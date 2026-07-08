@@ -1,0 +1,151 @@
+// Sentezy database schema (Prisma, PostgreSQL / Supabase).
+//
+// Notes:
+// - `userId` fields reference Supabase's `auth.users` (a schema Prisma does not own).
+//   Those FK constraints + the auth trigger + RLS + Realtime live in the companion
+//   migration `.../supabase_rls_triggers/migration.sql` (raw SQL, applied by migrate deploy).
+// - `updated_at` is maintained by a DB trigger (so it updates for the Python worker too),
+//   not Prisma's @updatedAt.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("SUPABASE_DB_URL")
+}
+
+/// 1:1 with auth.users — id IS the auth user id.
+model Profile {
+  id          String   @id @db.Uuid
+  displayName String?  @map("display_name")
+  plan        String   @default("free")
+  credits     Int      @default(30)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("profiles")
+}
+
+model Presenter {
+  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String          @map("user_id") @db.Uuid
+  name                 String
+  sourceImageId        String          @map("source_image_id")
+  previewImageId       String?         @map("preview_image_id")
+  heygenTalkingPhotoId String?         @map("heygen_talking_photo_id")
+  status               PresenterStatus @default(pending)
+  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  videos               Video[]
+
+  @@index([userId])
+  @@map("presenters")
+}
+
+model Voice {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elevenlabsVoiceId String   @map("elevenlabs_voice_id")
+  label             String
+  gender            String?
+  style             String?
+  isPublic          Boolean  @default(true) @map("is_public")
+  userId            String?  @map("user_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  videos            Video[]
+
+  @@index([userId])
+  @@map("voices")
+}
+
+model Video {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String         @map("user_id") @db.Uuid
+  title            String
+  script           String
+  presenterId      String?        @map("presenter_id") @db.Uuid
+  voiceId          String?        @map("voice_id") @db.Uuid
+  aspectRatio      AspectRatio    @default(r9_16) @map("aspect_ratio")
+  options          Json           @default("{}")
+  status           VideoStatus    @default(draft)
+  stage            VideoStage?
+  progress         Int            @default(0)
+  outputKey        String?        @map("output_key")
+  thumbnailImageId String?        @map("thumbnail_image_id")
+  durationS        Decimal?       @map("duration_s") @db.Decimal
+  creditsCost      Int            @default(1) @map("credits_cost")
+  error            String?
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
+  presenter        Presenter?     @relation(fields: [presenterId], references: [id], onDelete: SetNull)
+  voice            Voice?         @relation(fields: [voiceId], references: [id], onDelete: SetNull)
+  jobs             Job[]
+  creditLedger     CreditLedger[]
+
+  @@index([userId, createdAt])
+  @@map("videos")
+}
+
+model Job {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  videoId   String   @map("video_id") @db.Uuid
+  streamId  String?  @map("stream_id")
+  status    String   @default("queued")
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@map("jobs")
+}
+
+model CreditLedger {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  delta     Int
+  reason    String
+  videoId   String?  @map("video_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  video     Video?   @relation(fields: [videoId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("credit_ledger")
+}
+
+enum VideoStatus {
+  draft
+  queued
+  processing
+  ready
+  failed
+
+  @@map("video_status")
+}
+
+enum VideoStage {
+  tts
+  avatar
+  compose
+  thumbnail
+  done
+
+  @@map("video_stage")
+}
+
+enum PresenterStatus {
+  pending
+  ready
+  failed
+
+  @@map("presenter_status")
+}
+
+enum AspectRatio {
+  r9_16 @map("9:16")
+  r1_1  @map("1:1")
+  r16_9 @map("16:9")
+
+  @@map("aspect_ratio")
+}

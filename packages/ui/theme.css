@@ -1,0 +1,17 @@
+/* Sentezy shared design tokens (Tailwind v4 @theme). Imported by web + landing. */
+@theme {
+  /* palette — light & airy, black CTAs, soft periwinkle accent */
+  --color-paper: #ffffff;
+  --color-mist: #f5f4f1;
+  --color-ink: #0b0b0d;
+  --color-slate: #55565e;
+  --color-muted: #8a8b92;
+  --color-hairline: #ebe9e4;
+  --color-signal: #7c86e8;
+  --color-aurora: #c9a9e9;
+
+  /* type */
+  --font-display: "General Sans", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}

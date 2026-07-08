@@ -1,0 +1,32 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+.next/
+out/
+.astro/
+.turbo/
+.wrangler/
+.vercel/
+*.tsbuildinfo
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.python-version
+apps/worker/.venv/
+
+# env
+.env
+.env.*
+!.env.example
+
+# misc
+coverage/
+*.log
+.DS_Store
+tmp/

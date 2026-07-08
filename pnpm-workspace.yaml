@@ -1,0 +1,4 @@
+# Python worker (apps/worker) has no package.json, so pnpm ignores it — that's intentional.
+packages:
+  - "apps/*"
+  - "packages/*"

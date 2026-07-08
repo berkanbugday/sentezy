@@ -1,0 +1,66 @@
+import { z } from "zod";
+
+/**
+ * Shared contracts for Sentezy — imported by the web app and the API (TypeScript),
+ * and mirrored by the Python worker. Keep this in sync with the Supabase schema
+ * (Phase 1) and the queue design (Redis Streams).
+ */
+
+// ── Domain enums ──────────────────────────────────────────────────────────
+export const VideoStatus = z.enum(["draft", "queued", "processing", "ready", "failed"]);
+export type VideoStatus = z.infer<typeof VideoStatus>;
+
+export const VideoStage = z.enum(["tts", "avatar", "compose", "thumbnail", "done"]);
+export type VideoStage = z.infer<typeof VideoStage>;
+
+export const AspectRatio = z.enum(["9:16", "1:1", "16:9"]);
+export type AspectRatio = z.infer<typeof AspectRatio>;
+
+// ── Reel composition options (stored on videos.options jsonb) ──────────────
+export const ReelOptions = z.object({
+  background: z
+    .object({
+      // MVP: solid color or image only (no video backgrounds).
+      type: z.enum(["color", "image"]).default("color"),
+      value: z.string().default("#0B0B0D"), // hex color, or a Cloudflare Images id for `image`
+    })
+    .default({ type: "color", value: "#0B0B0D" }),
+  captions: z.boolean().default(true),
+  branding: z
+    .object({
+      logoImageId: z.string().nullable().default(null), // Cloudflare Images id
+      intro: z.boolean().default(false),
+      outro: z.boolean().default(false),
+    })
+    .default({ logoImageId: null, intro: false, outro: false }),
+  music: z
+    .object({
+      trackKey: z.string().nullable().default(null), // R2 key (audio)
+      volume: z.number().min(0).max(1).default(0.15),
+    })
+    .default({ trackKey: null, volume: 0.15 }),
+});
+export type ReelOptions = z.infer<typeof ReelOptions>;
+
+// ── API request contracts ─────────────────────────────────────────────────
+export const CreateVideoRequest = z.object({
+  title: z.string().min(1).max(120),
+  script: z.string().min(1).max(5000),
+  presenterId: z.string().uuid(),
+  voiceId: z.string().uuid(),
+  aspectRatio: AspectRatio.default("9:16"),
+  options: ReelOptions.default({}),
+});
+export type CreateVideoRequest = z.infer<typeof CreateVideoRequest>;
+
+// ── Redis Streams job payload (API → worker) ──────────────────────────────
+export const VideoJob = z.object({
+  videoId: z.string().uuid(),
+  userId: z.string().uuid(),
+  attempt: z.number().int().nonnegative().default(0),
+});
+export type VideoJob = z.infer<typeof VideoJob>;
+
+/** Redis Stream key + consumer group. The worker (Python) uses the same literals. */
+export const REDIS_STREAM = "sentezy:videos" as const;
+export const REDIS_GROUP = "worker" as const;
