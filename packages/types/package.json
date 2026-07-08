@@ -11,10 +11,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "^3.23.8"
+    "zod": "3.23.8"
   },
   "devDependencies": {
     "@sentezy/config": "workspace:*",
-    "typescript": "^5.6.3"
+    "typescript": "5.6.3"
   }
 }
