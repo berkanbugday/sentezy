@@ -66,6 +66,7 @@ body {
 .badge-ready { background: var(--wash); color: var(--color-signal); }
 .badge-proc { background: rgba(245, 158, 11, 0.15); color: #b45309; }
 .badge-draft { background: var(--color-mist); color: var(--color-muted); }
+.badge-fail { background: rgba(239, 68, 68, 0.13); color: #dc2626; }
 
 .grad {
   background: var(--beam);

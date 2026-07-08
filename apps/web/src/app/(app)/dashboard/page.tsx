@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Icon } from "@/components/icons";
 
 const STATS = [
@@ -34,7 +35,7 @@ export default function DashboardPage() {
           <h3 className="disp text-[22px] font-semibold">Yeni video oluştur</h3>
           <p className="text-[14.5px] text-white/90">Metni yaz ya da bir link yapıştır — gerisini Sentezy halletsin.</p>
         </div>
-        <a className="flex-none rounded-full bg-white px-5 py-2.5 text-[14px] font-semibold text-ink">Başla →</a>
+        <Link href="/create" className="flex-none rounded-full bg-white px-5 py-2.5 text-[14px] font-semibold text-ink">Başla →</Link>
       </div>
 
       {/* stats */}
@@ -59,7 +60,7 @@ export default function DashboardPage() {
       {/* recent */}
       <div className="mt-8 mb-4 flex items-center justify-between">
         <h2 className="text-[18px] font-semibold text-ink">Son videoların</h2>
-        <a className="text-[13.5px] font-semibold text-signal">Tümünü gör →</a>
+        <Link href="/library" className="text-[13.5px] font-semibold text-signal">Tümünü gör →</Link>
       </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {VIDEOS.map((v) => {

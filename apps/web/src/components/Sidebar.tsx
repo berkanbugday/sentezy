@@ -1,36 +1,54 @@
+"use client";
+
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { UserInfo } from "@/lib/user";
 import { Icon } from "./icons";
 import { UserMenu } from "./UserMenu";
 
 const NAV = [
-  { key: "dashboard", label: "Ana sayfa", icon: Icon.home, active: true },
-  { key: "library", label: "Videolarım", icon: Icon.video },
-  { key: "avatars", label: "Avatarlar", icon: Icon.users },
-  { key: "templates", label: "Şablonlar", icon: Icon.grid },
-  { key: "brand", label: "Marka kiti", icon: Icon.box },
+  { href: "/dashboard", label: "Ana sayfa", icon: Icon.home, ready: true },
+  { href: "/library", label: "Videolarım", icon: Icon.video, ready: true },
+  { href: "/avatars", label: "Avatarlar", icon: Icon.users, ready: false },
+  { href: "/templates", label: "Şablonlar", icon: Icon.grid, ready: false },
+  { href: "/brand", label: "Marka kiti", icon: Icon.box, ready: false },
 ];
 
 export function Sidebar({ user }: { user: UserInfo }) {
+  const pathname = usePathname();
   return (
-    <aside className="hidden w-[264px] flex-none flex-col gap-1 border-r border-[var(--color-hairline)] bg-paper p-4 md:flex">
+    <aside className="hidden h-screen w-[264px] flex-none flex-col gap-1 overflow-y-auto border-r border-hairline bg-paper p-4 md:flex">
       <div className="flex items-center gap-2 px-2 pb-3 pt-1">
         <Image src="/sentezy-logo.png" alt="Sentezy" width={28} height={28} className="h-7 w-7" />
         <span className="disp text-[21px] font-bold tracking-tight text-ink">Sentezy</span>
       </div>
 
-      <button className="btn btn-primary w-full">
+      <Link href="/create" className="btn btn-primary w-full">
         <Icon.plus width={18} height={18} />
         Yeni video
-      </button>
+      </Link>
 
       <nav className="mt-4 flex flex-col gap-0.5">
-        {NAV.map((n) => (
-          <a key={n.key} className="nav-item" data-active={n.active ? "true" : "false"}>
-            <n.icon />
-            <span>{n.label}</span>
-          </a>
-        ))}
+        {NAV.map((n) => {
+          const active = pathname === n.href || pathname.startsWith(`${n.href}/`);
+          const content = (
+            <>
+              <n.icon />
+              <span>{n.label}</span>
+              {!n.ready && <span className="ml-auto text-[10px] text-muted">yakında</span>}
+            </>
+          );
+          return n.ready ? (
+            <Link key={n.href} href={n.href} className="nav-item" data-active={active ? "true" : "false"}>
+              {content}
+            </Link>
+          ) : (
+            <span key={n.href} className="nav-item cursor-default opacity-70">
+              {content}
+            </span>
+          );
+        })}
       </nav>
 
       <div className="mt-auto flex flex-col gap-3">
@@ -44,12 +62,12 @@ export function Sidebar({ user }: { user: UserInfo }) {
           </div>
           <div className="flex items-center justify-between text-[12px]">
             <span className="text-muted">video</span>
-            <a className="font-semibold text-signal">Yükselt →</a>
+            <span className="font-semibold text-signal">Yükselt →</span>
           </div>
         </div>
 
-        <a className="nav-item"><Icon.card /><span>Fatura &amp; plan</span></a>
-        <a className="nav-item"><Icon.settings /><span>Ayarlar</span></a>
+        <span className="nav-item cursor-default opacity-70"><Icon.card /><span>Fatura &amp; plan</span></span>
+        <span className="nav-item cursor-default opacity-70"><Icon.settings /><span>Ayarlar</span></span>
 
         <UserMenu user={user} />
       </div>

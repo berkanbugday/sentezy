@@ -16,11 +16,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const info: UserInfo = { name, email: user.email!, initials: toInitials(name) };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar user={info} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar user={info} />
-        <main className="flex-1 px-6 py-8 md:px-8">{children}</main>
+        <main className="flex-1 overflow-y-auto px-6 py-8 md:px-8">{children}</main>
       </div>
     </div>
   );

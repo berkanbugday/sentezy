@@ -15,3 +15,21 @@ export const signupSchema = loginSchema.extend({
   name: z.string().min(2, "Adını gir"),
 });
 export type SignupValues = z.infer<typeof signupSchema>;
+
+// ── create-reel wizard ──
+export const createReelSchema = z.object({
+  title: z.string().min(1, "Başlık gerekli").max(120, "Başlık çok uzun"),
+  script: z.string().min(1, "Senaryo gerekli").max(5000, "Senaryo 5000 karakteri aşamaz"),
+  presenterId: z.string().uuid("Bir sunucu seç"),
+  voiceId: z.string().uuid("Bir ses seç"),
+  aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
+  captions: z.boolean().default(true),
+  backgroundColor: z.string().default("#0B0B0D"),
+});
+export type CreateReelValues = z.infer<typeof createReelSchema>;
+
+// name for the "add presenter" mini-form
+export const presenterSchema = z.object({
+  name: z.string().min(1, "İsim gerekli").max(80),
+});
+export type PresenterValues = z.infer<typeof presenterSchema>;
