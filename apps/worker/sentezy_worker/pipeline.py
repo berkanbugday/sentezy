@@ -77,7 +77,7 @@ def _resolve_music(options: dict, storage: Storage, workdir: str) -> str | None:
     if not track_key:
         return None
     dest = f"{workdir}/music.mp3"
-    storage.download(storage.r2_url(track_key), dest)  # music stored in R2
+    storage.download(storage.signed_get_url(track_key), dest)  # music stored in R2 (signed → always fetchable)
     return dest
 
 

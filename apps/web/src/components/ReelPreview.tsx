@@ -9,6 +9,7 @@ export type ReelPreviewValues = {
   presenterName?: string | null;
   presenterImageUrl?: string | null;
   voiceLabel?: string | null;
+  musicLabel?: string | null;
   aspectRatio: "9:16" | "1:1" | "16:9";
   captions: boolean;
   // B-roll images — cut in full-frame over the presenter on alternating sentences.
@@ -35,7 +36,7 @@ function fit(ratio: number, boxW = 320, boxH = 540) {
  * HeyGen render, so it works regardless of provider credits.
  */
 export function ReelPreview({ values, step }: { values: ReelPreviewValues; step: number }) {
-  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, aspectRatio, captions, brollImageUrls } = values;
+  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, musicLabel, aspectRatio, captions, brollImageUrls } = values;
   const broll = brollImageUrls ?? [];
 
   // Caption words grouped by sentence — the frame shows only the current
@@ -174,7 +175,7 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
             </div>
             <div className="mt-1.5 flex items-center gap-1.5 text-[10.5px] text-white/90">
               <MusicNoteIcon className="h-3 w-3 shrink-0" />
-              <span className="truncate">Orijinal ses · {voiceLabel || "Sentezy"}</span>
+              <span className="truncate">{musicLabel ? `${musicLabel} · ` : "Orijinal ses · "}{voiceLabel || "Sentezy"}</span>
             </div>
           </div>
 

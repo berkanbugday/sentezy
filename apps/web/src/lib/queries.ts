@@ -12,14 +12,21 @@ export type VideoDetailData = {
   brollImageUrls?: string[];
 };
 
+export type MusicTrack = { key: string; name: string; previewUrl: string };
+
 /** Query keys — one place so mutations can invalidate/update the right cache. */
 export const qk = {
   voices: ["voices"] as const,
   avatars: ["avatars"] as const,
   presenters: ["presenters"] as const,
+  music: ["music"] as const,
   videos: ["videos"] as const,
   video: (id: string) => ["video", id] as const,
 };
+
+export function useMusic(enabled = true) {
+  return useQuery({ queryKey: qk.music, queryFn: () => apiFetch<{ music: MusicTrack[] }>("/music").then((r) => r.music), enabled });
+}
 
 export function useVoices(enabled = true) {
   return useQuery({ queryKey: qk.voices, queryFn: () => apiFetch<{ voices: Voice[] }>("/voices").then((r) => r.voices), enabled });

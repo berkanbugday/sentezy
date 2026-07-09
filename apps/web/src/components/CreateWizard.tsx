@@ -8,7 +8,7 @@ import { ReelPreview } from "@/components/ReelPreview";
 import { type Avatar, AvatarStep, type BgImage, FormatStep, type Presenter, ReviewStep, ScriptStep, SetupStep, VoiceStep, type Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
 import { cfImageUrl } from "@/lib/images";
-import { useAvatars, useCreatePresenter, useGenerateVideo, usePresenters, useUploadBackground, useVoices } from "@/lib/queries";
+import { type MusicTrack, useAvatars, useCreatePresenter, useGenerateVideo, useMusic, usePresenters, useUploadBackground, useVoices } from "@/lib/queries";
 import { type CreateReelValues, createReelSchema } from "@/lib/schemas";
 
 const STEPS = ["Başlık & B-roll", "Avatar", "Ses & dil", "Senaryo", "Önizle"] as const;
@@ -25,6 +25,7 @@ function buildOptions(v: CreateReelValues, wizardStep: number) {
     background: ids.length
       ? { type: "image" as const, value: ids[0], images: ids }
       : { type: "color" as const, value: "#0B0B0D" },
+    ...(v.musicTrackKey ? { music: { trackKey: v.musicTrackKey, volume: 0.15 } } : {}),
     wizardStep,
   };
 }
@@ -34,6 +35,7 @@ export type StudioDemo = {
   voices?: Voice[];
   presenters?: Presenter[];
   avatars?: Avatar[];
+  music?: MusicTrack[];
   values?: Partial<CreateReelValues>;
   step?: number;
   bgImages?: BgImage[];
@@ -49,9 +51,11 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
   const voicesQ = useVoices(!demo);
   const avatarsQ = useAvatars(!demo);
   const presentersQ = usePresenters(!demo);
+  const musicQ = useMusic(!demo);
   const voices = demo?.voices ?? voicesQ.data ?? [];
   const avatars = demo?.avatars ?? avatarsQ.data ?? [];
   const presenters = demo?.presenters ?? presentersQ.data ?? [];
+  const music = demo?.music ?? musicQ.data ?? [];
   // Mutations (pending/error handled by TanStack Query, cache updates in the hooks).
   const createPresenter = useCreatePresenter();
   const uploadBg = useUploadBackground();
@@ -169,8 +173,9 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         if (video.presenterId) setValue("presenterId", video.presenterId);
         if (video.voiceId) setValue("voiceId", video.voiceId);
         setValue("aspectRatio", RATIO_FROM_API[video.aspectRatio] ?? "9:16");
-        const o = (video.options ?? {}) as { captions?: boolean; wizardStep?: number; background?: { type?: string; value?: string; images?: string[] } };
+        const o = (video.options ?? {}) as { captions?: boolean; wizardStep?: number; background?: { type?: string; value?: string; images?: string[] }; music?: { trackKey?: string | null } };
         if (typeof o.captions === "boolean") setValue("captions", o.captions);
+        if (o.music?.trackKey) setValue("musicTrackKey", o.music.trackKey);
         const bg = o.background ?? {};
         const ids = bg.images ?? (bg.type === "image" && bg.value ? [bg.value] : []);
         if (ids.length) {
@@ -297,7 +302,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
             {step === 3 && <ScriptStep register={register} errors={errors} values={values} setValue={set} />}
             {step === 4 && (
               <div className="flex flex-col gap-7">
-                <FormatStep register={register} errors={errors} values={values} setValue={set} />
+                <FormatStep register={register} errors={errors} values={values} setValue={set} music={music} />
                 <ReviewStep values={values} presenterName={presenter?.name ?? "—"} voiceLabel={voice?.label ?? "—"} submitError={submitError} />
               </div>
             )}
@@ -329,6 +334,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
               aspectRatio: values.aspectRatio ?? "9:16",
               captions: values.captions ?? true,
               brollImageUrls: bgImages.map((i) => i.url).filter(Boolean),
+              musicLabel: music.find((t) => t.key === values.musicTrackKey)?.name,
             }}
           />
         </div>

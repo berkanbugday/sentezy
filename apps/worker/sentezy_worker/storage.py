@@ -26,6 +26,10 @@ class Storage:
         """Public CDN URL if configured, else a signed GET URL (used to hand audio to HeyGen)."""
         if self.cfg.r2_public_url:
             return f"{self.cfg.r2_public_url.rstrip('/')}/{key}"
+        return self.signed_get_url(key, expires)
+
+    def signed_get_url(self, key: str, expires: int = 3600) -> str:
+        """Presigned GET URL — always fetchable regardless of public-URL config."""
         return self.s3.generate_presigned_url(
             "get_object", Params={"Bucket": self.cfg.r2_bucket, "Key": key}, ExpiresIn=expires
         )

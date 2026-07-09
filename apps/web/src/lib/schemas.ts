@@ -27,6 +27,8 @@ export const createReelSchema = z.object({
   // Cloudflare Images ids for the background — one image, or several shown as a
   // slideshow. Empty = plain dark background.
   backgroundImageIds: z.array(z.string()).default([]),
+  // R2 key of the background music bed, or undefined for none.
+  musicTrackKey: z.string().optional(),
 });
 export type CreateReelValues = z.infer<typeof createReelSchema>;
 

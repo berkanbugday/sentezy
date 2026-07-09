@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { estimateDuration, toWords } from "@/hooks/useCaptionPlayback";
+import type { MusicTrack } from "@/lib/queries";
 import type { CreateReelValues } from "@/lib/schemas";
 
 export type Voice = { id: string; label: string; gender: string | null; style: string | null; previewUrl?: string | null };
@@ -332,7 +333,21 @@ const RATIOS: { value: CreateReelValues["aspectRatio"]; label: string; w: number
   { value: "16:9", label: "Yatay · YouTube", w: 34, h: 19 },
 ];
 
-export function FormatStep({ register, values, setValue }: Common) {
+export function FormatStep({ register, values, setValue, music }: Common & { music: MusicTrack[] }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
+  function sample(t: MusicTrack) {
+    const audio = audioRef.current ?? (audioRef.current = new Audio());
+    if (playingKey === t.key) {
+      audio.pause();
+      setPlayingKey(null);
+      return;
+    }
+    audio.src = t.previewUrl;
+    audio.onended = () => setPlayingKey(null);
+    void audio.play();
+    setPlayingKey(t.key);
+  }
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -369,6 +384,50 @@ export function FormatStep({ register, values, setValue }: Common) {
         </span>
         <input type="checkbox" {...register("captions")} className="h-5 w-5 accent-[var(--color-signal)]" />
       </label>
+
+      <div>
+        <label className="mb-2.5 block text-[13px] font-medium text-ink">Müzik</label>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setValue("musicTrackKey", undefined)}
+            className={`rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition ${
+              !values.musicTrackKey ? "border-signal bg-[var(--wash)] text-signal" : "border-hairline text-ink hover:border-signal/50"
+            }`}
+          >
+            Yok
+          </button>
+          {music.map((t) => {
+            const active = values.musicTrackKey === t.key;
+            return (
+              <div
+                key={t.key}
+                className={`flex items-center gap-2 rounded-full border py-1 pl-3.5 pr-1 transition ${
+                  active ? "border-signal bg-[var(--wash)]" : "border-hairline hover:border-signal/50"
+                }`}
+              >
+                <button type="button" onClick={() => setValue("musicTrackKey", t.key)} className="text-[13px] font-medium text-ink">
+                  {t.name}
+                </button>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Dinle"
+                  onClick={() => sample(t)}
+                  onKeyDown={(e) => e.key === "Enter" && sample(t)}
+                  className="grid h-7 w-7 cursor-pointer place-items-center rounded-full bg-ink text-paper transition hover:opacity-90"
+                >
+                  {playingKey === t.key ? (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z" /></svg>
+                  ) : (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
