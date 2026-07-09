@@ -1,15 +1,18 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ReelPreview } from "@/components/ReelPreview";
-import { AvatarStep, type BgImage, FormatStep, type Presenter, ReviewStep, ScriptStep, SetupStep, VoiceStep, type Voice } from "@/components/WizardSteps";
+import { type Avatar, AvatarStep, type BgImage, FormatStep, type Presenter, ReviewStep, ScriptStep, SetupStep, VoiceStep, type Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
+import { cfImageUrl } from "@/lib/images";
+import { qk, useAvatars, usePresenters, useVoices } from "@/lib/queries";
 import { type CreateReelValues, createReelSchema } from "@/lib/schemas";
 
-const STEPS = ["Başlık & Arka plan", "Avatar", "Ses & dil", "Senaryo", "Önizle"] as const;
+const STEPS = ["Başlık & B-roll", "Avatar", "Ses & dil", "Senaryo", "Önizle"] as const;
 
 // Prisma stores aspectRatio as r9_16 etc.; map back when resuming a draft.
 const RATIO_FROM_API: Record<string, CreateReelValues["aspectRatio"]> = {
@@ -31,6 +34,7 @@ function buildOptions(v: CreateReelValues, wizardStep: number) {
 export type StudioDemo = {
   voices?: Voice[];
   presenters?: Presenter[];
+  avatars?: Avatar[];
   values?: Partial<CreateReelValues>;
   step?: number;
   bgImages?: BgImage[];
@@ -38,9 +42,16 @@ export type StudioDemo = {
 
 export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: string } = {}) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(demo?.step ?? 0);
-  const [voices, setVoices] = useState<Voice[]>(demo?.voices ?? []);
-  const [presenters, setPresenters] = useState<Presenter[]>(demo?.presenters ?? []);
+  // Server state via TanStack Query (disabled in dev/demo, which supplies its own).
+  const voicesQ = useVoices(!demo);
+  const avatarsQ = useAvatars(!demo);
+  const presentersQ = usePresenters(!demo);
+  const voices = demo?.voices ?? voicesQ.data ?? [];
+  const avatars = demo?.avatars ?? avatarsQ.data ?? [];
+  const presenters = demo?.presenters ?? presentersQ.data ?? [];
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [generating, setGenerating] = useState(false);
@@ -134,11 +145,26 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     })();
   }
 
-  useEffect(() => {
-    if (demo) return;
-    apiFetch<{ voices: Voice[] }>("/voices").then((r) => setVoices(r.voices)).catch(() => {});
-    apiFetch<{ presenters: Presenter[] }>("/presenters").then((r) => setPresenters(r.presenters)).catch(() => {});
-  }, [demo]);
+  // Selecting a preset avatar creates (or reuses) a presenter that references it.
+  async function selectAvatar(a: Avatar) {
+    const existing = presenters.find((p) => p.imageUrl === a.imageUrl);
+    if (existing) {
+      set("presenterId", existing.id, { shouldValidate: true });
+      return;
+    }
+    setAvatarBusy(true);
+    try {
+      const { presenter, imageUrl } = await apiFetch<{ presenter: Presenter; imageUrl: string }>("/presenters", {
+        method: "POST",
+        body: JSON.stringify({ name: a.name, sourceImageId: a.id }),
+      });
+      const p = { ...presenter, imageUrl };
+      queryClient.setQueryData<Presenter[]>(qk.presenters, (old) => [p, ...(old ?? [])]);
+      set("presenterId", p.id, { shouldValidate: true });
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
 
   // Resume: load an existing draft and jump to where the user left off.
   useEffect(() => {
@@ -147,8 +173,8 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
       title: string; script: string; presenterId: string | null; voiceId: string | null;
       aspectRatio: string; status: string; options: Record<string, unknown>;
     };
-    apiFetch<{ video: DraftVideo }>(`/videos/${draftId}`)
-      .then(({ video }) => {
+    apiFetch<{ video: DraftVideo; brollImageUrls?: string[] }>(`/videos/${draftId}`)
+      .then(({ video, brollImageUrls }) => {
         if (!video || video.status !== "draft") return;
         setValue("title", video.title === "Adsız video" ? "" : video.title);
         setValue("script", video.script ?? "");
@@ -161,8 +187,8 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         const ids = bg.images ?? (bg.type === "image" && bg.value ? [bg.value] : []);
         if (ids.length) {
           setValue("backgroundImageIds", ids);
-          // URLs can't be rebuilt client-side (no CF hash); the ids still render in the video.
-          setBgImages(ids.map((id) => ({ id, url: "" })));
+          // Prefer server-provided delivery URLs; fall back to the public hash.
+          setBgImages(ids.map((id, i) => ({ id, url: brollImageUrls?.[i] ?? cfImageUrl(id) })));
         }
         if (typeof o.wizardStep === "number") setStep(Math.min(o.wizardStep, STEPS.length - 1));
       })
@@ -270,13 +296,11 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
             )}
             {step === 1 && (
               <AvatarStep
-                presenters={presenters}
-                selected={values.presenterId}
-                onSelect={(id) => set("presenterId", id, { shouldValidate: true })}
-                onCreated={(p) => {
-                  setPresenters((list) => [p, ...list]);
-                  set("presenterId", p.id, { shouldValidate: true });
-                }}
+                avatars={avatars}
+                selectedImageUrl={presenter?.imageUrl}
+                selectedName={presenter?.name}
+                onSelect={selectAvatar}
+                busy={avatarBusy}
                 error={errors.presenterId?.message}
               />
             )}
@@ -317,7 +341,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
               voiceLabel: voice?.label,
               aspectRatio: values.aspectRatio ?? "9:16",
               captions: values.captions ?? true,
-              backgroundImageUrls: bgImages.map((i) => i.url).filter(Boolean),
+              brollImageUrls: bgImages.map((i) => i.url).filter(Boolean),
             }}
           />
         </div>

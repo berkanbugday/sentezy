@@ -11,8 +11,8 @@ export type ReelPreviewValues = {
   voiceLabel?: string | null;
   aspectRatio: "9:16" | "1:1" | "16:9";
   captions: boolean;
-  // One or more background images; multiple play as a slideshow. Empty = dark.
-  backgroundImageUrls?: string[];
+  // B-roll images — cut in full-frame over the presenter on alternating sentences.
+  brollImageUrls?: string[];
 };
 
 const RATIO: Record<ReelPreviewValues["aspectRatio"], number> = {
@@ -35,8 +35,8 @@ function fit(ratio: number, boxW = 320, boxH = 540) {
  * HeyGen render, so it works regardless of provider credits.
  */
 export function ReelPreview({ values, step }: { values: ReelPreviewValues; step: number }) {
-  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, aspectRatio, captions, backgroundImageUrls } = values;
-  const bgUrls = backgroundImageUrls ?? [];
+  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, aspectRatio, captions, brollImageUrls } = values;
+  const broll = brollImageUrls ?? [];
 
   // Caption words grouped by sentence — the frame shows only the current
   // sentence (a real reel never shows the whole script at once).
@@ -49,11 +49,28 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
   const localActive = activeWord < 0 ? -1 : flat[activeWord]?.li ?? -1;
   const curWords = sentences.length ? toWords(sentences[curIdx]) : [];
 
-  // Background slideshow: step through the images along the playback timeline.
-  const bgUrl = bgUrls.length ? bgUrls[Math.min(bgUrls.length - 1, Math.floor(progress * bgUrls.length))] : null;
-
   const { w, h } = fit(RATIO[aspectRatio]);
   const seconds = estimateDuration(script);
+
+  // Auto B-roll (mirrors the worker): A-roll hook → every image evenly → A-roll close.
+  let activeBroll: string | null = null;
+  let activeBrollKey = -1;
+  if (playing && broll.length > 0 && seconds > 0.1) {
+    const hook = Math.min(1.6, seconds * 0.22);
+    const close = Math.min(1.4, seconds * 0.18);
+    let midStart = hook;
+    let midEnd = seconds - close;
+    if (midEnd - midStart < 0.6) {
+      midStart = Math.min(0.5, seconds * 0.15);
+      midEnd = seconds;
+    }
+    const span = (midEnd - midStart) / broll.length;
+    const t = progress * seconds;
+    if (t >= midStart && t < midEnd) {
+      activeBrollKey = Math.min(broll.length - 1, Math.floor((t - midStart) / span));
+      activeBroll = broll[activeBrollKey];
+    }
+  }
 
   return (
     <div className="flex flex-col items-center">
@@ -63,21 +80,10 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
           className="relative overflow-hidden rounded-[28px] border-[6px] border-ink transition-[width,height] duration-300 ease-out"
           style={{ width: w, height: h, background: "#0b0b0d" }}
         >
-          {/* background image(s) — fill the whole frame (slideshow when multiple) */}
-          {bgUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={bgUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          )}
-
-          {/* presenter overlays the background; inset ~92% to match the compositor */}
+          {/* A-roll: presenter fills the frame */}
           {presenterImageUrl ? (
-            <div className="absolute inset-[4%] overflow-hidden rounded-[10px] ring-1 ring-white/10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={presenterImageUrl} alt={presenterName ?? ""} className="absolute inset-0 h-full w-full object-cover" />
-              {playing && (
-                <span className="absolute left-1/2 top-4 h-2.5 w-2.5 -translate-x-1/2 animate-ping rounded-full bg-white/90" />
-              )}
-            </div>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={presenterImageUrl} alt={presenterName ?? ""} className="absolute inset-0 h-full w-full object-cover" />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
               <div
@@ -88,6 +94,17 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
               </div>
               <span className="text-[11px] font-medium tracking-wide text-white/70 [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">Sunucu ekle</span>
             </div>
+          )}
+
+          {/* B-roll cutaway — crossfades in over the presenter while its sentence plays */}
+          {activeBroll && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={curIdx} src={activeBroll} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ animation: "brollIn 0.22s ease" }} />
+          )}
+
+          {/* speaking pulse only while the presenter (A-roll) is on screen */}
+          {playing && presenterImageUrl && !activeBroll && (
+            <span className="absolute left-1/2 top-6 h-2.5 w-2.5 -translate-x-1/2 animate-ping rounded-full bg-white/90" />
           )}
 
           {/* ── reels chrome — makes the preview read like a TikTok / Instagram Reels feed ── */}

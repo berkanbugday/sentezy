@@ -31,7 +31,14 @@ export async function videoRoutes(app: FastifyInstance) {
     let downloadUrl: string | null = null;
     if (video.outputKey) downloadUrl = publicUrl(video.outputKey) ?? (await signedDownloadUrl(video.outputKey));
     const thumbnailUrl = video.thumbnailImageId ? imageUrl(video.thumbnailImageId) : null;
-    return { video, downloadUrl, thumbnailUrl };
+
+    // Delivery URLs for the B-roll images so a resumed draft can show thumbnails
+    // (the account hash is server-only).
+    const bg = (video.options as { background?: { images?: string[]; type?: string; value?: string } } | null)?.background;
+    const brollIds = bg?.images ?? (bg?.type === "image" && bg?.value ? [bg.value] : []);
+    const brollImageUrls = brollIds.map((imgId) => imageUrl(imgId));
+
+    return { video, downloadUrl, thumbnailUrl, brollImageUrls };
   });
 
   app.post("/videos", { preHandler: app.authenticate }, async (req, reply) => {

@@ -106,30 +106,27 @@ def compose_reel(
     out_path: str,
     width: int = 1080,
     height: int = 1920,
-    background: dict | None = None,  # {"type": "color"|"image", "value": hex, "paths": [str, ...]}
+    broll: list[dict] | None = None,  # [{"path": str, "start": float, "end": float}] — auto-timed cutaways
     captions_ass: str | None = None,
     logo_path: str | None = None,
     music_path: str | None = None,
     music_volume: float = 0.15,
-    duration: float | None = None,  # video length; splits a multi-image slideshow evenly
 ) -> None:
-    background = background or {"type": "color", "value": "#0B0B0D"}
+    """A-roll / B-roll composite: the presenter fills the frame (A-roll); each
+    B-roll image cuts in full-screen over its time window while the voice keeps
+    playing; captions burn on top so a cutaway never hides them."""
+    broll = broll or []
 
-    inputs: list[str] = ["-i", avatar_path]  # [0] presenter clip (+ its voice audio)
+    inputs: list[str] = ["-i", avatar_path]  # [0] A-roll: presenter clip + its voice audio
     idx = 1
 
-    # [1..] background — a color, one image, or several images as a slideshow
-    bg_paths = background.get("paths") if background.get("type") == "image" else None
-    if bg_paths:
-        seg = (duration / len(bg_paths)) if (duration and len(bg_paths) > 1) else None
-        for p in bg_paths:
-            inputs += (["-loop", "1", "-t", f"{seg:.3f}", "-i", p] if seg else ["-loop", "1", "-i", p])
-        bg_idxs = list(range(idx, idx + len(bg_paths)))
-        idx += len(bg_paths)
-    else:
-        color = (background.get("value") or "#0B0B0D").lstrip("#")
-        inputs += ["-f", "lavfi", "-i", f"color=c=0x{color}:s={width}x{height}:r=30"]
-        bg_idxs = [idx]
+    # [1..] B-roll stills — looped so a frame exists at every timestamp; the
+    # overlay's `enable` window decides when each is shown.
+    broll_idxs: list[int] = []
+    for b in broll:
+        dur = max(0.3, float(b["end"]) - float(b["start"]))
+        inputs += ["-loop", "1", "-t", f"{dur:.3f}", "-i", b["path"]]
+        broll_idxs.append(idx)
         idx += 1
 
     logo_idx = None
@@ -146,29 +143,41 @@ def compose_reel(
 
     # ── video filtergraph ──
     fc: list[str] = []
-    _sc = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1"
-    if len(bg_idxs) > 1:
-        # scale/crop each image, then concat into a slideshow that spans the clip
-        for k, bi in enumerate(bg_idxs):
-            fc.append(f"[{bi}:v]{_sc},fps=30[bgi{k}]")
-        fc.append("".join(f"[bgi{k}]" for k in range(len(bg_idxs))) + f"concat=n={len(bg_idxs)}:v=1:a=0[bg]")
-    else:
-        fc.append(f"[{bg_idxs[0]}:v]{_sc}[bg]")
-    # presenter scaled to ~90% width, centered
-    fc.append(f"[0:v]scale={int(width*0.92)}:-2[av]")
-    fc.append("[bg][av]overlay=(W-w)/2:(H-h)/2[v1]")
-    last = "[v1]"
+    cover = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps=30"
+    # A-roll base: presenter filled to the frame
+    fc.append(f"[0:v]{cover}[base]")
+    last = "[base]"
+    # B-roll cutaways over the base — each gated to its [start, end] window and
+    # crossfaded in/out (alpha) so the cut feels produced, not abrupt.
+    for k, bi in enumerate(broll_idxs):
+        b = broll[k]
+        st = float(b["start"])
+        en = float(b["end"])
+        dur = max(0.3, en - st)
+        fd = min(0.22, max(0.05, dur / 3))  # crossfade duration
+        inc = max(0.0004, 0.10 / (dur * 30.0))  # slow Ken-Burns push-in (~10% over the window)
+        fc.append(
+            f"[{bi}:v]{cover},"
+            f"zoompan=z='min(zoom+{inc:.5f},1.12)':d=1:"
+            f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps=30,"
+            f"format=yuva420p,"
+            f"fade=t=in:st=0:d={fd:.3f}:alpha=1,"
+            f"fade=t=out:st={dur - fd:.3f}:d={fd:.3f}:alpha=1,"
+            f"setpts=PTS-STARTPTS+{st:.3f}/TB[brl{k}]"
+        )
+        fc.append(f"{last}[brl{k}]overlay=0:0:enable='between(t,{st:.3f},{en:.3f})'[bv{k}]")
+        last = f"[bv{k}]"
     if captions_ass and has_filter("subtitles"):
         esc = captions_ass.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
-        fc.append(f"{last}subtitles={esc}[v2]")
-        last = "[v2]"
+        fc.append(f"{last}subtitles={esc}[cap]")
+        last = "[cap]"
     elif captions_ass:
         # ffmpeg built without libass (e.g. local dev) — skip burn-in; Docker image has it.
         print("compose: 'subtitles' filter unavailable (no libass) — skipping captions")
     if logo_idx is not None:
         fc.append(f"[{logo_idx}:v]scale=160:-1[logo]")
-        fc.append(f"{last}[logo]overlay=W-w-48:48[v3]")
-        last = "[v3]"
+        fc.append(f"{last}[logo]overlay=W-w-48:48[logov]")
+        last = "[logov]"
 
     # ── audio ──
     audio_map: list[str]

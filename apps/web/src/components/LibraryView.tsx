@@ -1,18 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
-import { type ApiVideo, STATUS_LABEL } from "@/lib/types";
+import { useVideos } from "@/lib/queries";
+import { STATUS_LABEL } from "@/lib/types";
 
 export function LibraryView() {
-  const [videos, setVideos] = useState<ApiVideo[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<{ videos: ApiVideo[] }>("/videos")
-      .then((r) => setVideos(r.videos))
-      .catch(() => setVideos([]));
-  }, []);
+  const { data: videos, isLoading } = useVideos();
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -24,7 +17,7 @@ export function LibraryView() {
         <Link href="/create" className="btn btn-primary">+ Yeni video</Link>
       </div>
 
-      {videos === null && <p className="text-[14px] text-muted">Yükleniyor…</p>}
+      {isLoading && <p className="text-[14px] text-muted">Yükleniyor…</p>}
 
       {videos?.length === 0 && (
         <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">

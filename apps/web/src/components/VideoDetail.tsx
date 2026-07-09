@@ -1,34 +1,20 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { type ApiVideo, STAGE_LABEL, STATUS_LABEL, type VideoStage, type VideoStatus } from "@/lib/types";
+import { qk, useVideo } from "@/lib/queries";
+import { STAGE_LABEL, STATUS_LABEL, type VideoStage, type VideoStatus } from "@/lib/types";
 
-type Detail = { video: ApiVideo; downloadUrl: string | null; thumbnailUrl: string | null };
 type Live = { status: VideoStatus; stage: VideoStage; progress: number };
 
 export function VideoDetail({ id }: { id: string }) {
-  const [detail, setDetail] = useState<Detail | null>(null);
-  const [live, setLive] = useState<Live | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const { data: detail, isError } = useVideo(id);
+  const queryClient = useQueryClient();
+  const [liveOverride, setLiveOverride] = useState<Live | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const d = await apiFetch<Detail>(`/videos/${id}`);
-      setDetail(d);
-      setLive({ status: d.video.status, stage: d.video.stage, progress: d.video.progress });
-    } catch {
-      setNotFound(true);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  // live progress via Supabase Realtime on the videos row
+  // Live progress via Supabase Realtime; a terminal status refetches full detail.
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -37,21 +23,22 @@ export function VideoDetail({ id }: { id: string }) {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "videos", filter: `id=eq.${id}` },
         (payload) => {
-          const row = payload.new as { status: VideoStatus; stage: VideoStage; progress: number };
-          setLive({ status: row.status, stage: row.stage, progress: row.progress });
-          if (row.status === "ready" || row.status === "failed") load();
+          const row = payload.new as Live;
+          setLiveOverride({ status: row.status, stage: row.stage, progress: row.progress });
+          if (row.status === "ready" || row.status === "failed") queryClient.invalidateQueries({ queryKey: qk.video(id) });
         },
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, load]);
+  }, [id, queryClient]);
 
-  if (notFound) return <p className="text-[14px] text-muted">Video bulunamadı.</p>;
-  if (!detail || !live) return <p className="text-[14px] text-muted">Yükleniyor…</p>;
+  if (isError) return <p className="text-[14px] text-muted">Video bulunamadı.</p>;
+  if (!detail) return <p className="text-[14px] text-muted">Yükleniyor…</p>;
 
   const v = detail.video;
+  const live: Live = liveOverride ?? { status: v.status, stage: v.stage, progress: v.progress };
   const [label, cls] = STATUS_LABEL[live.status];
   const processing = live.status === "queued" || live.status === "processing";
   const ratioClass =

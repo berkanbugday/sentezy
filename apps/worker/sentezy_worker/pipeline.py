@@ -24,19 +24,43 @@ def _ffprobe_duration(path: str) -> float:
         return 0.0
 
 
-def _resolve_background(options: dict, storage: Storage, workdir: str) -> dict:
-    bg = (options or {}).get("background") or {"type": "color", "value": "#0B0B0D"}
-    if bg.get("type") == "image":
-        # One or more Cloudflare Images ids (multiple → slideshow).
-        ids = bg.get("images") or ([bg["value"]] if bg.get("value") else [])
-        paths: list[str] = []
-        for i, image_id in enumerate(ids):
-            dest = f"{workdir}/bg{i}.jpg"
-            storage.download(storage.cf_image_url(image_id), dest)
-            paths.append(dest)
-        if paths:
-            return {"type": "image", "paths": paths}
-    return {"type": "color", "value": bg.get("value", "#0B0B0D")}
+def _resolve_broll_images(options: dict, storage: Storage, workdir: str) -> list[str]:
+    """Download the user's uploaded images (used as B-roll cutaways)."""
+    bg = (options or {}).get("background") or {}
+    ids = bg.get("images") or ([bg["value"]] if bg.get("type") == "image" and bg.get("value") else [])
+    paths: list[str] = []
+    for i, image_id in enumerate(ids):
+        dest = f"{workdir}/broll{i}.jpg"
+        storage.download(storage.cf_image_url(image_id), dest)
+        paths.append(dest)
+    return paths
+
+
+def _broll_segments(words: list, image_paths: list[str]) -> list[dict]:
+    """Auto-place B-roll — no manual timeline needed. Keep a short A-roll hook at
+    the start and an A-roll close at the end, and fill the middle with EVERY
+    uploaded image, evenly spaced. So anyone can make a B-roll reel by just
+    uploading images, and all of them get used."""
+    if not words or not image_paths:
+        return []
+    t0 = words[0].start
+    t1 = words[-1].end
+    total = t1 - t0
+    if total <= 0.1:
+        return []
+    n = len(image_paths)
+    hook = min(1.6, total * 0.22)   # A-roll intro (see the presenter first)
+    close = min(1.4, total * 0.18)  # A-roll outro (CTA on the presenter)
+    mid_start = t0 + hook
+    mid_end = t1 - close
+    if mid_end - mid_start < 0.6:    # very short script — just keep a tiny hook
+        mid_start = t0 + min(0.5, total * 0.15)
+        mid_end = t1
+    span = (mid_end - mid_start) / n
+    return [
+        {"path": p, "start": mid_start + i * span, "end": (mid_start + (i + 1) * span) if i < n - 1 else mid_end}
+        for i, p in enumerate(image_paths)
+    ]
 
 
 def _resolve_logo(options: dict, storage: Storage, workdir: str) -> str | None:
@@ -98,17 +122,17 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     caps_path = f"{workdir}/caps.ass"
     build_captions_ass(words, caps_path, width=width, height=height)
     reel_path = f"{workdir}/reel.mp4"
+    broll_paths = _resolve_broll_images(options, storage, workdir)
     compose_reel(
         avatar_path=avatar_path,
         out_path=reel_path,
         width=width,
         height=height,
-        background=_resolve_background(options, storage, workdir),
+        broll=_broll_segments(words, broll_paths),
         captions_ass=caps_path if options.get("captions", True) else None,
         logo_path=_resolve_logo(options, storage, workdir),
         music_path=_resolve_music(options, storage, workdir),
         music_volume=float((options.get("music") or {}).get("volume", 0.15)),
-        duration=_ffprobe_duration(avatar_path),  # lets multi-image backgrounds span the clip
     )
 
     # 4) Thumbnail + upload

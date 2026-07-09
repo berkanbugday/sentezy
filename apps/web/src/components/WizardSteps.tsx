@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { estimateDuration, toWords } from "@/hooks/useCaptionPlayback";
-import { apiFetch } from "@/lib/api";
 import type { CreateReelValues } from "@/lib/schemas";
 
 export type Voice = { id: string; label: string; gender: string | null; style: string | null; previewUrl?: string | null };
@@ -46,13 +45,17 @@ export function SetupStep({
       </div>
 
       <div>
-        <label className="mb-1.5 block text-[13px] font-medium text-ink">Arka plan görselleri</label>
-        <p className="mb-2.5 text-[12px] text-muted">Bir ya da birden fazla görsel yükle — videonun arka planını tamamen kaplar.</p>
+        <label className="mb-1.5 block text-[13px] font-medium text-ink">B-roll görselleri</label>
+        <p className="mb-2.5 text-[12px] text-muted">Görselleri yükle — sunucu konuşurken otomatik olarak araya girerler. Düzenleme yok.</p>
         <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-5">
           {bgImages.map((img) => (
             <div key={img.id} className="group relative aspect-[9/16] overflow-hidden rounded-xl border border-hairline">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.url} alt="" className="h-full w-full object-cover" />
+              {img.url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={img.url} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-mist text-[10px] text-muted">Görsel</div>
+              )}
               <button
                 type="button"
                 onClick={() => onRemove(img.id)}
@@ -123,111 +126,115 @@ export function ScriptStep({ register, errors, values, setValue }: Common) {
   );
 }
 
-/* ── 02 · Avatar ──────────────────────────────────────────────────────── */
+/* ── 02 · Avatar — pick a preset AI presenter (no upload) ─────────────── */
+export type Avatar = { id: string; name: string; imageUrl: string };
+
 export function AvatarStep({
-  presenters,
-  selected,
+  avatars,
+  selectedImageUrl,
+  selectedName,
   onSelect,
-  onCreated,
+  busy,
   error,
 }: {
-  presenters: Presenter[];
-  selected?: string;
-  onSelect: (id: string) => void;
-  onCreated: (p: Presenter) => void;
+  avatars: Avatar[];
+  selectedImageUrl?: string | null;
+  selectedName?: string | null;
+  onSelect: (a: Avatar) => void;
+  busy?: boolean;
   error?: string;
 }) {
-  const [name, setName] = useState("");
-  const [preview, setPreview] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  async function addPresenter() {
-    const file = fileRef.current?.files?.[0];
-    if (!name.trim() || !file) return;
-    setBusy(true);
-    try {
-      const { presenter, uploadURL, imageUrl } = await apiFetch<{ presenter: Presenter; uploadURL: string; imageUrl: string }>(
-        "/presenters",
-        { method: "POST", body: JSON.stringify({ name }) },
-      );
-      const fd = new FormData();
-      fd.append("file", file);
-      await fetch(uploadURL, { method: "POST", body: fd });
-      onCreated({ ...presenter, imageUrl });
-      setName("");
-      setPreview(null);
-      if (fileRef.current) fileRef.current.value = "";
-    } finally {
-      setBusy(false);
-    }
-  }
-
+  const [open, setOpen] = useState(false);
   return (
     <div>
-      <p className="mb-4 text-[13px] text-slate">Videoda konuşacak sunucuyu seç ya da kendi fotoğrafını yükle.</p>
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-        {presenters.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => onSelect(p.id)}
-            className={`group overflow-hidden rounded-2xl border text-center transition ${
-              selected === p.id ? "border-signal ring-2 ring-signal/30" : "border-hairline hover:border-signal/50"
-            }`}
-          >
-            <div className="relative aspect-[3/4] w-full bg-mist">
-              {p.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="grad flex h-full w-full items-center justify-center text-[22px] font-bold text-white">
-                  {p.name.slice(0, 1).toUpperCase()}
-                </div>
-              )}
-            </div>
-            <div className="truncate px-2 py-1.5 text-[12.5px] font-semibold text-ink">{p.name}</div>
-          </button>
-        ))}
-
-        {/* upload tile */}
-        <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-hairline bg-mist text-center transition hover:border-signal">
-          {preview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={preview} alt="" className="h-full w-full rounded-2xl object-cover" />
-          ) : (
-            <>
-              <span className="text-[22px] text-muted">＋</span>
-              <span className="px-2 text-[11px] font-medium text-muted">Fotoğraf yükle</span>
-            </>
-          )}
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              setPreview(f ? URL.createObjectURL(f) : null);
-            }}
-          />
-        </label>
-      </div>
-
-      {preview && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-hairline bg-mist p-2.5">
-          <input
-            className={`${fieldClass} flex-1`}
-            placeholder="Sunucuya bir isim ver"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <button type="button" onClick={addPresenter} disabled={busy || !name.trim()} className="btn btn-primary disabled:opacity-50">
-            {busy ? "Yükleniyor…" : "Ekle"}
-          </button>
+      <p className="mb-4 text-[13px] text-slate">Videoda konuşacak AI sunucuyu seç.</p>
+      {selectedImageUrl ? (
+        <div className="flex items-center gap-4">
+          <div className="h-28 w-24 overflow-hidden rounded-2xl border border-hairline">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={selectedImageUrl} alt={selectedName ?? ""} className="h-full w-full object-cover" />
+          </div>
+          <div>
+            <div className="text-[15px] font-semibold text-ink">{selectedName}</div>
+            <button type="button" onClick={() => setOpen(true)} className="mt-1.5 text-[13px] font-medium text-signal hover:underline">
+              Değiştir
+            </button>
+          </div>
         </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-hairline bg-mist py-10 text-[14px] font-medium text-slate transition hover:border-signal"
+        >
+          <span className="text-[18px]">＋</span> Avatar seç
+        </button>
       )}
       {error && <p className="mt-2 text-[12.5px] text-red-600">{error}</p>}
+
+      {open && (
+        <AvatarModal
+          avatars={avatars}
+          selectedImageUrl={selectedImageUrl}
+          busy={busy}
+          onClose={() => setOpen(false)}
+          onPick={(a) => {
+            onSelect(a);
+            setOpen(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AvatarModal({
+  avatars,
+  selectedImageUrl,
+  busy,
+  onClose,
+  onPick,
+}: {
+  avatars: Avatar[];
+  selectedImageUrl?: string | null;
+  busy?: boolean;
+  onClose: () => void;
+  onPick: (a: Avatar) => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-hairline bg-paper shadow-2xl">
+        <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
+          <h3 className="disp text-[17px] font-semibold text-ink">Avatar seç</h3>
+          <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 place-items-center rounded-full text-[18px] text-muted transition hover:bg-mist">
+            ×
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-3">
+          {avatars.map((a) => {
+            const active = selectedImageUrl === a.imageUrl;
+            return (
+              <button
+                key={a.id}
+                type="button"
+                disabled={busy}
+                onClick={() => onPick(a)}
+                className={`group overflow-hidden rounded-2xl border text-left transition disabled:opacity-60 ${
+                  active ? "border-signal ring-2 ring-signal/30" : "border-hairline hover:border-signal/50"
+                }`}
+              >
+                <div className="aspect-[3/4] w-full bg-mist">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={a.imageUrl} alt={a.name} className="h-full w-full object-cover" />
+                </div>
+                <div className="truncate px-2.5 py-2 text-[13px] font-semibold text-ink">{a.name}</div>
+              </button>
+            );
+          })}
+          {avatars.length === 0 && <p className="col-span-full py-6 text-center text-[13px] text-muted">Avatarlar yükleniyor…</p>}
+        </div>
+      </div>
     </div>
   );
 }
