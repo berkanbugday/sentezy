@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -9,7 +8,7 @@ import { ReelPreview } from "@/components/ReelPreview";
 import { type Avatar, AvatarStep, type BgImage, FormatStep, type Presenter, ReviewStep, ScriptStep, SetupStep, VoiceStep, type Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
 import { cfImageUrl } from "@/lib/images";
-import { qk, useAvatars, usePresenters, useVoices } from "@/lib/queries";
+import { useAvatars, useCreatePresenter, useGenerateVideo, usePresenters, useUploadBackground, useVoices } from "@/lib/queries";
 import { type CreateReelValues, createReelSchema } from "@/lib/schemas";
 
 const STEPS = ["Başlık & B-roll", "Avatar", "Ses & dil", "Senaryo", "Önizle"] as const;
@@ -42,8 +41,10 @@ export type StudioDemo = {
 
 export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: string } = {}) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [step, setStep] = useState(demo?.step ?? 0);
+  // Highest step reached — every step up to here stays clickable in the top rail,
+  // so you can jump freely among visited steps (even after going back).
+  const [maxStep, setMaxStep] = useState(demo?.step ?? 0);
   // Server state via TanStack Query (disabled in dev/demo, which supplies its own).
   const voicesQ = useVoices(!demo);
   const avatarsQ = useAvatars(!demo);
@@ -51,7 +52,10 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
   const voices = demo?.voices ?? voicesQ.data ?? [];
   const avatars = demo?.avatars ?? avatarsQ.data ?? [];
   const presenters = demo?.presenters ?? presentersQ.data ?? [];
-  const [avatarBusy, setAvatarBusy] = useState(false);
+  // Mutations (pending/error handled by TanStack Query, cache updates in the hooks).
+  const createPresenter = useCreatePresenter();
+  const uploadBg = useUploadBackground();
+  const generate = useGenerateVideo();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [generating, setGenerating] = useState(false);
@@ -86,14 +90,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
   async function uploadBackgrounds(files: FileList) {
     const uploaded: BgImage[] = [];
     for (const file of Array.from(files)) {
-      const { id, uploadURL, imageUrl } = await apiFetch<{ id: string; uploadURL: string; imageUrl: string }>(
-        "/backgrounds/upload",
-        { method: "POST", body: JSON.stringify({}) },
-      );
-      const fd = new FormData();
-      fd.append("file", file);
-      await fetch(uploadURL, { method: "POST", body: fd });
-      uploaded.push({ id, url: imageUrl });
+      uploaded.push(await uploadBg.mutateAsync(file));
     }
     syncBgImages([...bgImages, ...uploaded]);
   }
@@ -152,18 +149,9 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
       set("presenterId", existing.id, { shouldValidate: true });
       return;
     }
-    setAvatarBusy(true);
-    try {
-      const { presenter, imageUrl } = await apiFetch<{ presenter: Presenter; imageUrl: string }>("/presenters", {
-        method: "POST",
-        body: JSON.stringify({ name: a.name, sourceImageId: a.id }),
-      });
-      const p = { ...presenter, imageUrl };
-      queryClient.setQueryData<Presenter[]>(qk.presenters, (old) => [p, ...(old ?? [])]);
-      set("presenterId", p.id, { shouldValidate: true });
-    } finally {
-      setAvatarBusy(false);
-    }
+    // useCreatePresenter adds the new presenter to the query cache on success.
+    const { presenter } = await createPresenter.mutateAsync({ name: a.name, sourceImageId: a.id });
+    set("presenterId", presenter.id, { shouldValidate: true });
   }
 
   // Resume: load an existing draft and jump to where the user left off.
@@ -190,30 +178,32 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
           // Prefer server-provided delivery URLs; fall back to the public hash.
           setBgImages(ids.map((id, i) => ({ id, url: brollImageUrls?.[i] ?? cfImageUrl(id) })));
         }
-        if (typeof o.wizardStep === "number") setStep(Math.min(o.wizardStep, STEPS.length - 1));
+        if (typeof o.wizardStep === "number") {
+          const s = Math.min(o.wizardStep, STEPS.length - 1);
+          setStep(s);
+          setMaxStep((m) => Math.max(m, s));
+        }
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftId, demo]);
 
-  // Debounced autosave — persists the draft ~0.8s after any change.
-  useEffect(() => {
-    if (demo) return;
-    if (!values.title?.trim() && !values.script?.trim() && !draftRef.current) return;
-    const t = setTimeout(() => saveProgress(values, step), 800);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    values.title, values.script, values.presenterId, values.voiceId, values.aspectRatio,
-    values.captions, values.backgroundImageIds, step, demo,
-  ]);
-
   const presenter = presenters.find((p) => p.id === values.presenterId);
   const voice = voices.find((v) => v.id === values.voiceId);
 
+  // Advance to the next step and save the draft (save on next, not on every change).
   async function next() {
     const perStep: (keyof CreateReelValues)[][] = [["title"], ["presenterId"], ["voiceId"], ["script"], []];
-    if (await trigger(perStep[step])) setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    if (!(await trigger(perStep[step]))) return;
+    const nextStep = Math.min(step + 1, STEPS.length - 1);
+    setStep(nextStep);
+    setMaxStep((m) => Math.max(m, nextStep));
+    saveProgress(values, nextStep);
+  }
+
+  // Jump to any already-visited step via the top rail (no save — data lives in the form).
+  function goToStep(i: number) {
+    if (i <= maxStep) setStep(i);
   }
 
   // Finalize: make sure the draft is saved, then generate (debit + queue).
@@ -234,10 +224,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
           options: buildOptions(v, step),
         }),
       });
-      const { video } = await apiFetch<{ video: { id: string } }>(`/videos/${id}/generate`, {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
+      const { video } = await generate.mutateAsync(id);
       router.push(`/videos/${video.id}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Bir hata oluştu";
@@ -270,10 +257,10 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
               <button
                 key={label}
                 type="button"
-                onClick={() => i <= step && setStep(i)}
-                disabled={i > step}
+                onClick={() => goToStep(i)}
+                disabled={i > maxStep}
                 className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium transition ${
-                  i === step ? "bg-[var(--wash)] text-signal" : i < step ? "text-ink hover:bg-mist" : "cursor-default text-muted"
+                  i === step ? "bg-[var(--wash)] text-signal" : i <= maxStep ? "text-ink hover:bg-mist" : "cursor-default text-muted"
                 }`}
               >
                 <span className="mono text-[11px]">{String(i + 1).padStart(2, "0")}</span>
@@ -300,8 +287,8 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
                 selectedImageUrl={presenter?.imageUrl}
                 selectedName={presenter?.name}
                 onSelect={selectAvatar}
-                busy={avatarBusy}
-                error={errors.presenterId?.message}
+                busy={createPresenter.isPending}
+                error={createPresenter.isError ? "Avatar seçilemedi, tekrar dene." : errors.presenterId?.message}
               />
             )}
             {step === 2 && (

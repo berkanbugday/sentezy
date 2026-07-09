@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import type { Avatar, Presenter, Voice } from "@/components/WizardSteps";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Avatar, BgImage, Presenter, Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
 import type { ApiVideo } from "@/lib/types";
 
@@ -39,4 +39,42 @@ export function useVideos() {
 
 export function useVideo(id: string) {
   return useQuery({ queryKey: qk.video(id), queryFn: () => apiFetch<VideoDetailData>(`/videos/${id}`) });
+}
+
+// ── Mutations ──────────────────────────────────────────────────────────────
+
+/** Create a presenter from a preset avatar and add it to the presenters cache. */
+export function useCreatePresenter() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; sourceImageId: string }) =>
+      apiFetch<{ presenter: Presenter; imageUrl: string }>("/presenters", { method: "POST", body: JSON.stringify(input) }),
+    onSuccess: ({ presenter, imageUrl }) =>
+      qc.setQueryData<Presenter[]>(qk.presenters, (old) => [{ ...presenter, imageUrl }, ...(old ?? [])]),
+  });
+}
+
+/** Upload one B-roll image: get a direct-upload URL, PUT the file, return {id,url}. */
+export function useUploadBackground() {
+  return useMutation({
+    mutationFn: async (file: File): Promise<BgImage> => {
+      const { id, uploadURL, imageUrl } = await apiFetch<{ id: string; uploadURL: string; imageUrl: string }>(
+        "/backgrounds/upload",
+        { method: "POST", body: JSON.stringify({}) },
+      );
+      const fd = new FormData();
+      fd.append("file", file);
+      await fetch(uploadURL, { method: "POST", body: fd });
+      return { id, url: imageUrl };
+    },
+  });
+}
+
+/** Finalize a draft → queue it for the worker. */
+export function useGenerateVideo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch<{ video: { id: string } }>(`/videos/${id}/generate`, { method: "POST", body: JSON.stringify({}) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.videos }),
+  });
 }
