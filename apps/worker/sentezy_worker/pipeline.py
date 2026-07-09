@@ -26,10 +26,16 @@ def _ffprobe_duration(path: str) -> float:
 
 def _resolve_background(options: dict, storage: Storage, workdir: str) -> dict:
     bg = (options or {}).get("background") or {"type": "color", "value": "#0B0B0D"}
-    if bg.get("type") == "image" and bg.get("value"):
-        dest = f"{workdir}/bg.jpg"
-        storage.download(storage.cf_image_url(bg["value"]), dest)  # value = Cloudflare Images id
-        return {"type": "image", "path": dest}
+    if bg.get("type") == "image":
+        # One or more Cloudflare Images ids (multiple → slideshow).
+        ids = bg.get("images") or ([bg["value"]] if bg.get("value") else [])
+        paths: list[str] = []
+        for i, image_id in enumerate(ids):
+            dest = f"{workdir}/bg{i}.jpg"
+            storage.download(storage.cf_image_url(image_id), dest)
+            paths.append(dest)
+        if paths:
+            return {"type": "image", "paths": paths}
     return {"type": "color", "value": bg.get("value", "#0B0B0D")}
 
 
@@ -102,6 +108,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
         logo_path=_resolve_logo(options, storage, workdir),
         music_path=_resolve_music(options, storage, workdir),
         music_volume=float((options.get("music") or {}).get("volume", 0.15)),
+        duration=_ffprobe_duration(avatar_path),  # lets multi-image backgrounds span the clip
     )
 
     # 4) Thumbnail + upload

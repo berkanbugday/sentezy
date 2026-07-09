@@ -106,27 +106,31 @@ def compose_reel(
     out_path: str,
     width: int = 1080,
     height: int = 1920,
-    background: dict | None = None,  # {"type": "color"|"image", "value": hex, "path": str}
+    background: dict | None = None,  # {"type": "color"|"image", "value": hex, "paths": [str, ...]}
     captions_ass: str | None = None,
     logo_path: str | None = None,
     music_path: str | None = None,
     music_volume: float = 0.15,
+    duration: float | None = None,  # video length; splits a multi-image slideshow evenly
 ) -> None:
     background = background or {"type": "color", "value": "#0B0B0D"}
 
     inputs: list[str] = ["-i", avatar_path]  # [0] presenter clip (+ its voice audio)
     idx = 1
 
-    # [1] background
-    if background.get("type") == "image" and background.get("path"):
-        inputs += ["-loop", "1", "-i", background["path"]]
-        bg_in = f"[{idx}:v]"
+    # [1..] background — a color, one image, or several images as a slideshow
+    bg_paths = background.get("paths") if background.get("type") == "image" else None
+    if bg_paths:
+        seg = (duration / len(bg_paths)) if (duration and len(bg_paths) > 1) else None
+        for p in bg_paths:
+            inputs += (["-loop", "1", "-t", f"{seg:.3f}", "-i", p] if seg else ["-loop", "1", "-i", p])
+        bg_idxs = list(range(idx, idx + len(bg_paths)))
+        idx += len(bg_paths)
     else:
         color = (background.get("value") or "#0B0B0D").lstrip("#")
         inputs += ["-f", "lavfi", "-i", f"color=c=0x{color}:s={width}x{height}:r=30"]
-        bg_in = f"[{idx}:v]"
-    bg_idx = idx
-    idx += 1
+        bg_idxs = [idx]
+        idx += 1
 
     logo_idx = None
     if logo_path:
@@ -142,8 +146,14 @@ def compose_reel(
 
     # ── video filtergraph ──
     fc: list[str] = []
-    fc.append(f"{bg_in}scale={width}:{height}:force_original_aspect_ratio=increase,"
-              f"crop={width}:{height},setsar=1[bg]")
+    _sc = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1"
+    if len(bg_idxs) > 1:
+        # scale/crop each image, then concat into a slideshow that spans the clip
+        for k, bi in enumerate(bg_idxs):
+            fc.append(f"[{bi}:v]{_sc},fps=30[bgi{k}]")
+        fc.append("".join(f"[bgi{k}]" for k in range(len(bg_idxs))) + f"concat=n={len(bg_idxs)}:v=1:a=0[bg]")
+    else:
+        fc.append(f"[{bg_idxs[0]}:v]{_sc}[bg]")
     # presenter scaled to ~90% width, centered
     fc.append(f"[0:v]scale={int(width*0.92)}:-2[av]")
     fc.append("[bg][av]overlay=(W-w)/2:(H-h)/2[v1]")
@@ -179,7 +189,6 @@ def compose_reel(
         "-shortest", "-movflags", "+faststart",
         out_path,
     ]
-    _ = bg_idx
     _run(cmd)
 
 

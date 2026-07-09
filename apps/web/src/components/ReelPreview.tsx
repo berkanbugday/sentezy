@@ -11,9 +11,8 @@ export type ReelPreviewValues = {
   voiceLabel?: string | null;
   aspectRatio: "9:16" | "1:1" | "16:9";
   captions: boolean;
-  backgroundType?: "color" | "image";
-  backgroundColor: string;
-  backgroundImageUrl?: string | null;
+  // One or more background images; multiple play as a slideshow. Empty = dark.
+  backgroundImageUrls?: string[];
 };
 
 const RATIO: Record<ReelPreviewValues["aspectRatio"], number> = {
@@ -36,8 +35,8 @@ function fit(ratio: number, boxW = 320, boxH = 540) {
  * HeyGen render, so it works regardless of provider credits.
  */
 export function ReelPreview({ values, step }: { values: ReelPreviewValues; step: number }) {
-  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, aspectRatio, captions, backgroundColor, backgroundType = "color", backgroundImageUrl } = values;
-  const showBgImage = backgroundType === "image" && !!backgroundImageUrl;
+  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, aspectRatio, captions, backgroundImageUrls } = values;
+  const bgUrls = backgroundImageUrls ?? [];
 
   // Caption words grouped by sentence — the frame shows only the current
   // sentence (a real reel never shows the whole script at once).
@@ -50,6 +49,9 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
   const localActive = activeWord < 0 ? -1 : flat[activeWord]?.li ?? -1;
   const curWords = sentences.length ? toWords(sentences[curIdx]) : [];
 
+  // Background slideshow: step through the images along the playback timeline.
+  const bgUrl = bgUrls.length ? bgUrls[Math.min(bgUrls.length - 1, Math.floor(progress * bgUrls.length))] : null;
+
   const { w, h } = fit(RATIO[aspectRatio]);
   const seconds = estimateDuration(script);
 
@@ -59,39 +61,34 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
       <div className="relative flex items-center justify-center" style={{ width: 340, height: 560 }}>
         <div
           className="relative overflow-hidden rounded-[28px] border-[6px] border-ink transition-[width,height] duration-300 ease-out"
-          style={{ width: w, height: h, background: backgroundColor }}
+          style={{ width: w, height: h, background: "#0b0b0d" }}
         >
-          {/* background image layer (fills the frame behind the presenter) */}
-          {showBgImage && (
+          {/* background image(s) — fill the whole frame (slideshow when multiple) */}
+          {bgUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={backgroundImageUrl!} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <img src={bgUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
           )}
 
-          {/* presenter — inset ~92% and centered, matching how the reel composites
-              the avatar over the background (so the background stays visible) */}
-          <div className="absolute inset-[4%] overflow-hidden rounded-[10px] ring-1 ring-white/10">
-            {presenterImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
+          {/* presenter overlays the background; inset ~92% to match the compositor */}
+          {presenterImageUrl ? (
+            <div className="absolute inset-[4%] overflow-hidden rounded-[10px] ring-1 ring-white/10">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={presenterImageUrl} alt={presenterName ?? ""} className="absolute inset-0 h-full w-full object-cover" />
-            ) : (
+              {playing && (
+                <span className="absolute left-1/2 top-4 h-2.5 w-2.5 -translate-x-1/2 animate-ping rounded-full bg-white/90" />
+              )}
+            </div>
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-                style={{ background: "linear-gradient(160deg, #2a2a30, #0c0c0f)" }}
+                className="grid h-20 w-20 place-items-center rounded-full"
+                style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.25)" }}
               >
-                <div
-                  className="grid h-20 w-20 place-items-center rounded-full"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
-                >
-                  <SilhouetteIcon className="text-white/45" />
-                </div>
-                <span className="text-[11px] font-medium tracking-wide text-white/50">Sunucu ekle</span>
+                <SilhouetteIcon className="text-white/70" />
               </div>
-            )}
-            {/* speaking pulse while playing */}
-            {playing && presenterImageUrl && (
-              <span className="absolute left-1/2 top-4 h-2.5 w-2.5 -translate-x-1/2 animate-ping rounded-full bg-white/90" />
-            )}
-          </div>
+              <span className="text-[11px] font-medium tracking-wide text-white/70 [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">Sunucu ekle</span>
+            </div>
+          )}
 
           {/* ── reels chrome — makes the preview read like a TikTok / Instagram Reels feed ── */}
           {/* legibility scrims */}

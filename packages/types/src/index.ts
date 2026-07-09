@@ -20,9 +20,11 @@ export type AspectRatio = z.infer<typeof AspectRatio>;
 export const ReelOptions = z.object({
   background: z
     .object({
-      // MVP: solid color or image only (no video backgrounds).
+      // MVP: solid color or image(s). No video backgrounds.
       type: z.enum(["color", "image"]).default("color"),
-      value: z.string().default("#0B0B0D"), // hex color, or a Cloudflare Images id for `image`
+      value: z.string().default("#0B0B0D"), // hex color, or the first Cloudflare Images id for `image`
+      // Multiple Cloudflare Images ids → slideshow background (first == value).
+      images: z.array(z.string()).optional(),
     })
     .default({ type: "color", value: "#0B0B0D" }),
   captions: z.boolean().default(true),

@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ReelPreview } from "@/components/ReelPreview";
-import { AvatarStep, type Presenter, ReviewStep, ScriptStep, SetupStep, VoiceStep, type Voice } from "@/components/WizardSteps";
+import { AvatarStep, type BgImage, FormatStep, type Presenter, ReviewStep, ScriptStep, SetupStep, VoiceStep, type Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
 import { type CreateReelValues, createReelSchema } from "@/lib/schemas";
 
-const STEPS = ["Başlık & Biçim", "Avatar", "Ses & dil", "Senaryo", "Önizle"] as const;
+const STEPS = ["Başlık & Arka plan", "Avatar", "Ses & dil", "Senaryo", "Önizle"] as const;
 
 // Prisma stores aspectRatio as r9_16 etc.; map back when resuming a draft.
 const RATIO_FROM_API: Record<string, CreateReelValues["aspectRatio"]> = {
@@ -17,12 +17,12 @@ const RATIO_FROM_API: Record<string, CreateReelValues["aspectRatio"]> = {
 };
 
 function buildOptions(v: CreateReelValues, wizardStep: number) {
+  const ids = v.backgroundImageIds ?? [];
   return {
     captions: v.captions,
-    background:
-      v.backgroundType === "image" && v.backgroundImageId
-        ? { type: "image" as const, value: v.backgroundImageId }
-        : { type: "color" as const, value: v.backgroundColor },
+    background: ids.length
+      ? { type: "image" as const, value: ids[0], images: ids }
+      : { type: "color" as const, value: "#0B0B0D" },
     wizardStep,
   };
 }
@@ -31,10 +31,9 @@ function buildOptions(v: CreateReelValues, wizardStep: number) {
 export type StudioDemo = {
   voices?: Voice[];
   presenters?: Presenter[];
-  colors?: string[];
   values?: Partial<CreateReelValues>;
   step?: number;
-  bgImageUrl?: string | null;
+  bgImages?: BgImage[];
 };
 
 export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: string } = {}) {
@@ -42,7 +41,6 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
   const [step, setStep] = useState(demo?.step ?? 0);
   const [voices, setVoices] = useState<Voice[]>(demo?.voices ?? []);
   const [presenters, setPresenters] = useState<Presenter[]>(demo?.presenters ?? []);
-  const [colors, setColors] = useState<string[]>(demo?.colors ?? ["#0A0A0B", "#3F3F46", "#FFFFFF"]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [generating, setGenerating] = useState(false);
@@ -60,32 +58,37 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     formState: { errors, isSubmitting },
   } = useForm<CreateReelValues>({
     resolver: zodResolver(createReelSchema),
-    defaultValues: { aspectRatio: "9:16", captions: true, backgroundType: "color", backgroundColor: "#0B0B0D", ...demo?.values },
+    defaultValues: { aspectRatio: "9:16", captions: true, backgroundImageIds: [], ...demo?.values },
   });
   const values = watch();
   const set: (n: keyof CreateReelValues, v: CreateReelValues[keyof CreateReelValues], o?: object) => void = setValue;
 
-  // Delivery URL of the chosen background image (for the preview); the form only holds its id.
-  const [bgImageUrl, setBgImageUrl] = useState<string | null>(demo?.bgImageUrl ?? null);
+  // Background images (id + delivery URL for the preview). The form field
+  // `backgroundImageIds` mirrors the ids so autosave/submit persist them.
+  const [bgImages, setBgImages] = useState<BgImage[]>(demo?.bgImages ?? []);
 
-  function pickColor(c: string) {
-    set("backgroundType", "color");
-    set("backgroundColor", c);
-    set("backgroundImageId", undefined);
-    setBgImageUrl(null);
+  function syncBgImages(next: BgImage[]) {
+    setBgImages(next);
+    set("backgroundImageIds", next.map((i) => i.id));
   }
 
-  async function uploadBackground(file: File) {
-    const { id, uploadURL, imageUrl } = await apiFetch<{ id: string; uploadURL: string; imageUrl: string }>(
-      "/backgrounds/upload",
-      { method: "POST", body: JSON.stringify({}) },
-    );
-    const fd = new FormData();
-    fd.append("file", file);
-    await fetch(uploadURL, { method: "POST", body: fd });
-    set("backgroundType", "image");
-    set("backgroundImageId", id);
-    setBgImageUrl(imageUrl);
+  async function uploadBackgrounds(files: FileList) {
+    const uploaded: BgImage[] = [];
+    for (const file of Array.from(files)) {
+      const { id, uploadURL, imageUrl } = await apiFetch<{ id: string; uploadURL: string; imageUrl: string }>(
+        "/backgrounds/upload",
+        { method: "POST", body: JSON.stringify({}) },
+      );
+      const fd = new FormData();
+      fd.append("file", file);
+      await fetch(uploadURL, { method: "POST", body: fd });
+      uploaded.push({ id, url: imageUrl });
+    }
+    syncBgImages([...bgImages, ...uploaded]);
+  }
+
+  function removeBackground(id: string) {
+    syncBgImages(bgImages.filter((i) => i.id !== id));
   }
 
   // Lazily create the draft on first save; concurrent callers share the promise.
@@ -135,7 +138,6 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     if (demo) return;
     apiFetch<{ voices: Voice[] }>("/voices").then((r) => setVoices(r.voices)).catch(() => {});
     apiFetch<{ presenters: Presenter[] }>("/presenters").then((r) => setPresenters(r.presenters)).catch(() => {});
-    apiFetch<{ colors: string[] }>("/backgrounds").then((r) => setColors(r.colors)).catch(() => {});
   }, [demo]);
 
   // Resume: load an existing draft and jump to where the user left off.
@@ -153,15 +155,14 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         if (video.presenterId) setValue("presenterId", video.presenterId);
         if (video.voiceId) setValue("voiceId", video.voiceId);
         setValue("aspectRatio", RATIO_FROM_API[video.aspectRatio] ?? "9:16");
-        const o = (video.options ?? {}) as { captions?: boolean; wizardStep?: number; background?: { type?: string; value?: string } };
+        const o = (video.options ?? {}) as { captions?: boolean; wizardStep?: number; background?: { type?: string; value?: string; images?: string[] } };
         if (typeof o.captions === "boolean") setValue("captions", o.captions);
         const bg = o.background ?? {};
-        if (bg.type === "image" && bg.value) {
-          setValue("backgroundType", "image");
-          setValue("backgroundImageId", bg.value);
-        } else if (bg.value) {
-          setValue("backgroundType", "color");
-          setValue("backgroundColor", bg.value);
+        const ids = bg.images ?? (bg.type === "image" && bg.value ? [bg.value] : []);
+        if (ids.length) {
+          setValue("backgroundImageIds", ids);
+          // URLs can't be rebuilt client-side (no CF hash); the ids still render in the video.
+          setBgImages(ids.map((id) => ({ id, url: "" })));
         }
         if (typeof o.wizardStep === "number") setStep(Math.min(o.wizardStep, STEPS.length - 1));
       })
@@ -178,7 +179,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     values.title, values.script, values.presenterId, values.voiceId, values.aspectRatio,
-    values.captions, values.backgroundType, values.backgroundColor, values.backgroundImageId, step, demo,
+    values.captions, values.backgroundImageIds, step, demo,
   ]);
 
   const presenter = presenters.find((p) => p.id === values.presenterId);
@@ -262,10 +263,9 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
                 errors={errors}
                 values={values}
                 setValue={set}
-                colors={colors}
-                bgImageUrl={bgImageUrl}
-                onPickColor={pickColor}
-                onUploadBackground={uploadBackground}
+                bgImages={bgImages}
+                onUpload={uploadBackgrounds}
+                onRemove={removeBackground}
               />
             )}
             {step === 1 && (
@@ -285,7 +285,10 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
             )}
             {step === 3 && <ScriptStep register={register} errors={errors} values={values} setValue={set} />}
             {step === 4 && (
-              <ReviewStep values={values} presenterName={presenter?.name ?? "—"} voiceLabel={voice?.label ?? "—"} submitError={submitError} />
+              <div className="flex flex-col gap-7">
+                <FormatStep register={register} errors={errors} values={values} setValue={set} />
+                <ReviewStep values={values} presenterName={presenter?.name ?? "—"} voiceLabel={voice?.label ?? "—"} submitError={submitError} />
+              </div>
             )}
           </div>
 
@@ -314,9 +317,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
               voiceLabel: voice?.label,
               aspectRatio: values.aspectRatio ?? "9:16",
               captions: values.captions ?? true,
-              backgroundType: values.backgroundType ?? "color",
-              backgroundColor: values.backgroundColor ?? "#0B0B0D",
-              backgroundImageUrl: bgImageUrl,
+              backgroundImageUrls: bgImages.map((i) => i.url).filter(Boolean),
             }}
           />
         </div>

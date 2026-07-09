@@ -22,16 +22,21 @@ const fieldClass =
 const SAMPLE =
   "Yeni sezon koleksiyonumuz geldi! Bu hafta sana özel indirimleri kaçırma. Hemen mağazamıza uğra, favori parçalarını keşfet.";
 
-/* ── 01 · Başlık & Biçim — title + format/background setup ────────────── */
-export function SetupStep(
-  props: Common & {
-    colors: string[];
-    bgImageUrl: string | null;
-    onPickColor: (c: string) => void;
-    onUploadBackground: (file: File) => Promise<void>;
-  },
-) {
-  const { register, errors } = props;
+/* ── 01 · Başlık & Arka plan — title + background images ──────────────── */
+export type BgImage = { id: string; url: string };
+
+export function SetupStep({
+  register,
+  errors,
+  bgImages,
+  onUpload,
+  onRemove,
+}: Common & {
+  bgImages: BgImage[];
+  onUpload: (files: FileList) => Promise<void>;
+  onRemove: (id: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -39,7 +44,48 @@ export function SetupStep(
         <input className={fieldClass} placeholder="Örn: Kuaför tanıtımı" {...register("title")} />
         {errors.title && <p className="mt-1 text-[12.5px] text-red-600">{errors.title.message}</p>}
       </div>
-      <FormatStep {...props} />
+
+      <div>
+        <label className="mb-1.5 block text-[13px] font-medium text-ink">Arka plan görselleri</label>
+        <p className="mb-2.5 text-[12px] text-muted">Bir ya da birden fazla görsel yükle — videonun arka planını tamamen kaplar.</p>
+        <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-5">
+          {bgImages.map((img) => (
+            <div key={img.id} className="group relative aspect-[9/16] overflow-hidden rounded-xl border border-hairline">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img.url} alt="" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => onRemove(img.id)}
+                aria-label="Kaldır"
+                className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-[13px] leading-none text-white transition hover:bg-black/80"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <label className="flex aspect-[9/16] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-hairline bg-mist text-center transition hover:border-signal">
+            <span className="text-[20px] text-muted">{busy ? "…" : "＋"}</span>
+            <span className="px-1 text-[10px] font-medium text-muted">Görsel ekle</span>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={async (e) => {
+                const fs = e.target.files;
+                if (!fs?.length) return;
+                setBusy(true);
+                try {
+                  await onUpload(fs);
+                } finally {
+                  setBusy(false);
+                  e.target.value = "";
+                }
+              }}
+            />
+          </label>
+        </div>
+      </div>
     </div>
   );
 }
@@ -279,22 +325,7 @@ const RATIOS: { value: CreateReelValues["aspectRatio"]; label: string; w: number
   { value: "16:9", label: "Yatay · YouTube", w: 34, h: 19 },
 ];
 
-export function FormatStep({
-  register,
-  values,
-  setValue,
-  colors,
-  bgImageUrl,
-  onPickColor,
-  onUploadBackground,
-}: Common & {
-  colors: string[];
-  bgImageUrl: string | null;
-  onPickColor: (c: string) => void;
-  onUploadBackground: (file: File) => Promise<void>;
-}) {
-  const [busy, setBusy] = useState(false);
-  const isImage = values.backgroundType === "image";
+export function FormatStep({ register, values, setValue }: Common) {
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -331,56 +362,6 @@ export function FormatStep({
         </span>
         <input type="checkbox" {...register("captions")} className="h-5 w-5 accent-[var(--color-signal)]" />
       </label>
-
-      <div>
-        <label className="mb-2.5 block text-[13px] font-medium text-ink">Arka plan</label>
-        <div className="flex flex-wrap gap-2.5">
-          {colors.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => onPickColor(c)}
-              className={`h-10 w-10 rounded-xl border-2 transition ${
-                !isImage && values.backgroundColor === c ? "border-signal ring-2 ring-signal/30" : "border-hairline"
-              }`}
-              style={{ background: c }}
-              aria-label={c}
-            />
-          ))}
-
-          {/* upload custom background */}
-          <label
-            className={`grid h-10 w-10 cursor-pointer place-items-center overflow-hidden rounded-xl border-2 transition ${
-              isImage ? "border-signal ring-2 ring-signal/30" : "border-dashed border-hairline hover:border-signal/50"
-            }`}
-            title="Görsel yükle"
-          >
-            {isImage && bgImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={bgImageUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-[16px] text-muted">{busy ? "…" : "＋"}</span>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
-                if (!f) return;
-                setBusy(true);
-                try {
-                  await onUploadBackground(f);
-                } finally {
-                  setBusy(false);
-                  e.target.value = "";
-                }
-              }}
-            />
-          </label>
-        </div>
-        <p className="mt-2 text-[12px] text-muted">Renk seç ya da kendi arka plan görselini yükle.</p>
-      </div>
     </div>
   );
 }
