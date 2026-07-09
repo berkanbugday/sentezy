@@ -50,15 +50,6 @@ def _ass_time(t: float) -> str:
     return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
 
 
-def _hex_to_ass(color: str) -> str:
-    """#RRGGBB -> ASS &HBBGGRR& (ASS is BGR)."""
-    c = color.lstrip("#")
-    if len(c) != 6:
-        c = "FFFFFF"
-    r, g, b = c[0:2], c[2:4], c[4:6]
-    return f"&H00{b}{g}{r}".upper()
-
-
 def build_captions_ass(
     words: list[Word],
     path: str,
@@ -66,22 +57,26 @@ def build_captions_ass(
     width: int = 1080,
     height: int = 1920,
     per_chunk: int = 3,
-    accent: str = "#7C86E8",
 ) -> None:
-    """Write an ASS subtitle file grouping words into short caption chunks."""
-    font_size = max(36, int(height * 0.045))
+    """Write an ASS subtitle file with word-by-word karaoke highlighting: each
+    word pops from a dimmed white to bright white the moment it's spoken (the
+    premium reels caption style), grouped into short chunks."""
+    font_size = max(40, int(height * 0.048))
     margin_v = int(height * 0.16)
-    primary = "&H00FFFFFF"  # white
-    outline = "&H00000000"  # black
+    primary = "&H00FFFFFF"    # spoken/active word — bright white
+    secondary = "&H70FFFFFF"  # upcoming word — dimmed white (0x70 alpha)
+    outline = "&H00000000"    # black outline
+    back = "&H64000000"
     header = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {width}
 PlayResY: {height}
 WrapStyle: 2
+ScaledBorderAndShadow: yes
 
 [V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV
-Style: Cap,General Sans,{font_size},{primary},{outline},&H64000000,1,1,4,0,2,60,60,{margin_v}
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,General Sans,{font_size},{primary},{secondary},{outline},{back},1,0,0,0,100,100,0,0,1,5,0,2,80,80,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -93,11 +88,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             continue
         start = _ass_time(chunk[0].start)
         end = _ass_time(chunk[-1].end)
-        text = " ".join(w.text for w in chunk).replace("\n", " ")
+        # \k<centiseconds> per word → the highlight sweeps at each word boundary.
+        parts: list[str] = []
+        for j, w in enumerate(chunk):
+            nxt = chunk[j + 1].start if j + 1 < len(chunk) else w.end
+            k_cs = max(1, int(round((nxt - w.start) * 100)))
+            parts.append(f"{{\\k{k_cs}}}{w.text.replace(chr(10), ' ')} ")
+        text = "".join(parts).rstrip()
         lines.append(f"Dialogue: 0,{start},{end},Cap,,0,0,0,,{text}")
     with open(path, "w", encoding="utf-8") as f:
         f.write(header + "\n".join(lines) + "\n")
-    _ = _hex_to_ass(accent)  # reserved for a future highlight style
 
 
 def compose_reel(

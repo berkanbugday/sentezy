@@ -142,18 +142,15 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
               {curWords.length > 0 ? (
                 <p className="text-center text-[15px] font-bold leading-snug">
                   {curWords.map((word, i) => {
-                    const active = localActive === i;
                     const shown = localActive < 0 || i <= localActive;
                     return (
                       <span
                         key={i}
                         className="transition-colors duration-150"
                         style={{
-                          color: active ? "#fff" : shown ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.45)",
-                          textShadow: active ? "0 1px 6px rgba(0,0,0,0.7)" : "0 1px 3px rgba(0,0,0,0.7)",
-                          background: active ? "rgba(0,0,0,0.62)" : "transparent",
-                          borderRadius: 4,
-                          padding: active ? "0 3px" : "0",
+                          // karaoke: spoken (incl. active) = bright white, upcoming = dimmed — matches the burned ASS
+                          color: shown ? "#fff" : "rgba(255,255,255,0.5)",
+                          textShadow: "0 0 3px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.85)",
                         }}
                       >
                         {word}{" "}
