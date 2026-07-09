@@ -26,6 +26,7 @@ function buildOptions(v: CreateReelValues, wizardStep: number) {
       ? { type: "image" as const, value: ids[0], images: ids }
       : { type: "color" as const, value: "#0B0B0D" },
     ...(v.musicTrackKey ? { music: { trackKey: v.musicTrackKey, volume: 0.15 } } : {}),
+    layout: { avatarSide: v.avatarSide, captionPosition: v.captionPosition },
     wizardStep,
   };
 }
@@ -77,7 +78,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     formState: { errors, isSubmitting },
   } = useForm<CreateReelValues>({
     resolver: zodResolver(createReelSchema),
-    defaultValues: { aspectRatio: "9:16", captions: true, backgroundImageIds: [], ...demo?.values },
+    defaultValues: { aspectRatio: "9:16", captions: true, backgroundImageIds: [], avatarSide: "right", captionPosition: "bottom", ...demo?.values },
   });
   const values = watch();
   const set: (n: keyof CreateReelValues, v: CreateReelValues[keyof CreateReelValues], o?: object) => void = setValue;
@@ -148,7 +149,8 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
 
   // Selecting a preset avatar creates (or reuses) a presenter that references it.
   async function selectAvatar(a: Avatar) {
-    const existing = presenters.find((p) => p.imageUrl === a.imageUrl);
+    if (!a.ready || !a.id) return; // pending portraits can't be rendered yet
+    const existing = presenters.find((p) => p.sourceImageId === a.id);
     if (existing) {
       set("presenterId", existing.id, { shouldValidate: true });
       return;
@@ -173,9 +175,11 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         if (video.presenterId) setValue("presenterId", video.presenterId);
         if (video.voiceId) setValue("voiceId", video.voiceId);
         setValue("aspectRatio", RATIO_FROM_API[video.aspectRatio] ?? "9:16");
-        const o = (video.options ?? {}) as { captions?: boolean; wizardStep?: number; background?: { type?: string; value?: string; images?: string[] }; music?: { trackKey?: string | null } };
+        const o = (video.options ?? {}) as { captions?: boolean; wizardStep?: number; background?: { type?: string; value?: string; images?: string[] }; music?: { trackKey?: string | null }; layout?: { avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" } };
         if (typeof o.captions === "boolean") setValue("captions", o.captions);
         if (o.music?.trackKey) setValue("musicTrackKey", o.music.trackKey);
+        if (o.layout?.avatarSide) setValue("avatarSide", o.layout.avatarSide);
+        if (o.layout?.captionPosition) setValue("captionPosition", o.layout.captionPosition);
         const bg = o.background ?? {};
         const ids = bg.images ?? (bg.type === "image" && bg.value ? [bg.value] : []);
         if (ids.length) {
@@ -194,6 +198,10 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
   }, [draftId, demo]);
 
   const presenter = presenters.find((p) => p.id === values.presenterId);
+  // Prefer the avatar's matted (transparent) thumbnail for the cut-out preview;
+  // fall back to the presenter's source image if it isn't matted yet.
+  const selectedAvatar = avatars.find((a) => a.ready && a.id === presenter?.sourceImageId);
+  const presenterCutoutUrl = selectedAvatar?.imageUrl ?? presenter?.imageUrl ?? null;
   const voice = voices.find((v) => v.id === values.voiceId);
 
   // Advance to the next step and save the draft (save on next, not on every change).
@@ -289,7 +297,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
             {step === 1 && (
               <AvatarStep
                 avatars={avatars}
-                selectedImageUrl={presenter?.imageUrl}
+                selectedImageUrl={presenterCutoutUrl}
                 selectedName={presenter?.name}
                 onSelect={selectAvatar}
                 busy={createPresenter.isPending}
@@ -329,12 +337,14 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
               title: values.title,
               script: values.script,
               presenterName: presenter?.name,
-              presenterImageUrl: presenter?.imageUrl,
+              presenterImageUrl: presenterCutoutUrl,
               voiceLabel: voice?.label,
               aspectRatio: values.aspectRatio ?? "9:16",
               captions: values.captions ?? true,
               brollImageUrls: bgImages.map((i) => i.url).filter(Boolean),
               musicLabel: music.find((t) => t.key === values.musicTrackKey)?.name,
+              avatarSide: values.avatarSide ?? "right",
+              captionPosition: values.captionPosition ?? "bottom",
             }}
           />
         </div>

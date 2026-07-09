@@ -2,23 +2,64 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "@sentezy/db";
 import { createDirectUpload, imageUrl } from "../lib/cloudflareImages";
+import catalog from "../data/avatars.json";
 
 const CreatePresenter = z.object({ name: z.string().min(1).max(80), sourceImageId: z.string().optional() });
 
-// Curated AI presenter avatars (Cloudflare Images ids). Users pick one — no upload.
-const AVATARS = [
-  { id: "be5e4625-aaa8-447e-9fb3-c1660d5db500", name: "Defne" },
-  { id: "d0c8da36-50df-4e58-c459-81ccd198fe00", name: "Kerem" },
-  { id: "f3fe5310-8212-49cf-69bb-81ee18d47800", name: "Selin" },
-  { id: "1a88b800-f411-454d-1fc3-ae5ac854b700", name: "Emre" },
-];
-const AVATAR_IDS = new Set(AVATARS.map((a) => a.id));
+type CatalogAvatar = {
+  slug: string;
+  name: string;
+  sector: string;
+  sectorLabel: string;
+  gender: "kadın" | "erkek";
+  age: "genç" | "yetişkin" | "olgun";
+  ethnicity: string;
+  imageId: string; // green-screen source (fed to HeyGen), or "" while still being generated
+  displayImageId: string; // matted transparent thumbnail for the picker (may be "")
+  prompt: string;
+};
+
+// The full 100-avatar library (apps/api/src/data/avatars.json, built by the worker's
+// build_avatar_catalog.py). Avatars with an empty imageId are still pending generation.
+const CATALOG = catalog.avatars as CatalogAvatar[];
+// Only avatars with a real image can be picked (HeyGen needs the source photo).
+const READY = CATALOG.filter((a) => a.imageId);
+const AVATAR_IDS = new Set(READY.map((a) => a.imageId));
+
+// Distinct sectors, in catalog order — powers the picker's filter chips.
+const SECTORS = [...new Map(CATALOG.map((a) => [a.sector, a.sectorLabel])).entries()].map(
+  ([slug, label]) => ({ slug, label }),
+);
+
+const AvatarQuery = z.object({
+  sector: z.string().optional(),
+  gender: z.enum(["kadın", "erkek"]).optional(),
+  age: z.enum(["genç", "yetişkin", "olgun"]).optional(),
+});
 
 export async function presenterRoutes(app: FastifyInstance) {
-  // The avatar library shown in the picker.
-  app.get("/avatars", async () => ({
-    avatars: AVATARS.map((a) => ({ ...a, imageUrl: imageUrl(a.id) })),
-  }));
+  // The avatar library shown in the picker — full catalog with filter metadata.
+  // Pending avatars are returned with ready:false and no imageUrl so the picker can
+  // show the whole library and light each tile up as its portrait lands.
+  app.get("/avatars", async (req) => {
+    const q = AvatarQuery.safeParse(req.query);
+    const f = q.success ? q.data : {};
+    const avatars = CATALOG.filter(
+      (a) => (!f.sector || a.sector === f.sector) && (!f.gender || a.gender === f.gender) && (!f.age || a.age === f.age),
+    ).map((a) => ({
+      id: a.imageId, // green-screen source for HeyGen ("" while pending)
+      slug: a.slug,
+      name: a.name,
+      sector: a.sector,
+      sectorLabel: a.sectorLabel,
+      gender: a.gender,
+      age: a.age,
+      ready: Boolean(a.imageId),
+      // picker shows the matted thumbnail; fall back to the source if it's missing
+      imageUrl: a.displayImageId ? imageUrl(a.displayImageId) : a.imageId ? imageUrl(a.imageId) : "",
+    }));
+    return { avatars, sectors: SECTORS };
+  });
 
   app.get("/presenters", { preHandler: app.authenticate }, async (req) => {
     const rows = await prisma.presenter.findMany({

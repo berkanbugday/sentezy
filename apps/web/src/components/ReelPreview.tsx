@@ -12,8 +12,11 @@ export type ReelPreviewValues = {
   musicLabel?: string | null;
   aspectRatio: "9:16" | "1:1" | "16:9";
   captions: boolean;
-  // B-roll images — cut in full-frame over the presenter on alternating sentences.
+  // B-roll images — fill the frame behind the cut-out presenter, on their beats.
   brollImageUrls?: string[];
+  // Layout: which side the cut-out presenter is framed to, and caption position.
+  avatarSide?: "left" | "right";
+  captionPosition?: "top" | "bottom";
 };
 
 const RATIO: Record<ReelPreviewValues["aspectRatio"], number> = {
@@ -36,7 +39,7 @@ function fit(ratio: number, boxW = 320, boxH = 540) {
  * HeyGen render, so it works regardless of provider credits.
  */
 export function ReelPreview({ values, step }: { values: ReelPreviewValues; step: number }) {
-  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, musicLabel, aspectRatio, captions, brollImageUrls } = values;
+  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, musicLabel, aspectRatio, captions, brollImageUrls, avatarSide = "right", captionPosition = "bottom" } = values;
   const broll = brollImageUrls ?? [];
 
   // Caption words grouped by sentence — the frame shows only the current
@@ -81,10 +84,29 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
           className="relative overflow-hidden rounded-[28px] border-[6px] border-ink transition-[width,height] duration-300 ease-out"
           style={{ width: w, height: h, background: "#0b0b0d" }}
         >
-          {/* A-roll: presenter fills the frame */}
+          {/* background: B-roll fills the frame on its beats; branded dark otherwise */}
+          {activeBroll && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={`broll-${curIdx}-${activeBrollKey}`} src={activeBroll} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ animation: "brollIn 0.22s ease" }} />
+          )}
+
+          {/* presenter cut-out, framed to one side, bottom-anchored (always visible) */}
           {presenterImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={presenterImageUrl} alt={presenterName ?? ""} className="absolute inset-0 h-full w-full object-cover" />
+            <img
+              src={presenterImageUrl}
+              alt={presenterName ?? ""}
+              className="pointer-events-none absolute bottom-0"
+              style={{
+                height: "76%",
+                width: "auto",
+                left: avatarSide === "left" ? "-3%" : "auto",
+                right: avatarSide === "right" ? "-3%" : "auto",
+                objectFit: "contain",
+                objectPosition: "bottom",
+                filter: "drop-shadow(0 3px 12px rgba(0,0,0,0.4))",
+              }}
+            />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
               <div
@@ -97,15 +119,9 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
             </div>
           )}
 
-          {/* B-roll cutaway — crossfades in over the presenter while its sentence plays */}
-          {activeBroll && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={curIdx} src={activeBroll} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ animation: "brollIn 0.22s ease" }} />
-          )}
-
-          {/* speaking pulse only while the presenter (A-roll) is on screen */}
+          {/* speaking pulse while the presenter is on a plain background (no B-roll) */}
           {playing && presenterImageUrl && !activeBroll && (
-            <span className="absolute left-1/2 top-6 h-2.5 w-2.5 -translate-x-1/2 animate-ping rounded-full bg-white/90" />
+            <span className="absolute left-1/2 top-6 h-2.5 w-2.5 -translate-x-1/2 animate-ping rounded-full bg-white/70" />
           )}
 
           {/* ── reels chrome — makes the preview read like a TikTok / Instagram Reels feed ── */}
@@ -136,9 +152,18 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
             </div>
           </div>
 
-          {/* burned captions (part of the video) */}
+          {/* burned captions — on the clear side, opposite the presenter */}
           {captions && (
-            <div className="absolute inset-x-0 bottom-[27%] flex justify-center px-3 pr-12">
+            <div
+              className="pointer-events-none absolute flex justify-center px-2"
+              style={{
+                width: "48%",
+                left: avatarSide === "right" ? "3%" : "auto",
+                right: avatarSide === "left" ? "3%" : "auto",
+                top: captionPosition === "top" ? "12%" : "auto",
+                bottom: captionPosition === "bottom" ? "20%" : "auto",
+              }}
+            >
               {curWords.length > 0 ? (
                 <p className="text-center text-[15px] font-bold leading-snug">
                   {curWords.map((word, i) => {

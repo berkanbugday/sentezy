@@ -41,6 +41,14 @@ export const ReelOptions = z.object({
       volume: z.number().min(0).max(1).default(0.15),
     })
     .default({ trackKey: null, volume: 0.15 }),
+  // Reel layout: which side the cut-out presenter is framed to, and where the
+  // captions sit (on the clear side, opposite the presenter).
+  layout: z
+    .object({
+      avatarSide: z.enum(["left", "right"]).default("right"),
+      captionPosition: z.enum(["top", "bottom"]).default("bottom"),
+    })
+    .default({ avatarSide: "right", captionPosition: "bottom" }),
   // Which wizard step the draft was last left on, so it can be resumed.
   wizardStep: z.number().int().min(0).max(4).optional(),
 });

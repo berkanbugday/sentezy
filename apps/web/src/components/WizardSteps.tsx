@@ -7,7 +7,7 @@ import type { MusicTrack } from "@/lib/queries";
 import type { CreateReelValues } from "@/lib/schemas";
 
 export type Voice = { id: string; label: string; gender: string | null; style: string | null; previewUrl?: string | null };
-export type Presenter = { id: string; name: string; status: string; imageUrl?: string | null };
+export type Presenter = { id: string; name: string; status: string; imageUrl?: string | null; sourceImageId?: string | null };
 
 type Common = {
   register: UseFormRegister<CreateReelValues>;
@@ -127,8 +127,20 @@ export function ScriptStep({ register, errors, values, setValue }: Common) {
   );
 }
 
-/* ── 02 · Avatar — pick a preset AI presenter (no upload) ─────────────── */
-export type Avatar = { id: string; name: string; imageUrl: string };
+/* ── 02 · Avatar — pick from the 100-presenter library (no upload) ─────── */
+export type Avatar = {
+  id: string; // Cloudflare Images id — "" while the portrait is still pending
+  slug: string;
+  name: string;
+  imageUrl: string;
+  sector: string;
+  sectorLabel: string;
+  gender: "kadın" | "erkek";
+  age: "genç" | "yetişkin" | "olgun";
+  ready: boolean;
+};
+
+const AGE_LABEL: Record<Avatar["age"], string> = { genç: "Genç", yetişkin: "Yetişkin", olgun: "Olgun" };
 
 export function AvatarStep({
   avatars,
@@ -146,9 +158,12 @@ export function AvatarStep({
   error?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const readyCount = avatars.filter((a) => a.ready).length;
   return (
     <div>
-      <p className="mb-4 text-[13px] text-slate">Videoda konuşacak AI sunucuyu seç.</p>
+      <p className="mb-4 text-[13px] text-slate">
+        Videoda konuşacak AI sunucuyu seç — {avatars.length} sektörel avatar, sektöre ve profile göre filtrele.
+      </p>
       {selectedImageUrl ? (
         <div className="flex items-center gap-4">
           <div className="h-28 w-24 overflow-hidden rounded-2xl border border-hairline">
@@ -168,7 +183,7 @@ export function AvatarStep({
           onClick={() => setOpen(true)}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-hairline bg-mist py-10 text-[14px] font-medium text-slate transition hover:border-signal"
         >
-          <span className="text-[18px]">＋</span> Avatar seç
+          <span className="text-[18px]">＋</span> Avatar kütüphanesini aç
         </button>
       )}
       {error && <p className="mt-2 text-[12.5px] text-red-600">{error}</p>}
@@ -176,6 +191,7 @@ export function AvatarStep({
       {open && (
         <AvatarModal
           avatars={avatars}
+          readyCount={readyCount}
           selectedImageUrl={selectedImageUrl}
           busy={busy}
           onClose={() => setOpen(false)}
@@ -189,51 +205,127 @@ export function AvatarStep({
   );
 }
 
+function chipClass(active: boolean) {
+  return `rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition ${
+    active ? "border-signal bg-[var(--wash)] text-signal" : "border-hairline text-ink hover:border-signal/50"
+  }`;
+}
+
 function AvatarModal({
   avatars,
+  readyCount,
   selectedImageUrl,
   busy,
   onClose,
   onPick,
 }: {
   avatars: Avatar[];
+  readyCount: number;
   selectedImageUrl?: string | null;
   busy?: boolean;
   onClose: () => void;
   onPick: (a: Avatar) => void;
 }) {
+  const [search, setSearch] = useState("");
+  const [gender, setGender] = useState<"" | Avatar["gender"]>("");
+  const [age, setAge] = useState<"" | Avatar["age"]>("");
+  const [sector, setSector] = useState("");
+
+  // Sectors present in the library, in catalog order — for the dropdown.
+  const sectors = [...new Map(avatars.map((a) => [a.sector, a.sectorLabel])).entries()];
+  const q = search.trim().toLocaleLowerCase("tr");
+  const filtered = avatars.filter(
+    (a) =>
+      (!gender || a.gender === gender) &&
+      (!age || a.age === age) &&
+      (!sector || a.sector === sector) &&
+      (!q || a.name.toLocaleLowerCase("tr").includes(q) || a.sectorLabel.toLocaleLowerCase("tr").includes(q)),
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-hairline bg-paper shadow-2xl">
+      <div className="relative z-10 flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-hairline bg-paper shadow-2xl">
         <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
-          <h3 className="disp text-[17px] font-semibold text-ink">Avatar seç</h3>
+          <div>
+            <h3 className="disp text-[17px] font-semibold text-ink">Avatar kütüphanesi</h3>
+            <p className="text-[12px] text-muted">{readyCount} hazır · {avatars.length} avatar</p>
+          </div>
           <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 place-items-center rounded-full text-[18px] text-muted transition hover:bg-mist">
             ×
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-3">
-          {avatars.map((a) => {
-            const active = selectedImageUrl === a.imageUrl;
+
+        {/* filters */}
+        <div className="flex flex-col gap-3 border-b border-hairline px-5 py-3.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="İsim veya sektör ara…"
+              className="min-w-[160px] flex-1 rounded-full border border-hairline bg-mist px-3.5 py-1.5 text-[12.5px] text-ink outline-none transition focus:border-signal"
+            />
+            <select
+              value={sector}
+              onChange={(e) => setSector(e.target.value)}
+              className="rounded-full border border-hairline bg-mist px-3 py-1.5 text-[12.5px] text-ink outline-none transition focus:border-signal"
+            >
+              <option value="">Tüm sektörler</option>
+              {sectors.map(([slug, label]) => (
+                <option key={slug} value={slug}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button type="button" onClick={() => setGender("")} className={chipClass(!gender)}>Herkes</button>
+            <button type="button" onClick={() => setGender("kadın")} className={chipClass(gender === "kadın")}>Kadın</button>
+            <button type="button" onClick={() => setGender("erkek")} className={chipClass(gender === "erkek")}>Erkek</button>
+            <span className="mx-1 h-4 w-px bg-hairline" />
+            <button type="button" onClick={() => setAge("")} className={chipClass(!age)}>Tüm yaşlar</button>
+            {(["genç", "yetişkin", "olgun"] as const).map((a) => (
+              <button key={a} type="button" onClick={() => setAge(a)} className={chipClass(age === a)}>{AGE_LABEL[a]}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* grid */}
+        <div className="grid grid-cols-2 gap-3 overflow-y-auto p-5 sm:grid-cols-3 md:grid-cols-4">
+          {filtered.map((a) => {
+            const active = a.ready && selectedImageUrl === a.imageUrl;
             return (
               <button
-                key={a.id}
+                key={a.slug}
                 type="button"
-                disabled={busy}
-                onClick={() => onPick(a)}
-                className={`group overflow-hidden rounded-2xl border text-left transition disabled:opacity-60 ${
+                disabled={busy || !a.ready}
+                title={a.ready ? a.name : `${a.name} — yakında`}
+                onClick={() => a.ready && onPick(a)}
+                className={`group overflow-hidden rounded-2xl border text-left transition disabled:cursor-not-allowed ${
                   active ? "border-signal ring-2 ring-signal/30" : "border-hairline hover:border-signal/50"
-                }`}
+                } ${!a.ready ? "opacity-55" : ""}`}
               >
-                <div className="aspect-[3/4] w-full bg-mist">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a.imageUrl} alt={a.name} className="h-full w-full object-cover" />
+                <div className="relative aspect-[3/4] w-full bg-mist">
+                  {a.ready ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={a.imageUrl} alt={a.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-1">
+                      <span className="disp text-[26px] font-semibold text-muted">{a.name.charAt(0)}</span>
+                      <span className="rounded-full bg-black/10 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted">Yakında</span>
+                    </div>
+                  )}
                 </div>
-                <div className="truncate px-2.5 py-2 text-[13px] font-semibold text-ink">{a.name}</div>
+                <div className="px-2.5 py-2">
+                  <div className="truncate text-[13px] font-semibold text-ink">{a.name}</div>
+                  <div className="truncate text-[11px] text-muted">{a.sectorLabel}</div>
+                </div>
               </button>
             );
           })}
-          {avatars.length === 0 && <p className="col-span-full py-6 text-center text-[13px] text-muted">Avatarlar yükleniyor…</p>}
+          {filtered.length === 0 && (
+            <p className="col-span-full py-8 text-center text-[13px] text-muted">
+              {avatars.length === 0 ? "Avatarlar yükleniyor…" : "Bu filtrelere uygun avatar yok."}
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -384,6 +476,32 @@ export function FormatStep({ register, values, setValue, music }: Common & { mus
         </span>
         <input type="checkbox" {...register("captions")} className="h-5 w-5 accent-[var(--color-signal)]" />
       </label>
+
+      <div>
+        <label className="mb-2.5 block text-[13px] font-medium text-ink">Yerleşim</label>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <span className="mb-1.5 block text-[12px] text-muted">Sunucu tarafı</span>
+            <div className="flex gap-2">
+              {(["left", "right"] as const).map((s) => (
+                <button key={s} type="button" onClick={() => setValue("avatarSide", s)} className={chipClass(values.avatarSide === s)}>
+                  {s === "left" ? "◧ Sol" : "Sağ ◨"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="mb-1.5 block text-[12px] text-muted">Altyazı</span>
+            <div className="flex gap-2">
+              {(["top", "bottom"] as const).map((p) => (
+                <button key={p} type="button" onClick={() => setValue("captionPosition", p)} className={chipClass(values.captionPosition === p)}>
+                  {p === "top" ? "Üst" : "Alt"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div>
         <label className="mb-2.5 block text-[13px] font-medium text-ink">Müzik</label>

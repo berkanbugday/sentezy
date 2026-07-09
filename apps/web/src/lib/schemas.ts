@@ -29,6 +29,9 @@ export const createReelSchema = z.object({
   backgroundImageIds: z.array(z.string()).default([]),
   // R2 key of the background music bed, or undefined for none.
   musicTrackKey: z.string().optional(),
+  // Reel layout — which side the cut-out presenter sits on, and caption position.
+  avatarSide: z.enum(["left", "right"]).default("right"),
+  captionPosition: z.enum(["top", "bottom"]).default("bottom"),
 });
 export type CreateReelValues = z.infer<typeof createReelSchema>;
 

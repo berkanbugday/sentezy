@@ -57,12 +57,21 @@ def build_captions_ass(
     width: int = 1080,
     height: int = 1920,
     per_chunk: int = 3,
+    avatar_side: str = "right",
+    position: str = "bottom",
 ) -> None:
     """Write an ASS subtitle file with word-by-word karaoke highlighting: each
     word pops from a dimmed white to bright white the moment it's spoken (the
-    premium reels caption style), grouped into short chunks."""
-    font_size = max(40, int(height * 0.048))
-    margin_v = int(height * 0.16)
+    premium reels caption style), grouped into short chunks. Captions sit on the
+    clear side (opposite the presenter), at the top or bottom."""
+    font_size = max(36, int(height * 0.045))
+    # keep captions off the presenter: reserve the presenter's half horizontally,
+    # so the text centres in the clear half.
+    reserve = int(width * 0.50)
+    edge = int(width * 0.06)
+    margin_l, margin_r = (edge, reserve) if avatar_side == "right" else (reserve, edge)
+    alignment = 8 if position == "top" else 2  # 8 = top-centre, 2 = bottom-centre
+    margin_v = int(height * (0.10 if position == "top" else 0.12))
     primary = "&H00FFFFFF"    # spoken/active word — bright white
     secondary = "&H70FFFFFF"  # upcoming word — dimmed white (0x70 alpha)
     outline = "&H00000000"    # black outline
@@ -76,7 +85,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Cap,General Sans,{font_size},{primary},{secondary},{outline},{back},1,0,0,0,100,100,0,0,1,5,0,2,80,80,{margin_v},1
+Style: Cap,General Sans,{font_size},{primary},{secondary},{outline},{back},1,0,0,0,100,100,0,0,1,5,0,{alignment},{margin_l},{margin_r},{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -100,32 +109,47 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         f.write(header + "\n".join(lines) + "\n")
 
 
+def _duration(path: str) -> float:
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+        capture_output=True, text=True, check=True).stdout.strip()
+    return float(out or 0.0)
+
+
 def compose_reel(
     *,
-    avatar_path: str,
+    presenter_path: str,  # matted alpha .mov (presenter cut-out + voice) from matte.matte_video_to_mov
     out_path: str,
     width: int = 1080,
     height: int = 1920,
-    broll: list[dict] | None = None,  # [{"path": str, "start": float, "end": float}] — auto-timed cutaways
+    broll: list[dict] | None = None,  # [{"path": str, "start": float, "end": float}] — auto-timed backgrounds
     captions_ass: str | None = None,
     logo_path: str | None = None,
     music_path: str | None = None,
     music_volume: float = 0.15,
+    avatar_side: str = "right",  # which side the presenter is framed to
+    presenter_scale: float = 0.66,  # presenter height as a fraction of the frame
+    bg_color: str = "0x101319",  # branded background shown wherever B-roll isn't
 ) -> None:
-    """A-roll / B-roll composite: the presenter fills the frame (A-roll); each
-    B-roll image cuts in full-screen over its time window while the voice keeps
-    playing; captions burn on top so a cutaway never hides them."""
+    """Cut-out reel composite: B-roll fills the frame (over a branded background),
+    the matted presenter is framed to one side (bottom-anchored, always visible),
+    and captions burn on top. The presenter's alpha is used to blend the cut-out
+    over whatever is behind — no rectangular PiP edge."""
     broll = broll or []
+    dur = _duration(presenter_path)
 
-    inputs: list[str] = ["-i", avatar_path]  # [0] A-roll: presenter clip + its voice audio
-    idx = 1
+    # [0] branded background base (shown during hook/close, or if no B-roll uploaded)
+    inputs: list[str] = ["-f", "lavfi", "-i", f"color=c={bg_color}:s={width}x{height}:r=30:d={dur:.3f}"]
+    # [1] presenter cut-out (alpha video) + voice audio
+    inputs += ["-i", presenter_path]
+    presenter_idx = 1
+    idx = 2
 
-    # [1..] B-roll stills — looped so a frame exists at every timestamp; the
-    # overlay's `enable` window decides when each is shown.
+    # [2..] B-roll stills — looped so a frame exists across their window.
     broll_idxs: list[int] = []
     for b in broll:
-        dur = max(0.3, float(b["end"]) - float(b["start"]))
-        inputs += ["-loop", "1", "-t", f"{dur:.3f}", "-i", b["path"]]
+        d = max(0.3, float(b["end"]) - float(b["start"]))
+        inputs += ["-loop", "1", "-t", f"{d:.3f}", "-i", b["path"]]
         broll_idxs.append(idx)
         idx += 1
 
@@ -144,29 +168,35 @@ def compose_reel(
     # ── video filtergraph ──
     fc: list[str] = []
     cover = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps=30"
-    # A-roll base: presenter filled to the frame
-    fc.append(f"[0:v]{cover}[base]")
+    fc.append(f"[0:v]setsar=1,fps=30[base]")
     last = "[base]"
-    # B-roll cutaways over the base — each gated to its [start, end] window and
-    # crossfaded in/out (alpha) so the cut feels produced, not abrupt.
+    # B-roll fills the frame behind the presenter — gated to its window, crossfaded
+    # (alpha) and slowly pushed in (Ken-Burns) so it feels produced.
     for k, bi in enumerate(broll_idxs):
         b = broll[k]
         st = float(b["start"])
         en = float(b["end"])
-        dur = max(0.3, en - st)
-        fd = min(0.22, max(0.05, dur / 3))  # crossfade duration
-        inc = max(0.0004, 0.10 / (dur * 30.0))  # slow Ken-Burns push-in (~10% over the window)
+        d = max(0.3, en - st)
+        fd = min(0.22, max(0.05, d / 3))
+        inc = max(0.0004, 0.10 / (d * 30.0))
         fc.append(
             f"[{bi}:v]{cover},"
             f"zoompan=z='min(zoom+{inc:.5f},1.12)':d=1:"
             f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps=30,"
             f"format=yuva420p,"
             f"fade=t=in:st=0:d={fd:.3f}:alpha=1,"
-            f"fade=t=out:st={dur - fd:.3f}:d={fd:.3f}:alpha=1,"
+            f"fade=t=out:st={d - fd:.3f}:d={fd:.3f}:alpha=1,"
             f"setpts=PTS-STARTPTS+{st:.3f}/TB[brl{k}]"
         )
         fc.append(f"{last}[brl{k}]overlay=0:0:enable='between(t,{st:.3f},{en:.3f})'[bv{k}]")
         last = f"[bv{k}]"
+    # presenter cut-out, scaled and framed to one side, bottom-anchored; its alpha
+    # blends it over the B-roll/background.
+    ph = int(height * presenter_scale)
+    px = "-40" if avatar_side == "left" else "W-w+40"  # slight bleed off the chosen edge
+    fc.append(f"[{presenter_idx}:v]scale=-2:{ph}:flags=lanczos,setsar=1[pv]")
+    fc.append(f"{last}[pv]overlay=x={px}:y=H-h[pp]")
+    last = "[pp]"
     if captions_ass and has_filter("subtitles"):
         esc = captions_ass.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
         fc.append(f"{last}subtitles={esc}[cap]")
@@ -179,14 +209,14 @@ def compose_reel(
         fc.append(f"{last}[logo]overlay=W-w-48:48[logov]")
         last = "[logov]"
 
-    # ── audio ──
+    # ── audio: presenter voice (+ optional ducked music) ──
     audio_map: list[str]
     if music_idx is not None:
         fc.append(f"[{music_idx}:a]volume={music_volume}[mus]")
-        fc.append("[0:a][mus]amix=inputs=2:duration=first:dropout_transition=0[a]")
+        fc.append(f"[{presenter_idx}:a][mus]amix=inputs=2:duration=first:dropout_transition=0[a]")
         audio_map = ["-map", "[a]"]
     else:
-        audio_map = ["-map", "0:a?"]
+        audio_map = ["-map", f"{presenter_idx}:a?"]
 
     cmd = [
         "ffmpeg", "-y", *inputs,

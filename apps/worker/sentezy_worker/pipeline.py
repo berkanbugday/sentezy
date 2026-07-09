@@ -6,6 +6,7 @@ import tempfile
 from .compose import build_captions_ass, compose_reel, make_thumbnail
 from .config import Config
 from .db import Db
+from .matte import matte_video_to_mov
 from .providers.elevenlabs import ElevenLabs
 from .providers.heygen import HeyGen
 from .storage import Storage
@@ -117,14 +118,25 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     avatar_path = f"{workdir}/avatar.mp4"
     storage.download(heygen_url, avatar_path)
 
-    # 3) Compose reel
+    # 2b) Matte the presenter out of the green screen → alpha clip (keeps the voice),
+    #     so the reel composites the cut-out presenter over the B-roll.
+    db.set_stage(video_id, "avatar", 55)
+    presenter_path = f"{workdir}/presenter.mov"
+    matte_video_to_mov(avatar_path, presenter_path)
+
+    # 3) Compose reel — B-roll fills the frame, presenter framed to one side.
     db.set_stage(video_id, "compose", 70)
+    layout = options.get("layout") or {}
+    avatar_side = layout.get("avatarSide", "right")
     caps_path = f"{workdir}/caps.ass"
-    build_captions_ass(words, caps_path, width=width, height=height)
+    build_captions_ass(
+        words, caps_path, width=width, height=height,
+        avatar_side=avatar_side, position=layout.get("captionPosition", "bottom"),
+    )
     reel_path = f"{workdir}/reel.mp4"
     broll_paths = _resolve_broll_images(options, storage, workdir)
     compose_reel(
-        avatar_path=avatar_path,
+        presenter_path=presenter_path,
         out_path=reel_path,
         width=width,
         height=height,
@@ -133,6 +145,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
         logo_path=_resolve_logo(options, storage, workdir),
         music_path=_resolve_music(options, storage, workdir),
         music_volume=float((options.get("music") or {}).get("volume", 0.15)),
+        avatar_side=avatar_side,
     )
 
     # 4) Thumbnail + upload
