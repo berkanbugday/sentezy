@@ -1,0 +1,46 @@
+# Local dev infrastructure for Sentezy (Phase 6 — local end-to-end).
+#
+# Brings up the Redis Streams queue and the Python worker so a reel can be
+# driven through the full pipeline locally. The api (Node 20) and web (Node 24)
+# run on the host for hot-reload — see infra/README.md.
+#
+#   docker compose -f infra/docker-compose.yml up -d redis     # queue only
+#   docker compose -f infra/docker-compose.yml up --build worker  # + worker (libass captions)
+#
+# The worker reads all secrets from the repo-root .env. Its REDIS_URL is
+# overridden to reach the redis service over the compose network.
+
+name: sentezy
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: sentezy-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  worker:
+    build:
+      context: ../apps/worker
+    container_name: sentezy-worker
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      # Reach redis over the compose network, not localhost.
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis-data:

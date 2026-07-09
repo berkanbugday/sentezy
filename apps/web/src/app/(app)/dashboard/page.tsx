@@ -52,7 +52,7 @@ export default function DashboardPage() {
               {s.value}
               {s.unit && <span className="ml-1 text-[16px] text-muted">{s.unit}</span>}
             </div>
-            <div className={`mt-2 text-[12px] font-medium ${s.up ? "text-emerald-600" : "text-muted"}`}>{s.sub}</div>
+            <div className={`mt-2 text-[12px] font-medium ${s.up ? "text-ink" : "text-muted"}`}>{s.sub}</div>
           </div>
         ))}
       </div>

@@ -106,7 +106,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </div>
 
         {errors.root && <p className="text-[12.5px] text-red-600">{errors.root.message}</p>}
-        {info && <p className="text-[12.5px] text-emerald-600">{info}</p>}
+        {info && <p className="text-[12.5px] text-slate">{info}</p>}
 
         <button type="submit" disabled={isSubmitting} className="btn btn-primary mt-1 w-full disabled:opacity-60">
           {isSubmitting ? "…" : isSignup ? "Kayıt ol" : "Giriş yap"}

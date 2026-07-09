@@ -7,10 +7,12 @@ const CreatePresenter = z.object({ name: z.string().min(1).max(80) });
 
 export async function presenterRoutes(app: FastifyInstance) {
   app.get("/presenters", { preHandler: app.authenticate }, async (req) => {
-    const presenters = await prisma.presenter.findMany({
+    const rows = await prisma.presenter.findMany({
       where: { userId: req.user!.id },
       orderBy: { createdAt: "desc" },
     });
+    // The web preview needs a ready delivery URL (the account hash is server-only).
+    const presenters = rows.map((p) => ({ ...p, imageUrl: imageUrl(p.previewImageId ?? p.sourceImageId) }));
     return { presenters };
   });
 

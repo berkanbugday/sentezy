@@ -4,19 +4,32 @@
 /* class-based dark mode: <html class="dark"> flips the tokens below */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Premium monochrome — cool neutral grays, ink accent (no brand color).
+   Overrides the shared @theme tokens for the web app only; the landing keeps
+   its own palette. Names are unchanged so every text-signal / bg-mist utility
+   recolors automatically. */
 :root {
-  --beam: linear-gradient(120deg, #8e97ec, #c7a9ea);
-  --wash: rgba(124, 134, 232, 0.1);
+  --color-paper: #ffffff;
+  --color-mist: #f4f4f5;
+  --color-ink: #0a0a0b;
+  --color-slate: #52525b;
+  --color-muted: #a1a1aa;
+  --color-hairline: #e4e4e7;
+  --color-signal: #18181b;
+  --beam: linear-gradient(135deg, #3f3f46, #18181b);
+  --wash: rgba(24, 24, 27, 0.06);
 }
 
 .dark {
-  --color-paper: #141416;
-  --color-mist: #0f0f11;
-  --color-ink: #f4f3f1;
-  --color-slate: #a8a8b0;
-  --color-muted: #6e6e78;
-  --color-hairline: #26262b;
-  --wash: rgba(154, 166, 242, 0.14);
+  --color-paper: #161619;
+  --color-mist: #0b0b0d;
+  --color-ink: #fafafa;
+  --color-slate: #a1a1aa;
+  --color-muted: #71717a;
+  --color-hairline: #27272a;
+  --color-signal: #fafafa;
+  --beam: linear-gradient(135deg, #52525b, #27272a);
+  --wash: rgba(250, 250, 250, 0.08);
 }
 
 body {
@@ -64,7 +77,7 @@ body {
 }
 .badge .dot { width: 7px; height: 7px; border-radius: 999px; background: currentColor; }
 .badge-ready { background: var(--wash); color: var(--color-signal); }
-.badge-proc { background: rgba(245, 158, 11, 0.15); color: #b45309; }
+.badge-proc { background: var(--wash); color: var(--color-slate); }
 .badge-draft { background: var(--color-mist); color: var(--color-muted); }
 .badge-fail { background: rgba(239, 68, 68, 0.13); color: #dc2626; }
 

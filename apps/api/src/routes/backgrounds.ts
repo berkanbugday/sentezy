@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 
 // MVP backgrounds: solid colors + (later) curated Cloudflare Images presets.
-const COLORS = ["#0B0B0D", "#F5F4F1", "#7C86E8", "#111827", "#1E293B", "#FDF2F8"];
+// Premium monochrome background options (dark → light neutral grays).
+const COLORS = ["#0A0A0B", "#18181B", "#3F3F46", "#71717A", "#D4D4D8", "#FFFFFF"];
 
 export async function backgroundRoutes(app: FastifyInstance) {
   app.get("/backgrounds", async () => {

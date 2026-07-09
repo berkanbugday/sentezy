@@ -25,6 +25,16 @@ class Config:
     cf_images_account_hash: str
     elevenlabs_api_key: str
     heygen_api_key: str
+    # When true, HeyGen renders in test mode: watermarked output that does not
+    # spend paid credits — used for local end-to-end runs (Phase 6).
+    heygen_test_mode: bool
+
+
+def _bool(key: str, default: bool = False) -> bool:
+    raw = os.environ.get(key)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
 def load_config() -> Config:
@@ -40,4 +50,5 @@ def load_config() -> Config:
         cf_images_account_hash=_get("CF_IMAGES_ACCOUNT_HASH", required=True),  # type: ignore[arg-type]
         elevenlabs_api_key=_get("ELEVENLABS_API_KEY", required=True),  # type: ignore[arg-type]
         heygen_api_key=_get("HEYGEN_API_KEY", required=True),  # type: ignore[arg-type]
+        heygen_test_mode=_bool("HEYGEN_TEST_MODE", default=False),
     )

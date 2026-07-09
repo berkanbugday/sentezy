@@ -1,0 +1,10 @@
+# Keep the host virtualenv and caches out of the build context — the image
+# builds its own venv via `uv sync` (a copied host .venv breaks the container).
+.venv/
+**/__pycache__/
+*.pyc
+.python-version
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.env

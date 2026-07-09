@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from redis import Redis
-from redis.exceptions import ResponseError
+from redis.exceptions import ResponseError, TimeoutError as RedisTimeoutError
 
 # Must match packages/types (REDIS_STREAM / REDIS_GROUP) on the TS producer side.
 STREAM = "sentezy:videos"
@@ -21,7 +21,12 @@ class Queue:
                 raise
 
     def read(self, block_ms: int = 5000, count: int = 1) -> list[tuple[str, dict]]:
-        res = self.r.xreadgroup(GROUP, self.consumer, {STREAM: ">"}, count=count, block=block_ms)
+        try:
+            res = self.r.xreadgroup(GROUP, self.consumer, {STREAM: ">"}, count=count, block=block_ms)
+        except RedisTimeoutError:
+            # A blocking read that finds no messages surfaces as a socket read
+            # timeout (RESP3) — that's an idle queue, not an error. Return empty.
+            return []
         out: list[tuple[str, dict]] = []
         for _stream, entries in res or []:
             for msg_id, fields in entries:

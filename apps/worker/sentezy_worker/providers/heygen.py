@@ -13,8 +13,10 @@ class HeyGen:
     API = "https://api.heygen.com"
     UPLOAD = "https://upload.heygen.com"
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, test_mode: bool = False):
         self.key = api_key
+        # test_mode → watermarked render that does not spend paid credits (Phase 6 local E2E).
+        self.test_mode = test_mode
 
     def _h(self) -> dict:
         return {"X-Api-Key": self.key}
@@ -38,6 +40,7 @@ class HeyGen:
                 }
             ],
             "dimension": {"width": width, "height": height},
+            "test": self.test_mode,
         }
         r = httpx.post(
             f"{self.API}/v2/video/generate",

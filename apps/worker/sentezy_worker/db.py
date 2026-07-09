@@ -1,9 +1,35 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import unquote
 
 import psycopg
 from psycopg.rows import dict_row
+
+
+def _parse_pg_url(url: str) -> dict[str, Any]:
+    """Parse a Postgres URI into psycopg keyword params.
+
+    The Supabase pooler password can contain characters (`@`, `[`, `>`, …) that
+    break libpq's URI parser (splits on the first `@`) and urllib (`[` → IPv6).
+    Parsing by hand and passing keyword args sidesteps both, so the worker
+    connects whether the injected URL's password is raw or percent-encoded.
+    """
+    for scheme in ("postgresql://", "postgres://"):
+        if url.startswith(scheme):
+            url = url[len(scheme):]
+            break
+    userinfo, _, hostpart = url.rpartition("@")  # rpartition: password may itself contain '@'
+    hostport, _, dbpart = hostpart.partition("/")
+    host, _, port = hostport.partition(":")
+    user, _, password = userinfo.partition(":")
+    return {
+        "host": host,
+        "port": int(port) if port else 5432,
+        "user": unquote(user),
+        "password": unquote(password),
+        "dbname": dbpart.split("?", 1)[0] or "postgres",
+    }
 
 
 class Db:
@@ -11,10 +37,10 @@ class Db:
     the connection role). The TS side uses Prisma; the worker uses psycopg."""
 
     def __init__(self, url: str):
-        self._url = url
+        self._conn_kwargs = _parse_pg_url(url)
 
     def _conn(self) -> psycopg.Connection:
-        return psycopg.connect(self._url, row_factory=dict_row, autocommit=True)
+        return psycopg.connect(row_factory=dict_row, autocommit=True, **self._conn_kwargs)
 
     def _one(self, sql: str, *params: Any) -> dict | None:
         with self._conn() as c, c.cursor() as cur:

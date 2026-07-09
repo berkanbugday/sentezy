@@ -32,7 +32,7 @@ def main() -> None:
     db = Db(cfg.database_url)
     storage = Storage(cfg)
     el = ElevenLabs(cfg.elevenlabs_api_key)
-    hg = HeyGen(cfg.heygen_api_key)
+    hg = HeyGen(cfg.heygen_api_key, cfg.heygen_test_mode)
     queue = Queue(cfg.redis_url, consumer=os.environ.get("WORKER_NAME", "worker-1"))
     queue.ensure_group()
 
