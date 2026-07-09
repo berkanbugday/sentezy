@@ -39,6 +39,8 @@ export const ReelOptions = z.object({
       volume: z.number().min(0).max(1).default(0.15),
     })
     .default({ trackKey: null, volume: 0.15 }),
+  // Which wizard step the draft was last left on, so it can be resumed.
+  wizardStep: z.number().int().min(0).max(4).optional(),
 });
 export type ReelOptions = z.infer<typeof ReelOptions>;
 
@@ -52,6 +54,25 @@ export const CreateVideoRequest = z.object({
   options: ReelOptions.default({}),
 });
 export type CreateVideoRequest = z.infer<typeof CreateVideoRequest>;
+
+// Draft: created early and saved progressively as the user moves through the
+// wizard. All fields optional — a draft can be incomplete. Finalizing (debit +
+// enqueue) happens later via POST /videos/:id/generate.
+export const CreateVideoDraft = z.object({
+  title: z.string().max(120).optional(),
+  script: z.string().max(5000).optional(),
+});
+export type CreateVideoDraft = z.infer<typeof CreateVideoDraft>;
+
+export const UpdateVideoDraft = z.object({
+  title: z.string().max(120).optional(),
+  script: z.string().max(5000).optional(),
+  presenterId: z.string().uuid().nullable().optional(),
+  voiceId: z.string().uuid().nullable().optional(),
+  aspectRatio: AspectRatio.optional(),
+  options: ReelOptions.optional(),
+});
+export type UpdateVideoDraft = z.infer<typeof UpdateVideoDraft>;
 
 // ── Redis Streams job payload (API → worker) ──────────────────────────────
 export const VideoJob = z.object({

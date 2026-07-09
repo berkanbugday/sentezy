@@ -2,14 +2,30 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ReelPreview } from "@/components/ReelPreview";
-import { AvatarStep, FormatStep, type Presenter, ReviewStep, ScriptStep, VoiceStep, type Voice } from "@/components/WizardSteps";
+import { AvatarStep, type Presenter, ReviewStep, ScriptStep, SetupStep, VoiceStep, type Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
 import { type CreateReelValues, createReelSchema } from "@/lib/schemas";
 
-const STEPS = ["Senaryo", "Avatar", "Ses & dil", "Biçim", "Önizle"] as const;
+const STEPS = ["Başlık & Biçim", "Avatar", "Ses & dil", "Senaryo", "Önizle"] as const;
+
+// Prisma stores aspectRatio as r9_16 etc.; map back when resuming a draft.
+const RATIO_FROM_API: Record<string, CreateReelValues["aspectRatio"]> = {
+  r9_16: "9:16", r1_1: "1:1", r16_9: "16:9", "9:16": "9:16", "1:1": "1:1", "16:9": "16:9",
+};
+
+function buildOptions(v: CreateReelValues, wizardStep: number) {
+  return {
+    captions: v.captions,
+    background:
+      v.backgroundType === "image" && v.backgroundImageId
+        ? { type: "image" as const, value: v.backgroundImageId }
+        : { type: "color" as const, value: v.backgroundColor },
+    wizardStep,
+  };
+}
 
 /** Dev-only seed data so the studio can be previewed outside the auth gate. */
 export type StudioDemo = {
@@ -18,15 +34,22 @@ export type StudioDemo = {
   colors?: string[];
   values?: Partial<CreateReelValues>;
   step?: number;
+  bgImageUrl?: string | null;
 };
 
-export function CreateWizard({ demo }: { demo?: StudioDemo } = {}) {
+export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: string } = {}) {
   const router = useRouter();
   const [step, setStep] = useState(demo?.step ?? 0);
   const [voices, setVoices] = useState<Voice[]>(demo?.voices ?? []);
   const [presenters, setPresenters] = useState<Presenter[]>(demo?.presenters ?? []);
   const [colors, setColors] = useState<string[]>(demo?.colors ?? ["#0A0A0B", "#3F3F46", "#FFFFFF"]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [generating, setGenerating] = useState(false);
+  // The draft's video id, and the in-flight creation promise (so concurrent
+  // saves share one create call rather than racing).
+  const draftRef = useRef<string | null>(draftId ?? null);
+  const creatingRef = useRef<Promise<string | null> | null>(null);
 
   const {
     register,
@@ -37,10 +60,76 @@ export function CreateWizard({ demo }: { demo?: StudioDemo } = {}) {
     formState: { errors, isSubmitting },
   } = useForm<CreateReelValues>({
     resolver: zodResolver(createReelSchema),
-    defaultValues: { aspectRatio: "9:16", captions: true, backgroundColor: "#0B0B0D", ...demo?.values },
+    defaultValues: { aspectRatio: "9:16", captions: true, backgroundType: "color", backgroundColor: "#0B0B0D", ...demo?.values },
   });
   const values = watch();
   const set: (n: keyof CreateReelValues, v: CreateReelValues[keyof CreateReelValues], o?: object) => void = setValue;
+
+  // Delivery URL of the chosen background image (for the preview); the form only holds its id.
+  const [bgImageUrl, setBgImageUrl] = useState<string | null>(demo?.bgImageUrl ?? null);
+
+  function pickColor(c: string) {
+    set("backgroundType", "color");
+    set("backgroundColor", c);
+    set("backgroundImageId", undefined);
+    setBgImageUrl(null);
+  }
+
+  async function uploadBackground(file: File) {
+    const { id, uploadURL, imageUrl } = await apiFetch<{ id: string; uploadURL: string; imageUrl: string }>(
+      "/backgrounds/upload",
+      { method: "POST", body: JSON.stringify({}) },
+    );
+    const fd = new FormData();
+    fd.append("file", file);
+    await fetch(uploadURL, { method: "POST", body: fd });
+    set("backgroundType", "image");
+    set("backgroundImageId", id);
+    setBgImageUrl(imageUrl);
+  }
+
+  // Lazily create the draft on first save; concurrent callers share the promise.
+  async function ensureDraft(v: CreateReelValues): Promise<string | null> {
+    if (draftRef.current) return draftRef.current;
+    if (!creatingRef.current) {
+      creatingRef.current = apiFetch<{ video: { id: string } }>("/videos/draft", {
+        method: "POST",
+        body: JSON.stringify({ title: v.title, script: v.script }),
+      })
+        .then((r) => {
+          draftRef.current = r.video.id;
+          return r.video.id;
+        })
+        .catch(() => null);
+    }
+    return creatingRef.current;
+  }
+
+  // Fire-and-forget: persist the draft without blocking the UI or navigation.
+  function saveProgress(v: CreateReelValues, wizardStep: number) {
+    if (demo) return;
+    setSaveState("saving");
+    void (async () => {
+      const id = await ensureDraft(v);
+      if (!id) return setSaveState("idle");
+      try {
+        await apiFetch(`/videos/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            title: v.title,
+            script: v.script,
+            presenterId: v.presenterId || null,
+            voiceId: v.voiceId || null,
+            aspectRatio: v.aspectRatio,
+            options: buildOptions(v, wizardStep),
+          }),
+        });
+        setSaveState("saved");
+      } catch {
+        setSaveState("idle");
+      }
+    })();
+  }
 
   useEffect(() => {
     if (demo) return;
@@ -49,38 +138,98 @@ export function CreateWizard({ demo }: { demo?: StudioDemo } = {}) {
     apiFetch<{ colors: string[] }>("/backgrounds").then((r) => setColors(r.colors)).catch(() => {});
   }, [demo]);
 
+  // Resume: load an existing draft and jump to where the user left off.
+  useEffect(() => {
+    if (demo || !draftId) return;
+    type DraftVideo = {
+      title: string; script: string; presenterId: string | null; voiceId: string | null;
+      aspectRatio: string; status: string; options: Record<string, unknown>;
+    };
+    apiFetch<{ video: DraftVideo }>(`/videos/${draftId}`)
+      .then(({ video }) => {
+        if (!video || video.status !== "draft") return;
+        setValue("title", video.title === "Adsız video" ? "" : video.title);
+        setValue("script", video.script ?? "");
+        if (video.presenterId) setValue("presenterId", video.presenterId);
+        if (video.voiceId) setValue("voiceId", video.voiceId);
+        setValue("aspectRatio", RATIO_FROM_API[video.aspectRatio] ?? "9:16");
+        const o = (video.options ?? {}) as { captions?: boolean; wizardStep?: number; background?: { type?: string; value?: string } };
+        if (typeof o.captions === "boolean") setValue("captions", o.captions);
+        const bg = o.background ?? {};
+        if (bg.type === "image" && bg.value) {
+          setValue("backgroundType", "image");
+          setValue("backgroundImageId", bg.value);
+        } else if (bg.value) {
+          setValue("backgroundType", "color");
+          setValue("backgroundColor", bg.value);
+        }
+        if (typeof o.wizardStep === "number") setStep(Math.min(o.wizardStep, STEPS.length - 1));
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, demo]);
+
+  // Debounced autosave — persists the draft ~0.8s after any change.
+  useEffect(() => {
+    if (demo) return;
+    if (!values.title?.trim() && !values.script?.trim() && !draftRef.current) return;
+    const t = setTimeout(() => saveProgress(values, step), 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    values.title, values.script, values.presenterId, values.voiceId, values.aspectRatio,
+    values.captions, values.backgroundType, values.backgroundColor, values.backgroundImageId, step, demo,
+  ]);
+
   const presenter = presenters.find((p) => p.id === values.presenterId);
   const voice = voices.find((v) => v.id === values.voiceId);
 
   async function next() {
-    const perStep: (keyof CreateReelValues)[][] = [["title", "script"], ["presenterId"], ["voiceId"], ["aspectRatio"], []];
+    const perStep: (keyof CreateReelValues)[][] = [["title"], ["presenterId"], ["voiceId"], ["script"], []];
     if (await trigger(perStep[step])) setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
 
+  // Finalize: make sure the draft is saved, then generate (debit + queue).
   const onSubmit = handleSubmit(async (v) => {
     setSubmitError(null);
+    setGenerating(true);
     try {
-      const { video } = await apiFetch<{ video: { id: string } }>("/videos", {
-        method: "POST",
+      const id = await ensureDraft(v);
+      if (!id) throw new Error("Taslak kaydedilemedi");
+      await apiFetch(`/videos/${id}`, {
+        method: "PATCH",
         body: JSON.stringify({
           title: v.title,
           script: v.script,
-          presenterId: v.presenterId,
-          voiceId: v.voiceId,
+          presenterId: v.presenterId || null,
+          voiceId: v.voiceId || null,
           aspectRatio: v.aspectRatio,
-          options: { captions: v.captions, background: { type: "color", value: v.backgroundColor } },
+          options: buildOptions(v, step),
         }),
+      });
+      const { video } = await apiFetch<{ video: { id: string } }>(`/videos/${id}/generate`, {
+        method: "POST",
+        body: JSON.stringify({}),
       });
       router.push(`/videos/${video.id}`);
     } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : "Bir hata oluştu");
+      const msg = e instanceof Error ? e.message : "Bir hata oluştu";
+      setSubmitError(msg.includes("insufficient_credits") ? "Yeterli krediniz yok." : msg);
+      setGenerating(false);
     }
   });
 
   return (
     <div className="mx-auto max-w-6xl">
       <header className="mb-6">
-        <span className="eyebrow">Stüdyo</span>
+        <div className="flex items-center gap-2.5">
+          <span className="eyebrow">Stüdyo</span>
+          {!demo && (
+            <span className="mono text-[11px] text-muted">
+              {saveState === "saving" ? "· kaydediliyor…" : saveState === "saved" ? "· taslak kaydedildi" : "· taslak"}
+            </span>
+          )}
+        </div>
         <h1 className="disp mt-1 text-[28px] font-semibold text-ink">Yeni video</h1>
         <p className="mt-1 text-[14px] text-slate">Beş adımda konuşan videon hazır — sağda canlı önizle.</p>
       </header>
@@ -107,7 +256,18 @@ export function CreateWizard({ demo }: { demo?: StudioDemo } = {}) {
           </div>
 
           <div className="card p-6">
-            {step === 0 && <ScriptStep register={register} errors={errors} values={values} setValue={set} />}
+            {step === 0 && (
+              <SetupStep
+                register={register}
+                errors={errors}
+                values={values}
+                setValue={set}
+                colors={colors}
+                bgImageUrl={bgImageUrl}
+                onPickColor={pickColor}
+                onUploadBackground={uploadBackground}
+              />
+            )}
             {step === 1 && (
               <AvatarStep
                 presenters={presenters}
@@ -123,7 +283,7 @@ export function CreateWizard({ demo }: { demo?: StudioDemo } = {}) {
             {step === 2 && (
               <VoiceStep voices={voices} selected={values.voiceId} onSelect={(id) => set("voiceId", id, { shouldValidate: true })} error={errors.voiceId?.message} />
             )}
-            {step === 3 && <FormatStep register={register} errors={errors} values={values} setValue={set} colors={colors} />}
+            {step === 3 && <ScriptStep register={register} errors={errors} values={values} setValue={set} />}
             {step === 4 && (
               <ReviewStep values={values} presenterName={presenter?.name ?? "—"} voiceLabel={voice?.label ?? "—"} submitError={submitError} />
             )}
@@ -135,8 +295,8 @@ export function CreateWizard({ demo }: { demo?: StudioDemo } = {}) {
             {step < STEPS.length - 1 ? (
               <button type="button" onClick={next} className="btn btn-primary ml-auto">İleri →</button>
             ) : (
-              <button type="button" onClick={onSubmit} disabled={isSubmitting} className="btn btn-primary ml-auto disabled:opacity-60">
-                {isSubmitting ? "Oluşturuluyor…" : "Videoyu oluştur"}
+              <button type="button" onClick={onSubmit} disabled={generating || isSubmitting} className="btn btn-primary ml-auto disabled:opacity-60">
+                {generating ? "Oluşturuluyor…" : "Videoyu oluştur"}
               </button>
             )}
           </div>
@@ -154,7 +314,9 @@ export function CreateWizard({ demo }: { demo?: StudioDemo } = {}) {
               voiceLabel: voice?.label,
               aspectRatio: values.aspectRatio ?? "9:16",
               captions: values.captions ?? true,
+              backgroundType: values.backgroundType ?? "color",
               backgroundColor: values.backgroundColor ?? "#0B0B0D",
+              backgroundImageUrl: bgImageUrl,
             }}
           />
         </div>

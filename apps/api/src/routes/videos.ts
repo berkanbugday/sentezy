@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { Prisma, prisma } from "@sentezy/db";
-import { type AspectRatio, CreateVideoRequest } from "@sentezy/types";
+import { type AspectRatio, CreateVideoDraft, CreateVideoRequest, UpdateVideoDraft } from "@sentezy/types";
 import { enqueueVideo } from "../lib/redis";
 import { imageUrl } from "../lib/cloudflareImages";
 import { publicUrl, signedDownloadUrl } from "../lib/r2";
@@ -78,6 +78,91 @@ export async function videoRoutes(app: FastifyInstance) {
 
       await enqueueVideo({ videoId: video.id, userId });
       return reply.code(201).send({ video });
+    } catch (e) {
+      if (e instanceof Error && e.message === "insufficient_credits") {
+        return reply.code(402).send({ error: "insufficient_credits" });
+      }
+      throw e;
+    }
+  });
+
+  // ── Draft flow: create early, save progressively, generate at the end ──
+
+  // Create an empty draft (no credit debit, not queued).
+  app.post("/videos/draft", { preHandler: app.authenticate }, async (req, reply) => {
+    const parsed = CreateVideoDraft.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "invalid_body", details: parsed.error.flatten() });
+    }
+    const video = await prisma.video.create({
+      data: {
+        userId: req.user!.id,
+        title: parsed.data.title?.trim() || "Adsız video",
+        script: parsed.data.script ?? "",
+        status: "draft",
+      },
+    });
+    return reply.code(201).send({ video });
+  });
+
+  // Progressively save a draft's fields. Draft-only; no side effects.
+  app.patch("/videos/:id", { preHandler: app.authenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const parsed = UpdateVideoDraft.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "invalid_body", details: parsed.error.flatten() });
+    }
+    const existing = await prisma.video.findFirst({ where: { id, userId: req.user!.id } });
+    if (!existing) return reply.code(404).send({ error: "not_found" });
+    if (existing.status !== "draft") return reply.code(409).send({ error: "not_a_draft" });
+    const d = parsed.data;
+    const video = await prisma.video.update({
+      where: { id },
+      data: {
+        ...(d.title !== undefined ? { title: d.title.trim() || "Adsız video" } : {}),
+        ...(d.script !== undefined ? { script: d.script } : {}),
+        ...(d.presenterId !== undefined ? { presenterId: d.presenterId } : {}),
+        ...(d.voiceId !== undefined ? { voiceId: d.voiceId } : {}),
+        ...(d.aspectRatio !== undefined ? { aspectRatio: RATIO[d.aspectRatio] } : {}),
+        ...(d.options !== undefined ? { options: d.options as unknown as Prisma.InputJsonValue } : {}),
+      },
+    });
+    return { video };
+  });
+
+  // Finalize a draft: validate, debit a credit, queue it for the worker.
+  app.post("/videos/:id/generate", { preHandler: app.authenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const userId = req.user!.id;
+    const draft = await prisma.video.findFirst({ where: { id, userId } });
+    if (!draft) return reply.code(404).send({ error: "not_found" });
+    if (draft.status !== "draft") return reply.code(409).send({ error: "already_generated" });
+    if (!draft.presenterId || !draft.voiceId || !draft.script.trim()) {
+      return reply.code(400).send({ error: "incomplete_draft" });
+    }
+    const presenter = await prisma.presenter.findFirst({ where: { id: draft.presenterId, userId } });
+    if (!presenter) return reply.code(400).send({ error: "invalid_presenter" });
+    const voice = await prisma.voice.findFirst({
+      where: { id: draft.voiceId, OR: [{ isPublic: true }, { userId }] },
+    });
+    if (!voice) return reply.code(400).send({ error: "invalid_voice" });
+
+    try {
+      const video = await prisma.$transaction(async (tx) => {
+        const debit = await tx.profile.updateMany({
+          where: { id: userId, credits: { gte: CREDIT_COST } },
+          data: { credits: { decrement: CREDIT_COST } },
+        });
+        if (debit.count === 0) throw new Error("insufficient_credits");
+        const v = await tx.video.update({ where: { id }, data: { status: "queued", creditsCost: CREDIT_COST } });
+        await tx.creditLedger.create({
+          data: { userId, delta: -CREDIT_COST, reason: "video_create", videoId: id },
+        });
+        await tx.job.create({ data: { videoId: id, status: "queued" } });
+        return v;
+      });
+      await enqueueVideo({ videoId: video.id, userId });
+      return reply.code(200).send({ video });
     } catch (e) {
       if (e instanceof Error && e.message === "insufficient_credits") {
         return reply.code(402).send({ error: "insufficient_credits" });

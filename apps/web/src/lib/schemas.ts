@@ -24,7 +24,10 @@ export const createReelSchema = z.object({
   voiceId: z.string().uuid("Bir ses seç"),
   aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
   captions: z.boolean().default(true),
+  backgroundType: z.enum(["color", "image"]).default("color"),
   backgroundColor: z.string().default("#0B0B0D"),
+  // Cloudflare Images id when backgroundType === "image"
+  backgroundImageId: z.string().optional(),
 });
 export type CreateReelValues = z.infer<typeof createReelSchema>;
 

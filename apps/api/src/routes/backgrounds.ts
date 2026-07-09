@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { createDirectUpload, imageUrl } from "../lib/cloudflareImages";
 
 // MVP backgrounds: solid colors + (later) curated Cloudflare Images presets.
 // Premium monochrome background options (dark → light neutral grays).
@@ -10,5 +11,11 @@ export async function backgroundRoutes(app: FastifyInstance) {
       colors: COLORS,
       images: [] as Array<{ id: string; label: string }>,
     };
+  });
+
+  // One-time Cloudflare Images upload URL for a custom background photo.
+  app.post("/backgrounds/upload", { preHandler: app.authenticate }, async () => {
+    const upload = await createDirectUpload();
+    return { id: upload.id, uploadURL: upload.uploadURL, imageUrl: imageUrl(upload.id) };
   });
 }

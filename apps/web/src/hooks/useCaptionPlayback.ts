@@ -4,9 +4,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const WORDS_PER_SECOND = 2.4; // rough reel narration pace, matches the compose step's feel
 
-/** Split a script into caption words the same way the frame renders them. */
-export function toWords(script: string): string[] {
-  return script.trim().split(/\s+/).filter(Boolean);
+/** Split a string into caption words the same way the frame renders them. */
+export function toWords(text: string): string[] {
+  return text.trim().split(/\s+/).filter(Boolean);
+}
+
+/**
+ * Split a script into caption lines — one sentence per line. Real reels show a
+ * few words at a time, never the whole script, so the preview shows the current
+ * sentence only. Splits after sentence punctuation or on line breaks.
+ */
+export function toSentences(script: string): string[] {
+  return script
+    .split(/(?<=[.!?…])\s+|\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /** Estimated spoken duration of a script, in seconds. */
@@ -16,7 +28,7 @@ export function estimateDuration(script: string): number {
 
 type Playback = {
   playing: boolean;
-  /** Index of the word currently highlighted, or -1 when idle/finished. */
+  /** Index of the word currently highlighted (across the whole script), or -1 when idle. */
   activeWord: number;
   /** 0–1 progress through the script. */
   progress: number;
@@ -28,11 +40,10 @@ type Playback = {
  * Drives the karaoke-style caption playback in ReelPreview: steps through the
  * script word-by-word at a natural pace so the preview "plays" like the reel
  * will. No audio — this simulates timing and look only. Honors reduced-motion
- * by snapping to the full script instead of animating.
+ * by snapping to the last word. `total` is the script's word count; `resetKey`
+ * (the script) restarts playback whenever the text changes.
  */
-export function useCaptionPlayback(script: string): Playback {
-  const words = toWords(script);
-  const total = words.length;
+export function useCaptionPlayback(total: number, resetKey: string): Playback {
   const [playing, setPlaying] = useState(false);
   const [activeWord, setActiveWord] = useState(-1);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,7 +64,7 @@ export function useCaptionPlayback(script: string): Playback {
   // Reset whenever the script changes so we never index past the new text.
   useEffect(() => {
     stop();
-  }, [script, stop]);
+  }, [resetKey, stop]);
 
   useEffect(() => () => clear(), [clear]);
 

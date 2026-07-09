@@ -19,7 +19,7 @@ export function LibraryView() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="disp text-[28px] font-semibold text-ink">Videolarım</h1>
-          <p className="mt-1 text-[14.5px] text-slate">Oluşturduğun tüm reeller.</p>
+          <p className="mt-1 text-[14.5px] text-slate">Oluşturduğun tüm videolar.</p>
         </div>
         <Link href="/create" className="btn btn-primary">+ Yeni video</Link>
       </div>
@@ -38,8 +38,10 @@ export function LibraryView() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {videos.map((v) => {
             const [label, cls] = STATUS_LABEL[v.status];
+            // Drafts reopen in the wizard; finished videos go to their detail page.
+            const href = v.status === "draft" ? `/create?draft=${v.id}` : `/videos/${v.id}`;
             return (
-              <Link key={v.id} href={`/videos/${v.id}`} className="card overflow-hidden transition hover:-translate-y-0.5">
+              <Link key={v.id} href={href} className="card overflow-hidden transition hover:-translate-y-0.5">
                 <div className="ph-stripe relative aspect-[9/16]">
                   <span className={`badge ${cls} absolute left-2.5 top-2.5`}>
                     <span className="dot" />

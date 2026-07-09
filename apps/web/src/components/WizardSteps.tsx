@@ -22,18 +22,35 @@ const fieldClass =
 const SAMPLE =
   "Yeni sezon koleksiyonumuz geldi! Bu hafta sana özel indirimleri kaçırma. Hemen mağazamıza uğra, favori parçalarını keşfet.";
 
-/* ── 01 · Senaryo ─────────────────────────────────────────────────────── */
+/* ── 01 · Başlık & Biçim — title + format/background setup ────────────── */
+export function SetupStep(
+  props: Common & {
+    colors: string[];
+    bgImageUrl: string | null;
+    onPickColor: (c: string) => void;
+    onUploadBackground: (file: File) => Promise<void>;
+  },
+) {
+  const { register, errors } = props;
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <label className="mb-1.5 block text-[13px] font-medium text-ink">Başlık</label>
+        <input className={fieldClass} placeholder="Örn: Kuaför tanıtımı" {...register("title")} />
+        {errors.title && <p className="mt-1 text-[12.5px] text-red-600">{errors.title.message}</p>}
+      </div>
+      <FormatStep {...props} />
+    </div>
+  );
+}
+
+/* ── 04 · Senaryo — the video's spoken script ─────────────────────────── */
 export function ScriptStep({ register, errors, values, setValue }: Common) {
   const chars = values.script?.length ?? 0;
   const words = toWords(values.script ?? "").length;
   const secs = estimateDuration(values.script ?? "");
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <label className="mb-1.5 block text-[13px] font-medium text-ink">Başlık</label>
-        <input className={fieldClass} placeholder="Örn: Kuaför tanıtımı" {...register("title")} />
-        {errors.title && <p className="mt-1 text-[12.5px] text-red-600">{errors.title.message}</p>}
-      </div>
       <div>
         <div className="mb-1.5 flex items-center justify-between">
           <label className="text-[13px] font-medium text-ink">Senaryo</label>
@@ -262,7 +279,22 @@ const RATIOS: { value: CreateReelValues["aspectRatio"]; label: string; w: number
   { value: "16:9", label: "Yatay · YouTube", w: 34, h: 19 },
 ];
 
-export function FormatStep({ register, values, setValue, colors }: Common & { colors: string[] }) {
+export function FormatStep({
+  register,
+  values,
+  setValue,
+  colors,
+  bgImageUrl,
+  onPickColor,
+  onUploadBackground,
+}: Common & {
+  colors: string[];
+  bgImageUrl: string | null;
+  onPickColor: (c: string) => void;
+  onUploadBackground: (file: File) => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const isImage = values.backgroundType === "image";
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -307,13 +339,47 @@ export function FormatStep({ register, values, setValue, colors }: Common & { co
             <button
               key={c}
               type="button"
-              onClick={() => setValue("backgroundColor", c)}
-              className={`h-10 w-10 rounded-xl border-2 transition ${values.backgroundColor === c ? "border-signal ring-2 ring-signal/30" : "border-hairline"}`}
+              onClick={() => onPickColor(c)}
+              className={`h-10 w-10 rounded-xl border-2 transition ${
+                !isImage && values.backgroundColor === c ? "border-signal ring-2 ring-signal/30" : "border-hairline"
+              }`}
               style={{ background: c }}
               aria-label={c}
             />
           ))}
+
+          {/* upload custom background */}
+          <label
+            className={`grid h-10 w-10 cursor-pointer place-items-center overflow-hidden rounded-xl border-2 transition ${
+              isImage ? "border-signal ring-2 ring-signal/30" : "border-dashed border-hairline hover:border-signal/50"
+            }`}
+            title="Görsel yükle"
+          >
+            {isImage && bgImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={bgImageUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-[16px] text-muted">{busy ? "…" : "＋"}</span>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                setBusy(true);
+                try {
+                  await onUploadBackground(f);
+                } finally {
+                  setBusy(false);
+                  e.target.value = "";
+                }
+              }}
+            />
+          </label>
         </div>
+        <p className="mt-2 text-[12px] text-muted">Renk seç ya da kendi arka plan görselini yükle.</p>
       </div>
     </div>
   );
