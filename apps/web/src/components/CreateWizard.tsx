@@ -11,7 +11,7 @@ import { cfImageUrl } from "@/lib/images";
 import { type MusicTrack, useAvatars, useCreatePresenter, useGenerateVideo, useMusic, usePresenters, useUploadBackground, useVoices } from "@/lib/queries";
 import { type CreateReelValues, createReelSchema } from "@/lib/schemas";
 
-const STEPS = ["Başlık & B-roll", "Avatar", "Ses & dil", "Senaryo", "Önizle"] as const;
+const STEPS = ["Başlık & B-roll", "Avatar & ses", "Senaryo", "Önizle"] as const;
 
 // Prisma stores aspectRatio as r9_16 etc.; map back when resuming a draft.
 const RATIO_FROM_API: Record<string, CreateReelValues["aspectRatio"]> = {
@@ -212,7 +212,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
 
   // Advance to the next step and save the draft (save on next, not on every change).
   async function next() {
-    const perStep: (keyof CreateReelValues)[][] = [["title"], ["presenterId"], ["voiceId"], ["script"], []];
+    const perStep: (keyof CreateReelValues)[][] = [["title"], ["presenterId", "voiceId"], ["script"], []];
     if (!(await trigger(perStep[step]))) return;
     const nextStep = Math.min(step + 1, STEPS.length - 1);
     setStep(nextStep);
@@ -300,20 +300,26 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
               />
             )}
             {step === 1 && (
-              <AvatarStep
-                avatars={avatars}
-                selectedImageUrl={presenterCutoutUrl}
-                selectedName={presenter?.name}
-                onSelect={selectAvatar}
-                busy={createPresenter.isPending}
-                error={createPresenter.isError ? "Avatar seçilemedi, tekrar dene." : errors.presenterId?.message}
-              />
+              <div className="flex flex-col gap-7">
+                <div>
+                  <h3 className="disp mb-3 text-[15px] font-semibold text-ink">Avatar</h3>
+                  <AvatarStep
+                    avatars={avatars}
+                    selectedImageUrl={presenterCutoutUrl}
+                    selectedName={presenter?.name}
+                    onSelect={selectAvatar}
+                    busy={createPresenter.isPending}
+                    error={createPresenter.isError ? "Avatar seçilemedi, tekrar dene." : errors.presenterId?.message}
+                  />
+                </div>
+                <div className="border-t border-hairline pt-7">
+                  <h3 className="disp mb-3 text-[15px] font-semibold text-ink">Ses</h3>
+                  <VoiceStep voices={voices} selected={values.voiceId} onSelect={(id) => set("voiceId", id, { shouldValidate: true })} error={errors.voiceId?.message} />
+                </div>
+              </div>
             )}
-            {step === 2 && (
-              <VoiceStep voices={voices} selected={values.voiceId} onSelect={(id) => set("voiceId", id, { shouldValidate: true })} error={errors.voiceId?.message} />
-            )}
-            {step === 3 && <ScriptStep register={register} errors={errors} values={values} setValue={set} />}
-            {step === 4 && (
+            {step === 2 && <ScriptStep register={register} errors={errors} values={values} setValue={set} />}
+            {step === 3 && (
               <div className="flex flex-col gap-7">
                 <FormatStep register={register} errors={errors} values={values} setValue={set} music={music} />
                 <ReviewStep values={values} presenterName={presenter?.name ?? "—"} voiceLabel={voice?.label ?? "—"} submitError={submitError} />
