@@ -18,7 +18,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap"
+          rel="stylesheet"
+        />
+        {/* Caption fonts — so the live preview matches the fonts the worker burns in. */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@500;700&family=Montserrat:wght@600;800&family=Poppins:wght@600;800&family=Archivo+Black&family=Rubik:wght@500;700&family=Sora:wght@600;700&family=Fredoka:wght@500;600&family=Kanit:wght@600;700&family=Teko:wght@500;700&display=swap"
           rel="stylesheet"
         />
       </head>

@@ -18,10 +18,10 @@ RUN uv sync --no-dev
 
 COPY . .
 
-# Brand fonts (General Sans, ITF Free Font License — see fonts/LICENSE-FFL.txt)
-# installed system-wide so libass finds them for caption burn-in.
-RUN mkdir -p /usr/share/fonts/opentype/general-sans \
-    && cp fonts/*.otf /usr/share/fonts/opentype/general-sans/ \
+# Caption fonts — General Sans (ITF FFL) + curated OFL caption fonts (fonts/*.ttf),
+# installed system-wide so libass resolves them by family name for caption burn-in.
+RUN mkdir -p /usr/share/fonts/sentezy \
+    && cp fonts/*.otf fonts/*.ttf /usr/share/fonts/sentezy/ \
     && fc-cache -f
 
 ENV PYTHONUNBUFFERED=1

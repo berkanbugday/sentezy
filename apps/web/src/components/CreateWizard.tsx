@@ -21,7 +21,7 @@ const RATIO_FROM_API: Record<string, CreateReelValues["aspectRatio"]> = {
 function buildOptions(v: CreateReelValues, wizardStep: number) {
   const ids = v.backgroundImageIds ?? [];
   return {
-    captions: { enabled: v.captions, style: v.captionStyle ?? "karaoke" },
+    captions: { enabled: v.captions, style: v.captionStyle ?? "karaoke", font: v.captionFont ?? "General Sans", color: v.captionColor ?? "#FFD54A" },
     background: ids.length
       ? { type: "image" as const, value: ids[0], images: ids, transitions: v.backgroundTransitions ?? [] }
       : { type: "color" as const, value: "#0B0B0D" },
@@ -78,7 +78,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     formState: { errors, isSubmitting },
   } = useForm<CreateReelValues>({
     resolver: zodResolver(createReelSchema),
-    defaultValues: { aspectRatio: "9:16", captions: true, captionStyle: "karaoke", backgroundImageIds: [], backgroundTransitions: [], musicVolume: 0.15, avatarSide: "right", captionPosition: "bottom", ...demo?.values },
+    defaultValues: { aspectRatio: "9:16", captions: true, captionStyle: "karaoke", captionFont: "General Sans", captionColor: "#FFD54A", backgroundImageIds: [], backgroundTransitions: [], musicVolume: 0.15, avatarSide: "right", captionPosition: "bottom", ...demo?.values },
   });
   const values = watch();
   const set: (n: keyof CreateReelValues, v: CreateReelValues[keyof CreateReelValues], o?: object) => void = setValue;
@@ -181,12 +181,14 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         if (video.presenterId) setValue("presenterId", video.presenterId);
         if (video.voiceId) setValue("voiceId", video.voiceId);
         setValue("aspectRatio", RATIO_FROM_API[video.aspectRatio] ?? "9:16");
-        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean" }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[]; transitions?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" } };
+        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean"; font?: string; color?: string }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[]; transitions?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" } };
         // captions: legacy drafts store a boolean; newer ones an object.
         if (typeof o.captions === "boolean") setValue("captions", o.captions);
         else if (o.captions) {
           setValue("captions", o.captions.enabled ?? true);
           if (o.captions.style) setValue("captionStyle", o.captions.style);
+          if (o.captions.font) setValue("captionFont", o.captions.font);
+          if (o.captions.color) setValue("captionColor", o.captions.color);
         }
         if (o.music?.trackKey) setValue("musicTrackKey", o.music.trackKey);
         if (typeof o.music?.volume === "number") setValue("musicVolume", o.music.volume);
@@ -374,6 +376,8 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
               aspectRatio: values.aspectRatio ?? "9:16",
               captions: values.captions ?? true,
               captionStyle: values.captionStyle ?? "karaoke",
+              captionFont: values.captionFont ?? "General Sans",
+              captionColor: values.captionColor ?? "#FFD54A",
               brollImageUrls: bgImages.map((i) => i.url).filter(Boolean),
               musicLabel: music.find((t) => t.key === values.musicTrackKey)?.name,
               avatarSide: values.avatarSide ?? "right",

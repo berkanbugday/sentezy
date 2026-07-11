@@ -657,6 +657,14 @@ const CAPTION_STYLES = [
   { value: "clean", label: "Sade", hint: "Tüm cümle, sakin" },
 ] as const;
 
+// Caption fonts bundled in the worker image (family names — must match fc-list).
+const CAPTION_FONTS = [
+  "General Sans", "Anton", "Bebas Neue", "Oswald", "Montserrat", "Poppins",
+  "Archivo Black", "Rubik", "Sora", "Inter", "Fredoka", "Kanit", "Teko",
+] as const;
+// Highlight/accent colours for the caption.
+const CAPTION_COLORS = ["#FFD54A", "#FFFFFF", "#FF5A5A", "#4ADE80", "#5AA9FF", "#FF6BD5", "#FF9A3D"] as const;
+
 export function FormatStep({ register, values, setValue, music }: Common & { music: MusicTrack[] }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
@@ -710,7 +718,8 @@ export function FormatStep({ register, values, setValue, music }: Common & { mus
           <input type="checkbox" {...register("captions")} className="h-5 w-5 accent-[var(--color-signal)]" />
         </label>
         {values.captions && (
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-3 flex flex-col gap-3">
+            <div className="grid grid-cols-3 gap-2">
             {CAPTION_STYLES.map((s) => (
               <button
                 key={s.value}
@@ -742,6 +751,33 @@ export function FormatStep({ register, values, setValue, music }: Common & { mus
                 <span className="block text-[10px] text-muted">{s.hint}</span>
               </button>
             ))}
+            </div>
+            {/* font + accent colour */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+              <label className="flex items-center gap-2 text-[12px] text-muted">
+                Yazı tipi
+                <select
+                  value={values.captionFont ?? "General Sans"}
+                  onChange={(e) => setValue("captionFont", e.target.value)}
+                  className="rounded-lg border border-hairline bg-mist px-2.5 py-1.5 text-[12.5px] text-ink outline-none transition focus:border-signal"
+                >
+                  {CAPTION_FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </label>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[12px] text-muted">Renk</span>
+                {CAPTION_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setValue("captionColor", c)}
+                    aria-label={`Renk ${c}`}
+                    className={`h-6 w-6 rounded-full border-2 transition ${(values.captionColor ?? "#FFD54A") === c ? "border-ink scale-110" : "border-transparent hover:border-hairline"}`}
+                    style={{ background: c }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>

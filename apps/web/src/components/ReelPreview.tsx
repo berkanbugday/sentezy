@@ -13,6 +13,8 @@ export type ReelPreviewValues = {
   aspectRatio: "9:16" | "1:1" | "16:9";
   captions: boolean;
   captionStyle?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean";
+  captionFont?: string;
+  captionColor?: string;
   // B-roll images — fill the frame behind the cut-out presenter, on their beats.
   brollImageUrls?: string[];
   // Layout: which side the cut-out presenter is framed to, and caption position.
@@ -40,7 +42,7 @@ function fit(ratio: number, boxW = 320, boxH = 540) {
  * HeyGen render, so it works regardless of provider credits.
  */
 export function ReelPreview({ values, step }: { values: ReelPreviewValues; step: number }) {
-  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, musicLabel, aspectRatio, captions, captionStyle = "karaoke", brollImageUrls, avatarSide = "right", captionPosition = "bottom" } = values;
+  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, musicLabel, aspectRatio, captions, captionStyle = "karaoke", captionFont = "General Sans", captionColor = "#FFD54A", brollImageUrls, avatarSide = "right", captionPosition = "bottom" } = values;
   const broll = brollImageUrls ?? [];
 
   // Caption words grouped by sentence — the frame shows only the current
@@ -182,14 +184,33 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
                     captionStyle === "hormozi" ? "text-[19px] font-extrabold tracking-tight" :
                     captionStyle === "clean" ? "text-[14px] font-semibold" :
                     "text-[15px] font-bold";
+                  // boxed: one box hugging the whole phrase (per line), not per word.
+                  if (boxed) {
+                    return (
+                      <p className={`text-center leading-relaxed ${sizeClass}`} style={{ fontFamily: `"${captionFont}", sans-serif` }}>
+                        <span
+                          style={{
+                            color: "#fff",
+                            background: "rgba(0,0,0,0.85)",
+                            padding: "2px 9px",
+                            borderRadius: 7,
+                            boxDecorationBreak: "clone",
+                            WebkitBoxDecorationBreak: "clone",
+                          }}
+                        >
+                          {curWords.join(" ")}
+                        </span>
+                      </p>
+                    );
+                  }
                   return (
-                    <p className={`text-center leading-snug ${sizeClass}`}>
+                    <p className={`text-center leading-snug ${sizeClass}`} style={{ fontFamily: `"${captionFont}", sans-serif` }}>
                       {curWords.map((word, i) => {
                         const shown = localActive < 0 || i <= localActive;
                         const active = i === localActive;
                         const color = wordAccent
-                          ? active ? "#FFD54A" : "#fff"
-                          : boxed || captionStyle === "clean"
+                          ? active ? captionColor : "#fff"
+                          : captionStyle === "clean"
                             ? "#fff"
                             : shown ? "#fff" : "rgba(255,255,255,0.5)"; // karaoke: upcoming dimmed
                         return (
@@ -198,13 +219,8 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
                             className="inline-block transition-colors duration-150"
                             style={{
                               color,
-                              textShadow: boxed ? "none" : wordAccent ? "0 0 4px rgba(0,0,0,0.95), 0 2px 3px rgba(0,0,0,0.9)" : "0 0 3px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.85)",
+                              textShadow: wordAccent ? "0 0 4px rgba(0,0,0,0.95), 0 2px 3px rgba(0,0,0,0.9)" : "0 0 3px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.85)",
                               transform: wordAccent && active ? "scale(1.07)" : undefined,
-                              background: boxed ? "rgba(0,0,0,0.85)" : undefined,
-                              padding: boxed ? "1px 5px" : undefined,
-                              borderRadius: boxed ? 5 : undefined,
-                              boxDecorationBreak: boxed ? "clone" : undefined,
-                              WebkitBoxDecorationBreak: boxed ? "clone" : undefined,
                             }}
                           >
                             {upper ? word.toLocaleUpperCase("tr") : word}&nbsp;
