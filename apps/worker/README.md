@@ -6,9 +6,12 @@ Redis Streams consumer that renders reels. Not part of the pnpm workspace (manag
 
 1. **TTS** — ElevenLabs `with-timestamps` → audio (mp3) + word timings → upload to R2.
 2. **Avatar** — upload presenter photo to HeyGen (once → `heygen_talking_photo_id`), generate an
-   audio-driven talking-photo video, poll, download.
-3. **Compose** — ffmpeg: 9:16 canvas → background (color/image) → presenter → burned captions
-   (ASS from word timings) → optional logo + ducked music. (`compose.py`)
+   audio-driven talking-photo video, poll, download; then matte the green screen off
+   (`matte.py`, RobustVideoMatting) → alpha presenter clip carrying the voice.
+3. **Compose** — ffmpeg: blurred-B-roll (or branded color) backdrop → auto-timed full-frame
+   B-roll cutaways (crossfade + Ken-Burns) → presenter cut-out framed to one side → burned
+   captions (karaoke/hormozi/clean ASS from word timings) → optional logo + sidechain-ducked
+   music. (`compose.py`)
 4. **Thumbnail** — poster frame → Cloudflare Images.
 5. Upload reel → R2, thumbnail → Cloudflare Images, mark `videos.status = ready`.
 

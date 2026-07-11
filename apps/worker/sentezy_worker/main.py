@@ -23,10 +23,11 @@ log = logging.getLogger("sentezy.worker")
 
 
 def main() -> None:
-    # Dev convenience: load the monorepo root .env (Railway injects env directly).
-    root_env = Path(__file__).resolve().parents[3] / ".env"
-    if root_env.exists():
-        load_dotenv(root_env)
+    # Dev convenience: load the monorepo root .env (Railway/Docker inject env
+    # directly, and inside the container the tree is too shallow for parents[3]).
+    parents = Path(__file__).resolve().parents
+    if len(parents) > 3 and (parents[3] / ".env").exists():
+        load_dotenv(parents[3] / ".env")
 
     cfg = load_config()
     db = Db(cfg.database_url)

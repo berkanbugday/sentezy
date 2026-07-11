@@ -21,11 +21,11 @@ const RATIO_FROM_API: Record<string, CreateReelValues["aspectRatio"]> = {
 function buildOptions(v: CreateReelValues, wizardStep: number) {
   const ids = v.backgroundImageIds ?? [];
   return {
-    captions: v.captions,
+    captions: { enabled: v.captions, style: v.captionStyle ?? "karaoke" },
     background: ids.length
       ? { type: "image" as const, value: ids[0], images: ids }
       : { type: "color" as const, value: "#0B0B0D" },
-    ...(v.musicTrackKey ? { music: { trackKey: v.musicTrackKey, volume: 0.15 } } : {}),
+    ...(v.musicTrackKey ? { music: { trackKey: v.musicTrackKey, volume: v.musicVolume ?? 0.15 } } : {}),
     layout: { avatarSide: v.avatarSide, captionPosition: v.captionPosition },
     wizardStep,
   };
@@ -78,7 +78,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     formState: { errors, isSubmitting },
   } = useForm<CreateReelValues>({
     resolver: zodResolver(createReelSchema),
-    defaultValues: { aspectRatio: "9:16", captions: true, backgroundImageIds: [], avatarSide: "right", captionPosition: "bottom", ...demo?.values },
+    defaultValues: { aspectRatio: "9:16", captions: true, captionStyle: "karaoke", backgroundImageIds: [], musicVolume: 0.15, avatarSide: "right", captionPosition: "bottom", ...demo?.values },
   });
   const values = watch();
   const set: (n: keyof CreateReelValues, v: CreateReelValues[keyof CreateReelValues], o?: object) => void = setValue;
@@ -175,9 +175,15 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         if (video.presenterId) setValue("presenterId", video.presenterId);
         if (video.voiceId) setValue("voiceId", video.voiceId);
         setValue("aspectRatio", RATIO_FROM_API[video.aspectRatio] ?? "9:16");
-        const o = (video.options ?? {}) as { captions?: boolean; wizardStep?: number; background?: { type?: string; value?: string; images?: string[] }; music?: { trackKey?: string | null }; layout?: { avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" } };
+        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: "karaoke" | "hormozi" | "clean" }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" } };
+        // captions: legacy drafts store a boolean; newer ones an object.
         if (typeof o.captions === "boolean") setValue("captions", o.captions);
+        else if (o.captions) {
+          setValue("captions", o.captions.enabled ?? true);
+          if (o.captions.style) setValue("captionStyle", o.captions.style);
+        }
         if (o.music?.trackKey) setValue("musicTrackKey", o.music.trackKey);
+        if (typeof o.music?.volume === "number") setValue("musicVolume", o.music.volume);
         if (o.layout?.avatarSide) setValue("avatarSide", o.layout.avatarSide);
         if (o.layout?.captionPosition) setValue("captionPosition", o.layout.captionPosition);
         const bg = o.background ?? {};
@@ -193,7 +199,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
           setMaxStep((m) => Math.max(m, s));
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftId, demo]);
 
@@ -272,9 +278,8 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
                 type="button"
                 onClick={() => goToStep(i)}
                 disabled={i > maxStep}
-                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium transition ${
-                  i === step ? "bg-[var(--wash)] text-signal" : i <= maxStep ? "text-ink hover:bg-mist" : "cursor-default text-muted"
-                }`}
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium transition ${i === step ? "bg-[var(--wash)] text-signal" : i <= maxStep ? "text-ink hover:bg-mist" : "cursor-default text-muted"
+                  }`}
               >
                 <span className="mono text-[11px]">{String(i + 1).padStart(2, "0")}</span>
                 {label}
@@ -319,13 +324,25 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
           {/* nav */}
           <div className="mt-5 flex gap-3">
             {step > 0 && <button type="button" onClick={() => setStep((s) => s - 1)} className="btn btn-ghost">Geri</button>}
-            {step < STEPS.length - 1 ? (
-              <button type="button" onClick={next} className="btn btn-primary ml-auto">İleri →</button>
-            ) : (
-              <button type="button" onClick={onSubmit} disabled={generating || isSubmitting} className="btn btn-primary ml-auto disabled:opacity-60">
-                {generating ? "Oluşturuluyor…" : "Videoyu oluştur"}
-              </button>
-            )}
+            <div className="ml-auto flex gap-3">
+              {!demo && (
+                <button
+                  type="button"
+                  onClick={() => saveProgress(values, step)}
+                  disabled={saveState === "saving"}
+                  className="btn btn-ghost disabled:opacity-60"
+                >
+                  {saveState === "saving" ? "Kaydediliyor…" : "Kaydet"}
+                </button>
+              )}
+              {step < STEPS.length - 1 ? (
+                <button type="button" onClick={next} className="btn btn-primary">İleri →</button>
+              ) : (
+                <button type="button" onClick={onSubmit} disabled={generating || isSubmitting} className="btn btn-primary disabled:opacity-60">
+                  {generating ? "Oluşturuluyor…" : "Videoyu oluştur"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -341,6 +358,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
               voiceLabel: voice?.label,
               aspectRatio: values.aspectRatio ?? "9:16",
               captions: values.captions ?? true,
+              captionStyle: values.captionStyle ?? "karaoke",
               brollImageUrls: bgImages.map((i) => i.url).filter(Boolean),
               musicLabel: music.find((t) => t.key === values.musicTrackKey)?.name,
               avatarSide: values.avatarSide ?? "right",

@@ -38,10 +38,10 @@ def _resolve_broll_images(options: dict, storage: Storage, workdir: str) -> list
 
 
 def _broll_segments(words: list, image_paths: list[str]) -> list[dict]:
-    """Auto-place B-roll — no manual timeline needed. Keep a short A-roll hook at
-    the start and an A-roll close at the end, and fill the middle with EVERY
-    uploaded image, evenly spaced. So anyone can make a B-roll reel by just
-    uploading images, and all of them get used."""
+    """Auto-place B-roll — no manual timeline needed. Keep a short hook at the
+    start and a close at the end (presenter over the blurred backdrop, no cutaway),
+    and fill the middle with EVERY uploaded image, evenly spaced. So anyone can
+    make a B-roll reel by just uploading images, and all of them get used."""
     if not words or not image_paths:
         return []
     t0 = words[0].start
@@ -104,7 +104,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     words = el.tts_with_timestamps(video["script"], voice["elevenlabs_voice_id"], audio_path)
     audio_key = f"audio/{video_id}.mp3"
     storage.upload_r2(audio_path, audio_key, "audio/mpeg")
-    audio_url = storage.r2_url(audio_key)
+    audio_url = storage.signed_get_url(audio_key, 86400)  # HeyGen must fetch this; R2_PUBLIC_URL is the S3 endpoint, not public
 
     # 2) HeyGen talking photo (audio-driven)
     db.set_stage(video_id, "avatar", 35)
@@ -128,10 +128,16 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     db.set_stage(video_id, "compose", 70)
     layout = options.get("layout") or {}
     avatar_side = layout.get("avatarSide", "right")
+    caps = options.get("captions", True)
+    if isinstance(caps, bool):  # legacy drafts store captions as a plain boolean
+        caps = {"enabled": caps}
     caps_path = f"{workdir}/caps.ass"
     build_captions_ass(
         words, caps_path, width=width, height=height,
         avatar_side=avatar_side, position=layout.get("captionPosition", "bottom"),
+        style=caps.get("style", "karaoke"),
+        font=caps.get("font") or "General Sans",
+        color=caps.get("color"),
     )
     reel_path = f"{workdir}/reel.mp4"
     broll_paths = _resolve_broll_images(options, storage, workdir)
@@ -141,7 +147,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
         width=width,
         height=height,
         broll=_broll_segments(words, broll_paths),
-        captions_ass=caps_path if options.get("captions", True) else None,
+        captions_ass=caps_path if caps.get("enabled", True) else None,
         logo_path=_resolve_logo(options, storage, workdir),
         music_path=_resolve_music(options, storage, workdir),
         music_volume=float((options.get("music") or {}).get("volume", 0.15)),

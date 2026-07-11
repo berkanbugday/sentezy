@@ -23,7 +23,9 @@ class Storage:
         return key
 
     def r2_url(self, key: str, expires: int = 86400) -> str:
-        """Public CDN URL if configured, else a signed GET URL (used to hand audio to HeyGen)."""
+        """Public CDN URL if configured, else a signed GET URL. NOTE: while R2_PUBLIC_URL
+        points at the S3 endpoint (not a public domain), this is NOT fetchable by external
+        providers — use signed_get_url for anything HeyGen/third parties must download."""
         if self.cfg.r2_public_url:
             return f"{self.cfg.r2_public_url.rstrip('/')}/{key}"
         return self.signed_get_url(key, expires)

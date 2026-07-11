@@ -24,11 +24,15 @@ export const createReelSchema = z.object({
   voiceId: z.string().uuid("Bir ses seç"),
   aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
   captions: z.boolean().default(true),
+  // Caption look — karaoke (word sweep), hormozi (big uppercase + accent word), clean.
+  captionStyle: z.enum(["karaoke", "hormozi", "clean"]).default("karaoke"),
   // Cloudflare Images ids for the background — one image, or several shown as a
   // slideshow. Empty = plain dark background.
   backgroundImageIds: z.array(z.string()).default([]),
   // R2 key of the background music bed, or undefined for none.
   musicTrackKey: z.string().optional(),
+  // Music bed level (0..1 of full scale; UI caps at 0.4 so the bed never buries the voice).
+  musicVolume: z.number().min(0).max(1).default(0.15),
   // Reel layout — which side the cut-out presenter sits on, and caption position.
   avatarSide: z.enum(["left", "right"]).default("right"),
   captionPosition: z.enum(["top", "bottom"]).default("bottom"),

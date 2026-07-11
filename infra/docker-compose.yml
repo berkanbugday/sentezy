@@ -19,7 +19,9 @@ services:
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      # Host port 6380: a Homebrew redis commonly owns 127.0.0.1:6379 on macOS,
+      # which silently splits the queue (API → host redis, worker → this one).
+      - "6380:6379"
     volumes:
       - redis-data:/data
     healthcheck:

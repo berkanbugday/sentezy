@@ -16,6 +16,30 @@ export type VideoStage = z.infer<typeof VideoStage>;
 export const AspectRatio = z.enum(["9:16", "1:1", "16:9"]);
 export type AspectRatio = z.infer<typeof AspectRatio>;
 
+// ── Captions ────────────────────────────────────────────────────────────────
+export const CaptionStyle = z.enum(["karaoke", "hormozi", "clean"]);
+export type CaptionStyle = z.infer<typeof CaptionStyle>;
+
+const CaptionsObject = z.object({
+  enabled: z.boolean().default(true),
+  style: CaptionStyle.default("karaoke"),
+  font: z.string().default("General Sans"),
+  // Accent hex for the highlighted word (hormozi) or the karaoke primary.
+  // null = the style's own default (karaoke: white, hormozi: #FFD54A yellow).
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .nullable()
+    .default(null),
+});
+// BACK-COMPAT: old drafts store `captions: boolean` — true/false ⇒ {enabled},
+// zod defaults fill the rest. Output is always the object shape.
+export const CaptionsOptions = z.preprocess(
+  (v) => (typeof v === "boolean" ? { enabled: v } : v),
+  CaptionsObject,
+);
+export type CaptionsOptions = z.infer<typeof CaptionsOptions>;
+
 // ── Reel composition options (stored on videos.options jsonb) ──────────────
 export const ReelOptions = z.object({
   background: z
@@ -27,7 +51,7 @@ export const ReelOptions = z.object({
       images: z.array(z.string()).optional(),
     })
     .default({ type: "color", value: "#0B0B0D" }),
-  captions: z.boolean().default(true),
+  captions: CaptionsOptions.default(true), // boolean default runs through the preprocess
   branding: z
     .object({
       logoImageId: z.string().nullable().default(null), // Cloudflare Images id

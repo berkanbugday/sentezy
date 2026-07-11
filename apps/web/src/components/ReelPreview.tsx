@@ -12,6 +12,7 @@ export type ReelPreviewValues = {
   musicLabel?: string | null;
   aspectRatio: "9:16" | "1:1" | "16:9";
   captions: boolean;
+  captionStyle?: "karaoke" | "hormozi" | "clean";
   // B-roll images — fill the frame behind the cut-out presenter, on their beats.
   brollImageUrls?: string[];
   // Layout: which side the cut-out presenter is framed to, and caption position.
@@ -39,7 +40,7 @@ function fit(ratio: number, boxW = 320, boxH = 540) {
  * HeyGen render, so it works regardless of provider credits.
  */
 export function ReelPreview({ values, step }: { values: ReelPreviewValues; step: number }) {
-  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, musicLabel, aspectRatio, captions, brollImageUrls, avatarSide = "right", captionPosition = "bottom" } = values;
+  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, musicLabel, aspectRatio, captions, captionStyle = "karaoke", brollImageUrls, avatarSide = "right", captionPosition = "bottom" } = values;
   const broll = brollImageUrls ?? [];
 
   // Caption words grouped by sentence — the frame shows only the current
@@ -84,7 +85,13 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
           className="relative overflow-hidden rounded-[28px] border-[6px] border-ink transition-[width,height] duration-300 ease-out"
           style={{ width: w, height: h, background: "#0b0b0d" }}
         >
-          {/* background: B-roll fills the frame on its beats; branded dark otherwise */}
+          {/* backdrop: blurred, darkened first B-roll image behind the presenter
+              during the hook/close beats (mirrors the render); branded dark otherwise */}
+          {broll[0] && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={broll[0]} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl brightness-75" />
+          )}
+          {/* B-roll fills the frame on its beats */}
           {activeBroll && (
             // eslint-disable-next-line @next/next/no-img-element
             <img key={`broll-${curIdx}-${activeBrollKey}`} src={activeBroll} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ animation: "brollIn 0.22s ease" }} />
@@ -165,20 +172,36 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
               }}
             >
               {curWords.length > 0 ? (
-                <p className="text-center text-[15px] font-bold leading-snug">
+                <p
+                  className={`text-center leading-snug ${
+                    captionStyle === "hormozi" ? "text-[19px] font-extrabold tracking-tight" : captionStyle === "clean" ? "text-[14px] font-semibold" : "text-[15px] font-bold"
+                  }`}
+                >
                   {curWords.map((word, i) => {
                     const shown = localActive < 0 || i <= localActive;
+                    const active = i === localActive;
+                    // per-style word colour — matches the burned ASS styles
+                    const color =
+                      captionStyle === "hormozi"
+                        ? active
+                          ? "#FFD54A" // the spoken word pops in the accent yellow
+                          : "#fff"
+                        : captionStyle === "clean"
+                          ? "#fff"
+                          : shown
+                            ? "#fff"
+                            : "rgba(255,255,255,0.5)"; // karaoke: upcoming words dimmed
                     return (
                       <span
                         key={i}
-                        className="transition-colors duration-150"
+                        className="inline-block transition-colors duration-150"
                         style={{
-                          // karaoke: spoken (incl. active) = bright white, upcoming = dimmed — matches the burned ASS
-                          color: shown ? "#fff" : "rgba(255,255,255,0.5)",
-                          textShadow: "0 0 3px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.85)",
+                          color,
+                          textShadow: captionStyle === "hormozi" ? "0 0 4px rgba(0,0,0,0.95), 0 2px 3px rgba(0,0,0,0.9)" : "0 0 3px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.85)",
+                          transform: captionStyle === "hormozi" && active ? "scale(1.07)" : undefined,
                         }}
                       >
-                        {word}{" "}
+                        {captionStyle === "hormozi" ? word.toLocaleUpperCase("tr") : word}&nbsp;
                       </span>
                     );
                   })}

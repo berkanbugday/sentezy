@@ -162,7 +162,7 @@ export function AvatarStep({
   return (
     <div>
       <p className="mb-4 text-[13px] text-slate">
-        Videoda konuşacak AI sunucuyu seç — {avatars.length} sektörel avatar, sektöre ve profile göre filtrele.
+        Videoda konuşacak AI sunucuyu seç — {readyCount} sektörel avatar, sektöre ve profile göre filtrele.
       </p>
       {selectedImageUrl ? (
         <div className="flex items-center gap-4">
@@ -231,10 +231,13 @@ function AvatarModal({
   const [age, setAge] = useState<"" | Avatar["age"]>("");
   const [sector, setSector] = useState("");
 
+  // Only avatars with a generated portrait are pickable, so the library and its
+  // filters are built from the ready set — pending ones are hidden entirely.
+  const ready = avatars.filter((a) => a.ready);
   // Sectors present in the library, in catalog order — for the dropdown.
-  const sectors = [...new Map(avatars.map((a) => [a.sector, a.sectorLabel])).entries()];
+  const sectors = [...new Map(ready.map((a) => [a.sector, a.sectorLabel])).entries()];
   const q = search.trim().toLocaleLowerCase("tr");
-  const filtered = avatars.filter(
+  const filtered = ready.filter(
     (a) =>
       (!gender || a.gender === gender) &&
       (!age || a.age === age) &&
@@ -249,7 +252,7 @@ function AvatarModal({
         <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
           <div>
             <h3 className="disp text-[17px] font-semibold text-ink">Avatar kütüphanesi</h3>
-            <p className="text-[12px] text-muted">{readyCount} hazır · {avatars.length} avatar</p>
+            <p className="text-[12px] text-muted">{readyCount} avatar</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 place-items-center rounded-full text-[18px] text-muted transition hover:bg-mist">
             ×
@@ -291,28 +294,21 @@ function AvatarModal({
         {/* grid */}
         <div className="grid grid-cols-2 gap-3 overflow-y-auto p-5 sm:grid-cols-3 md:grid-cols-4">
           {filtered.map((a) => {
-            const active = a.ready && selectedImageUrl === a.imageUrl;
+            const active = selectedImageUrl === a.imageUrl;
             return (
               <button
                 key={a.slug}
                 type="button"
-                disabled={busy || !a.ready}
-                title={a.ready ? a.name : `${a.name} — yakında`}
-                onClick={() => a.ready && onPick(a)}
+                disabled={busy}
+                title={a.name}
+                onClick={() => onPick(a)}
                 className={`group overflow-hidden rounded-2xl border text-left transition disabled:cursor-not-allowed ${
                   active ? "border-signal ring-2 ring-signal/30" : "border-hairline hover:border-signal/50"
-                } ${!a.ready ? "opacity-55" : ""}`}
+                }`}
               >
                 <div className="relative aspect-[3/4] w-full bg-mist">
-                  {a.ready ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={a.imageUrl} alt={a.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-1">
-                      <span className="disp text-[26px] font-semibold text-muted">{a.name.charAt(0)}</span>
-                      <span className="rounded-full bg-black/10 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted">Yakında</span>
-                    </div>
-                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={a.imageUrl} alt={a.name} className="h-full w-full object-cover" />
                 </div>
                 <div className="px-2.5 py-2">
                   <div className="truncate text-[13px] font-semibold text-ink">{a.name}</div>
@@ -323,7 +319,7 @@ function AvatarModal({
           })}
           {filtered.length === 0 && (
             <p className="col-span-full py-8 text-center text-[13px] text-muted">
-              {avatars.length === 0 ? "Avatarlar yükleniyor…" : "Bu filtrelere uygun avatar yok."}
+              {ready.length === 0 ? "Avatarlar yükleniyor…" : "Bu filtrelere uygun avatar yok."}
             </p>
           )}
         </div>
@@ -425,6 +421,12 @@ const RATIOS: { value: CreateReelValues["aspectRatio"]; label: string; w: number
   { value: "16:9", label: "Yatay · YouTube", w: 34, h: 19 },
 ];
 
+const CAPTION_STYLES = [
+  { value: "karaoke", label: "Karaoke", hint: "Kelime kelime parlar" },
+  { value: "hormozi", label: "Vurgulu", hint: "Büyük, enerjik, renkli" },
+  { value: "clean", label: "Sade", hint: "Tüm cümle, sakin" },
+] as const;
+
 export function FormatStep({ register, values, setValue, music }: Common & { music: MusicTrack[] }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
@@ -469,13 +471,41 @@ export function FormatStep({ register, values, setValue, music }: Common & { mus
         </div>
       </div>
 
-      <label className="flex items-center justify-between rounded-xl border border-hairline px-4 py-3">
-        <span>
-          <span className="block text-[14px] font-medium text-ink">Otomatik altyazı</span>
-          <span className="block text-[12px] text-muted">Konuşma metni videoya işlenir</span>
-        </span>
-        <input type="checkbox" {...register("captions")} className="h-5 w-5 accent-[var(--color-signal)]" />
-      </label>
+      <div>
+        <label className="flex items-center justify-between rounded-xl border border-hairline px-4 py-3">
+          <span>
+            <span className="block text-[14px] font-medium text-ink">Otomatik altyazı</span>
+            <span className="block text-[12px] text-muted">Konuşma metni videoya işlenir</span>
+          </span>
+          <input type="checkbox" {...register("captions")} className="h-5 w-5 accent-[var(--color-signal)]" />
+        </label>
+        {values.captions && (
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {CAPTION_STYLES.map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => setValue("captionStyle", s.value)}
+                className={`rounded-xl border px-2 py-2.5 text-center transition ${
+                  (values.captionStyle ?? "karaoke") === s.value ? "border-signal bg-[var(--wash)]" : "border-hairline hover:border-signal/50"
+                }`}
+              >
+                <span className="block rounded-lg bg-[#0b0b0d] px-1 py-2 leading-none">
+                  {s.value === "karaoke" && (
+                    <span className="text-[10px] font-bold"><span className="text-white">Yeni </span><span className="text-white/45">sezon</span></span>
+                  )}
+                  {s.value === "hormozi" && (
+                    <span className="text-[10px] font-extrabold tracking-tight"><span className="text-[#FFD54A]">YENİ </span><span className="text-white">SEZON</span></span>
+                  )}
+                  {s.value === "clean" && <span className="text-[10px] font-medium text-white">Yeni sezon</span>}
+                </span>
+                <span className="mt-1.5 block text-[12px] font-semibold text-ink">{s.label}</span>
+                <span className="block text-[10px] text-muted">{s.hint}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div>
         <label className="mb-2.5 block text-[13px] font-medium text-ink">Yerleşim</label>
@@ -545,6 +575,24 @@ export function FormatStep({ register, values, setValue, music }: Common & { mus
             );
           })}
         </div>
+        {values.musicTrackKey && (
+          <div className="mt-3 flex items-center gap-3">
+            <span className="whitespace-nowrap text-[12px] text-muted">Müzik seviyesi</span>
+            <input
+              type="range"
+              min={0.05}
+              max={0.4}
+              step={0.05}
+              value={values.musicVolume ?? 0.15}
+              onChange={(e) => setValue("musicVolume", e.target.valueAsNumber)}
+              aria-label="Müzik seviyesi"
+              className="flex-1 accent-[var(--color-signal)]"
+            />
+            <span className="mono w-10 text-right text-[11px] text-muted">
+              %{Math.round(((values.musicVolume ?? 0.15) / 0.4) * 100)}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -567,7 +615,7 @@ export function ReviewStep({
     ["Sunucu", presenterName],
     ["Ses", voiceLabel],
     ["Oran", values.aspectRatio],
-    ["Altyazı", values.captions ? "Açık" : "Kapalı"],
+    ["Altyazı", values.captions ? (CAPTION_STYLES.find((s) => s.value === (values.captionStyle ?? "karaoke"))?.label ?? "Karaoke") : "Kapalı"],
     ["Süre", `~${estimateDuration(values.script ?? "").toFixed(1)}s`],
   ];
   return (
