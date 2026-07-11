@@ -15,9 +15,13 @@ export type ReelPreviewValues = {
   captionStyle?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean";
   captionFont?: string;
   captionColor?: string;
-  // B-roll images — fill the frame behind the cut-out presenter, on their beats.
+  // B-roll — images and/or video clips — fill the frame/top-band on their beats.
+  brollMedia?: { url: string; kind: "image" | "video" }[];
+  // Legacy: image-only URL list (still accepted; superseded by brollMedia).
   brollImageUrls?: string[];
-  // Layout: which side the cut-out presenter is framed to, and caption position.
+  // Layout: presenter framed to a side over full-frame B-roll ("side"), or
+  // bottom-centred with B-roll in a top band ("bottom"). Plus side + caption position.
+  presenterLayout?: "side" | "bottom";
   avatarSide?: "left" | "right";
   captionPosition?: "top" | "bottom";
 };
@@ -42,8 +46,9 @@ function fit(ratio: number, boxW = 320, boxH = 540) {
  * HeyGen render, so it works regardless of provider credits.
  */
 export function ReelPreview({ values, step }: { values: ReelPreviewValues; step: number }) {
-  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, musicLabel, aspectRatio, captions, captionStyle = "karaoke", captionFont = "General Sans", captionColor = "#FFD54A", brollImageUrls, avatarSide = "right", captionPosition = "bottom" } = values;
-  const broll = brollImageUrls ?? [];
+  const { title, script = "", presenterImageUrl, presenterName, voiceLabel, musicLabel, aspectRatio, captions, captionStyle = "karaoke", captionFont = "General Sans", captionColor = "#FFD54A", brollMedia, brollImageUrls, presenterLayout = "side", avatarSide = "right", captionPosition = "bottom" } = values;
+  const broll = brollMedia ?? (brollImageUrls ?? []).map((url) => ({ url, kind: "image" as const }));
+  const bottomLayout = presenterLayout === "bottom";
 
   // Caption words grouped by sentence — the frame shows only the current
   // sentence (a real reel never shows the whole script at once).
@@ -59,8 +64,8 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
   const { w, h } = fit(RATIO[aspectRatio]);
   const seconds = estimateDuration(script);
 
-  // Auto B-roll (mirrors the worker): A-roll hook → every image evenly → A-roll close.
-  let activeBroll: string | null = null;
+  // Auto B-roll (mirrors the worker): A-roll hook → every clip/image evenly → A-roll close.
+  let activeBroll: { url: string; kind: "image" | "video" } | null = null;
   let activeBrollKey = -1;
   if (playing && broll.length > 0 && seconds > 0.1) {
     const hook = Math.min(1.6, seconds * 0.22);
@@ -87,16 +92,36 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
           className="relative overflow-hidden rounded-[28px] border-[6px] border-ink transition-[width,height] duration-300 ease-out"
           style={{ width: w, height: h, background: "#0b0b0d" }}
         >
-          {/* backdrop: blurred, darkened first B-roll image behind the presenter
-              during the hook/close beats (mirrors the render); branded dark otherwise */}
-          {broll[0] && (
+          {/* backdrop: blurred, darkened first B-roll image behind the presenter during
+              the hook/close beats (mirrors the render); branded dark otherwise. Only an
+              image backs the blur — a video first item just shows the branded backdrop. */}
+          {broll[0]?.kind === "image" && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={broll[0]} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl brightness-75" />
+            <img src={broll[0].url} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl brightness-75" />
           )}
-          {/* B-roll fills the frame on its beats */}
+          {/* B-roll on its beats — full frame ("side"), or a top band ("bottom") */}
           {activeBroll && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={`broll-${curIdx}-${activeBrollKey}`} src={activeBroll} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ animation: "brollIn 0.22s ease" }} />
+            activeBroll.kind === "video" ? (
+              <video
+                key={`broll-${curIdx}-${activeBrollKey}`}
+                src={activeBroll.url}
+                muted
+                playsInline
+                autoPlay
+                loop
+                className="absolute inset-x-0 top-0 w-full object-cover"
+                style={{ height: bottomLayout ? "58%" : "100%", animation: "brollIn 0.22s ease" }}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={`broll-${curIdx}-${activeBrollKey}`}
+                src={activeBroll.url}
+                alt=""
+                className="absolute inset-x-0 top-0 w-full object-cover"
+                style={{ height: bottomLayout ? "58%" : "100%", animation: "brollIn 0.22s ease" }}
+              />
+            )
           )}
 
           {/* presenter cut-out, framed to one side, bottom-anchored (always visible) */}
@@ -107,13 +132,15 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
               alt={presenterName ?? ""}
               className="pointer-events-none absolute bottom-0"
               style={{
-                height: "76%",
+                height: bottomLayout ? "62%" : "76%",
                 width: "auto",
-                maxWidth: "70%", // cap so a wide portrait is never clipped by the frame edge
-                left: avatarSide === "left" ? "0" : "auto",
-                right: avatarSide === "right" ? "0" : "auto",
+                // cap so a wide portrait is never clipped by the frame edge
+                maxWidth: bottomLayout ? "88%" : "70%",
+                left: bottomLayout ? "50%" : avatarSide === "left" ? "0" : "auto",
+                right: bottomLayout ? "auto" : avatarSide === "right" ? "0" : "auto",
+                transform: bottomLayout ? "translateX(-50%)" : undefined,
                 objectFit: "contain",
-                objectPosition: avatarSide === "left" ? "bottom left" : "bottom right",
+                objectPosition: bottomLayout ? "bottom center" : avatarSide === "left" ? "bottom left" : "bottom right",
                 filter: "drop-shadow(0 3px 12px rgba(0,0,0,0.4))",
               }}
             />
@@ -166,13 +193,22 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
           {captions && (
             <div
               className="pointer-events-none absolute flex justify-center px-2"
-              style={{
-                width: "48%",
-                left: avatarSide === "right" ? "3%" : "auto",
-                right: avatarSide === "left" ? "3%" : "auto",
-                top: captionPosition === "top" ? "12%" : "auto",
-                bottom: captionPosition === "bottom" ? "20%" : "auto",
-              }}
+              style={
+                bottomLayout
+                  ? {
+                      // full-width, high over the top-band B-roll (above the presenter's head)
+                      width: "94%",
+                      left: "3%",
+                      top: captionPosition === "top" ? "8%" : "40%",
+                    }
+                  : {
+                      width: "48%",
+                      left: avatarSide === "right" ? "3%" : "auto",
+                      right: avatarSide === "left" ? "3%" : "auto",
+                      top: captionPosition === "top" ? "12%" : "auto",
+                      bottom: captionPosition === "bottom" ? "20%" : "auto",
+                    }
+              }
             >
               {curWords.length > 0 ? (
                 (() => {

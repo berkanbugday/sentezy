@@ -31,8 +31,8 @@ const fieldClass =
 const SAMPLE =
   "Yeni sezon koleksiyonumuz geldi! Bu hafta sana özel indirimleri kaçırma. Hemen mağazamıza uğra, favori parçalarını keşfet.";
 
-/* ── 01 · Başlık & Arka plan — title + background images ──────────────── */
-export type BgImage = { id: string; url: string; transition?: string };
+/* ── 01 · Başlık & Arka plan — title + background media (images + video clips) ── */
+export type BgImage = { id: string; url: string; transition?: string; kind?: "image" | "video" };
 
 // Per-photo transition catalog. `value` MUST match the worker's xfade allow-list
 // (compose._XFADE_TRANSITIONS) plus the synthetic "cut". Grouped for a scannable menu.
@@ -103,15 +103,18 @@ export function SetupStep({
   errors,
   bgImages,
   onUpload,
+  onUploadVideo,
   onRemove,
   onTransition,
 }: Common & {
   bgImages: BgImage[];
   onUpload: (files: FileList) => Promise<void>;
+  onUploadVideo: (files: FileList) => Promise<void>;
   onRemove: (id: string) => void;
   onTransition: (id: string, transition: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [busyVid, setBusyVid] = useState(false);
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -121,19 +124,24 @@ export function SetupStep({
       </div>
 
       <div>
-        <label className="mb-1.5 block text-[13px] font-medium text-ink">B-roll görselleri</label>
-        <p className="mb-2.5 text-[12px] text-muted">Görselleri yükle — sunucu konuşurken otomatik olarak araya girerler. Düzenleme yok.</p>
+        <label className="mb-1.5 block text-[13px] font-medium text-ink">B-roll medyası</label>
+        <p className="mb-2.5 text-[12px] text-muted">Görsel veya video (ör. ekran kaydı) yükle — sunucu konuşurken otomatik olarak araya girerler. Düzenleme yok.</p>
         <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-5">
           {bgImages.map((img, i) => (
             <div key={img.id} className="flex flex-col gap-1">
               <div className="group relative aspect-[9/16] overflow-hidden rounded-xl border border-hairline">
-                {img.url ? (
+                {img.url && img.kind === "video" ? (
+                  <video src={img.url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+                ) : img.url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={img.url} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-mist text-[10px] text-muted">Görsel</div>
+                  <div className="flex h-full w-full items-center justify-center bg-mist text-[10px] text-muted">{img.kind === "video" ? "Video" : "Görsel"}</div>
                 )}
                 <span className="absolute left-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-black/60 px-1 text-[9px] font-medium text-white">{i + 1}</span>
+                {img.kind === "video" && (
+                  <span className="absolute inset-0 grid place-items-center text-[22px] text-white/90 [text-shadow:0_1px_4px_rgba(0,0,0,0.7)]">▶</span>
+                )}
                 <button
                   type="button"
                   onClick={() => onRemove(img.id)}
@@ -176,6 +184,27 @@ export function SetupStep({
                   await onUpload(fs);
                 } finally {
                   setBusy(false);
+                  e.target.value = "";
+                }
+              }}
+            />
+          </label>
+          <label className="flex aspect-[9/16] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-hairline bg-mist text-center transition hover:border-signal">
+            <span className="text-[20px] text-muted">{busyVid ? "…" : "🎬"}</span>
+            <span className="px-1 text-[10px] font-medium text-muted">Video ekle</span>
+            <input
+              type="file"
+              accept="video/*"
+              multiple
+              className="hidden"
+              onChange={async (e) => {
+                const fs = e.target.files;
+                if (!fs?.length) return;
+                setBusyVid(true);
+                try {
+                  await onUploadVideo(fs);
+                } finally {
+                  setBusyVid(false);
                   e.target.value = "";
                 }
               }}
@@ -834,12 +863,37 @@ export function FormatStep({ register, values, setValue, music }: Common & { mus
 
       <div>
         <label className="mb-2.5 block text-[13px] font-medium text-ink">Yerleşim</label>
+        <div className="mb-3">
+          <span className="mb-1.5 block text-[12px] text-muted">Sunucu düzeni</span>
+          <div className="flex gap-2">
+            {([
+              { v: "side", label: "◨ Yanda", hint: "B-roll tam ekran, sunucu yanda" },
+              { v: "bottom", label: "⬓ Altta", hint: "B-roll üstte, sunucu ortada altta" },
+            ] as const).map((o) => (
+              <button
+                key={o.v}
+                type="button"
+                onClick={() => setValue("presenterLayout", o.v)}
+                title={o.hint}
+                className={chipClass((values.presenterLayout ?? "side") === o.v)}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className={(values.presenterLayout ?? "side") === "bottom" ? "opacity-40" : ""}>
             <span className="mb-1.5 block text-[12px] text-muted">Sunucu tarafı</span>
             <div className="flex gap-2">
               {(["left", "right"] as const).map((s) => (
-                <button key={s} type="button" onClick={() => setValue("avatarSide", s)} className={chipClass(values.avatarSide === s)}>
+                <button
+                  key={s}
+                  type="button"
+                  disabled={(values.presenterLayout ?? "side") === "bottom"}
+                  onClick={() => setValue("avatarSide", s)}
+                  className={`${chipClass(values.avatarSide === s)} disabled:cursor-not-allowed`}
+                >
                   {s === "left" ? "◧ Sol" : "Sağ ◨"}
                 </button>
               ))}

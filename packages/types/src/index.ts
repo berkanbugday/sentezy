@@ -44,13 +44,26 @@ export type CaptionsOptions = z.infer<typeof CaptionsOptions>;
 export const ReelOptions = z.object({
   background: z
     .object({
-      // MVP: solid color or image(s). No video backgrounds.
+      // MVP: solid color or image(s).
       type: z.enum(["color", "image"]).default("color"),
       value: z.string().default("#0B0B0D"), // hex color, or the first Cloudflare Images id for `image`
-      // Multiple Cloudflare Images ids → slideshow background (first == value).
+      // Multiple Cloudflare Images ids → slideshow background (first == value). Legacy;
+      // superseded by `media` when present, but kept for back-compat with older drafts.
       images: z.array(z.string()).optional(),
       // Per-photo transition effect (xfade name or "cut"), aligned to `images` order.
       transitions: z.array(z.string()).optional(),
+      // Unified ordered B-roll: images (Cloudflare Images id) AND video clips (R2 key),
+      // each with its own entrance transition. `ref` is a CF Images id when kind="image",
+      // or an R2 object key when kind="video".
+      media: z
+        .array(
+          z.object({
+            kind: z.enum(["image", "video"]),
+            ref: z.string(),
+            transition: z.string().optional(),
+          }),
+        )
+        .optional(),
     })
     .default({ type: "color", value: "#0B0B0D" }),
   captions: CaptionsOptions.default(true), // boolean default runs through the preprocess
@@ -71,10 +84,13 @@ export const ReelOptions = z.object({
   // captions sit (on the clear side, opposite the presenter).
   layout: z
     .object({
+      // "side" = presenter framed left/right over full-frame B-roll;
+      // "bottom" = presenter bottom-centred with B-roll filling a top band.
+      presenterLayout: z.enum(["side", "bottom"]).default("side"),
       avatarSide: z.enum(["left", "right"]).default("right"),
       captionPosition: z.enum(["top", "bottom"]).default("bottom"),
     })
-    .default({ avatarSide: "right", captionPosition: "bottom" }),
+    .default({ presenterLayout: "side", avatarSide: "right", captionPosition: "bottom" }),
   // Voice delivery — an ElevenLabs v3 audio tag setting the emotional tone
   // ("" = natural). Prepended to the script; drives both the voice and (audio-driven)
   // the HeyGen Avatar IV face.

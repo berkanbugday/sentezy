@@ -120,24 +120,33 @@ def build_captions_ass(
     style: str = "karaoke",
     font: str = "General Sans",
     color: str | None = None,
+    presenter_pos: str = "side",
 ) -> None:
-    """Write an ASS subtitle file in one of the caption styles above. Captions sit
-    on the clear side (opposite the presenter), at the top or bottom."""
+    """Write an ASS subtitle file in one of the caption styles above. In the "side"
+    layout captions sit on the clear side opposite the presenter; in the "bottom"
+    layout the presenter is bottom-centred, so captions span the full width, placed
+    high over the top-band B-roll (well above the presenter's head)."""
     if style not in _CAPTION_STYLES:
         style = "karaoke"
     spec = _CAPTION_STYLES[style]
     font_size = max(spec["min_size"], int(height * spec["scale"]))
-    # keep captions off the presenter: reserve the presenter's half horizontally,
-    # so the text centres in the clear half.
-    reserve = int(width * 0.50)
     edge = int(width * 0.06)
-    margin_l, margin_r = (edge, reserve) if avatar_side == "right" else (reserve, edge)
-    alignment = 8 if position == "top" else 2  # 8 = top-centre, 2 = bottom-centre
-    if position == "top":
-        margin_v = int(height * 0.10)
+    if presenter_pos == "bottom":
+        # full-width, top-anchored; margin_v sets how far down into the B-roll band.
+        margin_l = margin_r = edge
+        alignment = 8
+        margin_v = int(height * (0.08 if position == "top" else 0.34))
     else:
-        # hormozi rides higher off the bottom edge (chunky text placement, per refs)
-        margin_v = int(height * (0.18 if style == "hormozi" else 0.12))
+        # keep captions off the presenter: reserve the presenter's half horizontally,
+        # so the text centres in the clear half.
+        reserve = int(width * 0.50)
+        margin_l, margin_r = (edge, reserve) if avatar_side == "right" else (reserve, edge)
+        alignment = 8 if position == "top" else 2  # 8 = top-centre, 2 = bottom-centre
+        if position == "top":
+            margin_v = int(height * 0.10)
+        else:
+            # hormozi rides higher off the bottom edge (chunky text placement, per refs)
+            margin_v = int(height * (0.18 if style == "hormozi" else 0.12))
     kind = spec.get("kind", "karaoke")
     white = "&H00FFFFFF"
     primary = _hex_to_ass(color) if (style == "karaoke" and color) else white
@@ -242,7 +251,8 @@ def compose_reel(
     logo_path: str | None = None,
     music_path: str | None = None,
     music_volume: float = 0.15,
-    avatar_side: str = "right",  # which side the presenter is framed to
+    avatar_side: str = "right",  # which side the presenter is framed to (side layout)
+    presenter_pos: str = "side",  # "side" = framed left/right; "bottom" = centred, B-roll in a top band
     presenter_scale: float = 0.66,  # presenter height as a fraction of the frame
     bg_color: str = "0x101319",  # branded background shown wherever B-roll isn't
     transition_sfx: bool = True,  # whoosh SFX at each photo transition
@@ -273,7 +283,11 @@ def compose_reel(
     # With B-roll: a blurred, darkened take on the first image (warm UGC look);
     # without: the flat branded color.
     if broll:
-        inputs: list[str] = ["-loop", "1", "-t", f"{dur:.3f}", "-i", str(broll[0]["path"])]
+        # first B-roll item backs the blurred backdrop — loop a still, or stream-loop a clip.
+        if broll[0].get("kind") == "video":
+            inputs: list[str] = ["-stream_loop", "-1", "-t", f"{dur:.3f}", "-i", str(broll[0]["path"])]
+        else:
+            inputs = ["-loop", "1", "-t", f"{dur:.3f}", "-i", str(broll[0]["path"])]
     else:
         inputs = ["-f", "lavfi", "-i", f"color=c={bg_color}:s={width}x{height}:r=30:d={dur:.3f}"]
     # [1] presenter cut-out (alpha video) + voice audio
@@ -284,9 +298,13 @@ def compose_reel(
     # [2..] B-roll stills — looped so a frame exists across their window.
     broll_idxs: list[int] = []
     for b in broll:
-        # loop each still a bit longer than its window so xfade has overlap footage.
+        # cover each item's window (+ a little overlap so xfade has footage). Stills loop a
+        # single frame; video clips stream-loop to fill the window (their audio is ignored).
         d = max(0.3, float(b["end"]) - float(b["start"])) + 0.6
-        inputs += ["-loop", "1", "-t", f"{d:.3f}", "-i", b["path"]]
+        if b.get("kind") == "video":
+            inputs += ["-stream_loop", "-1", "-t", f"{d:.3f}", "-i", b["path"]]
+        else:
+            inputs += ["-loop", "1", "-t", f"{d:.3f}", "-i", b["path"]]
         broll_idxs.append(idx)
         idx += 1
 
@@ -312,9 +330,14 @@ def compose_reel(
 
     # ── video filtergraph ──
     fc: list[str] = []
-    cover = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps=30"
+    # In the "bottom" layout the sharp B-roll fills only a top band; the presenter sits
+    # bottom-centre with its head overlapping the seam. The blurred base still fills the
+    # whole frame (so the area around/below the presenter reads as a soft backdrop).
+    broll_h = int(height * 0.58) if presenter_pos == "bottom" else height
+    cover_full = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps=30"
+    cover_broll = f"scale={width}:{broll_h}:force_original_aspect_ratio=increase,crop={width}:{broll_h},setsar=1,fps=30"
     if broll:
-        fc.append(f"[0:v]{cover},boxblur=20:2,eq=brightness=-0.25[base]")
+        fc.append(f"[0:v]{cover_full},boxblur=20:2,eq=brightness=-0.25[base]")
     else:
         fc.append("[0:v]setsar=1,fps=30[base]")
     last = "[base]"
@@ -329,12 +352,16 @@ def compose_reel(
             return max(0.3, float(b["end"]) - float(b["start"]))
 
         for k, bi in enumerate(broll_idxs):
+            if broll[k].get("kind") == "video":
+                # video B-roll: no Ken-Burns (it already moves) — cover-fit to CFR 30fps.
+                fc.append(f"[{bi}:v]{cover_broll},fps=30,format=yuv420p[p{k}]")
+                continue
             span = _span(broll[k])
             inc = max(0.0004, 0.10 / (span * 30.0))
             fc.append(
-                f"[{bi}:v]{cover},"
+                f"[{bi}:v]{cover_broll},"
                 f"zoompan=z='min(zoom+{inc:.5f},1.12)':d=1:"
-                f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps=30,"
+                f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{broll_h}:fps=30,"
                 # no setpts here — it marks the stream VFR and xfade requires CFR inputs.
                 f"format=yuv420p[p{k}]"
             )
@@ -356,10 +383,15 @@ def compose_reel(
         )
         fc.append(f"{last}[slide]overlay=0:0:enable='between(t,{mid_start:.3f},{mid_end:.3f})'[bv]")
         last = "[bv]"
-    # presenter cut-out, scaled and framed to one side, bottom-anchored; its alpha
-    # blends it over the B-roll/background.
-    ph = int(height * presenter_scale)
-    px = "-40" if avatar_side == "left" else "W-w+40"  # slight bleed off the chosen edge
+    # presenter cut-out, bottom-anchored; its alpha blends it over the B-roll/background.
+    # "side" → framed left/right with a slight edge bleed; "bottom" → centred under the
+    # top-band B-roll, head crossing the seam so there's no hard rectangular edge.
+    if presenter_pos == "bottom":
+        ph = int(height * 0.54)
+        px = "(W-w)/2"
+    else:
+        ph = int(height * presenter_scale)
+        px = "-40" if avatar_side == "left" else "W-w+40"
     fc.append(f"[{presenter_idx}:v]scale=-2:{ph}:flags=lanczos,setsar=1[pv]")
     fc.append(f"{last}[pv]overlay=x={px}:y=H-h[pp]")
     last = "[pp]"

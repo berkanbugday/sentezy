@@ -40,13 +40,34 @@ export async function videoRoutes(app: FastifyInstance) {
     if (video.outputKey) downloadUrl = publicUrl(video.outputKey) ?? (await signedDownloadUrl(video.outputKey));
     const thumbnailUrl = video.thumbnailImageId ? imageUrl(video.thumbnailImageId) : null;
 
-    // Delivery URLs for the B-roll images so a resumed draft can show thumbnails
-    // (the account hash is server-only).
-    const bg = (video.options as { background?: { images?: string[]; type?: string; value?: string } } | null)?.background;
-    const brollIds = bg?.images ?? (bg?.type === "image" && bg?.value ? [bg.value] : []);
-    const brollImageUrls = brollIds.map((imgId) => imageUrl(imgId));
+    // Delivery URLs for the B-roll so a resumed draft can show thumbnails: images via
+    // Cloudflare Images, video clips via a signed R2 GET (account hash/keys are server-only).
+    const bg = (video.options as {
+      background?: {
+        images?: string[];
+        transitions?: string[];
+        type?: string;
+        value?: string;
+        media?: Array<{ kind: "image" | "video"; ref: string; transition?: string }>;
+      };
+    } | null)?.background;
+    let mediaList = bg?.media;
+    if (!mediaList) {
+      const ids = bg?.images ?? (bg?.type === "image" && bg?.value ? [bg.value] : []);
+      const trans = bg?.transitions ?? [];
+      mediaList = ids.map((ref, i) => ({ kind: "image" as const, ref, transition: trans[i] }));
+    }
+    const brollMedia = await Promise.all(
+      mediaList.map(async (m) => ({
+        kind: m.kind,
+        ref: m.ref,
+        transition: m.transition,
+        url: m.kind === "video" ? await signedDownloadUrl(m.ref, 86400) : imageUrl(m.ref),
+      })),
+    );
+    const brollImageUrls = brollMedia.filter((m) => m.kind === "image").map((m) => m.url); // back-compat
 
-    return { video, downloadUrl, thumbnailUrl, brollImageUrls };
+    return { video, downloadUrl, thumbnailUrl, brollImageUrls, brollMedia };
   });
 
   app.post("/videos", { preHandler: app.authenticate }, async (req, reply) => {

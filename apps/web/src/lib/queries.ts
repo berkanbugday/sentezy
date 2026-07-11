@@ -5,11 +5,13 @@ import type { Avatar, BgImage, Presenter, Voice } from "@/components/WizardSteps
 import { apiFetch } from "@/lib/api";
 import type { ApiVideo } from "@/lib/types";
 
+export type BrollMediaItem = { kind: "image" | "video"; ref: string; transition?: string; url: string };
 export type VideoDetailData = {
   video: ApiVideo;
   downloadUrl: string | null;
   thumbnailUrl: string | null;
   brollImageUrls?: string[];
+  brollMedia?: BrollMediaItem[];
 };
 
 export type MusicTrack = { key: string; name: string; previewUrl: string };
@@ -73,6 +75,21 @@ export function useUploadBackground() {
       fd.append("file", file);
       await fetch(uploadURL, { method: "POST", body: fd });
       return { id, url: imageUrl };
+    },
+  });
+}
+
+/** Upload one B-roll video clip: get a presigned R2 PUT, upload it, return {key,url}. */
+export function useUploadBackgroundVideo() {
+  return useMutation({
+    mutationFn: async (file: File): Promise<{ key: string; url: string }> => {
+      const contentType = file.type || "video/mp4";
+      const { key, uploadURL, previewUrl } = await apiFetch<{ key: string; uploadURL: string; previewUrl: string }>(
+        "/backgrounds/upload-video",
+        { method: "POST", body: JSON.stringify({ contentType }) },
+      );
+      await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": contentType }, body: file });
+      return { key, url: previewUrl };
     },
   });
 }

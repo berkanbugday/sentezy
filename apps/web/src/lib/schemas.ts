@@ -32,16 +32,20 @@ export const createReelSchema = z.object({
   captionColor: z.string().default("#FFD54A"),
   // ElevenLabs v3 emotional tone — an audio tag ("" = natural delivery).
   voiceEmotion: z.string().default(""),
-  // Cloudflare Images ids for the background — one image, or several shown as a
-  // slideshow. Empty = plain dark background.
+  // Ordered B-roll refs — a Cloudflare Images id (photo) or an R2 key (video clip),
+  // distinguished by the aligned backgroundKinds array. Empty = plain dark background.
   backgroundImageIds: z.array(z.string()).default([]),
-  // Per-photo transition effect (xfade name, or "cut"), aligned to backgroundImageIds order.
+  // "image" | "video" per B-roll item, aligned to backgroundImageIds order.
+  backgroundKinds: z.array(z.string()).default([]),
+  // Per-item entrance transition (xfade name, or "cut"), aligned to backgroundImageIds order.
   backgroundTransitions: z.array(z.string()).default([]),
   // R2 key of the background music bed, or undefined for none.
   musicTrackKey: z.string().optional(),
   // Music bed level (0..1 of full scale; UI caps at 0.4 so the bed never buries the voice).
   musicVolume: z.number().min(0).max(1).default(0.15),
-  // Reel layout — which side the cut-out presenter sits on, and caption position.
+  // Reel layout — presenter framed to a side over full-frame B-roll ("side"), or
+  // bottom-centred with B-roll filling a top band ("bottom"). Plus which side + caption pos.
+  presenterLayout: z.enum(["side", "bottom"]).default("side"),
   avatarSide: z.enum(["left", "right"]).default("right"),
   captionPosition: z.enum(["top", "bottom"]).default("bottom"),
   // Energy effects — whoosh SFX on photo transitions.

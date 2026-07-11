@@ -28,33 +28,49 @@ def _ffprobe_duration(path: str) -> float:
         return 0.0
 
 
-def _resolve_broll_images(options: dict, storage: Storage, workdir: str) -> list[str]:
-    """Download the user's uploaded images (used as B-roll cutaways)."""
+def _resolve_broll_media(options: dict, storage: Storage, workdir: str) -> list[dict]:
+    """Download ordered B-roll — images from Cloudflare Images, video clips from R2 —
+    returning [{path, kind, transition}]. Prefers the unified `media` list; falls back to
+    the legacy `images`+`transitions` (older drafts, images only)."""
     bg = (options or {}).get("background") or {}
-    ids = bg.get("images") or ([bg["value"]] if bg.get("type") == "image" and bg.get("value") else [])
-    paths: list[str] = []
-    for i, image_id in enumerate(ids):
-        dest = f"{workdir}/broll{i}.jpg"
-        storage.download(storage.cf_image_url(image_id), dest)
-        paths.append(dest)
-    return paths
+    media = bg.get("media")
+    if not media:
+        ids = bg.get("images") or ([bg["value"]] if bg.get("type") == "image" and bg.get("value") else [])
+        trans = bg.get("transitions") or []
+        media = [
+            {"kind": "image", "ref": rid, "transition": (trans[i] if i < len(trans) else None)}
+            for i, rid in enumerate(ids)
+        ]
+    out: list[dict] = []
+    for i, m in enumerate(media):
+        ref = m.get("ref")
+        if not ref:
+            continue
+        kind = m.get("kind", "image")
+        if kind == "video":
+            dest = f"{workdir}/broll{i}.mp4"
+            storage.download(storage.signed_get_url(ref, 86400), dest)
+        else:
+            dest = f"{workdir}/broll{i}.jpg"
+            storage.download(storage.cf_image_url(ref), dest)
+        out.append({"path": dest, "kind": kind, "transition": m.get("transition")})
+    return out
 
 
-def _broll_segments(words: list, image_paths: list[str], transitions: list[str] | None = None) -> list[dict]:
+def _broll_segments(words: list, media: list[dict]) -> list[dict]:
     """Auto-place B-roll — no manual timeline needed. Keep a short hook at the
     start and a close at the end (presenter over the blurred backdrop, no cutaway),
-    and fill the middle with EVERY uploaded image, evenly spaced. So anyone can
-    make a B-roll reel by just uploading images, and all of them get used. Each
-    image carries its creator-chosen incoming transition (aligned to image order)."""
-    transitions = transitions or []
-    if not words or not image_paths:
+    and fill the middle with EVERY uploaded clip/image, evenly spaced. So anyone can
+    make a B-roll reel by just uploading media, and all of it gets used. Each item
+    carries its kind (image|video) and creator-chosen incoming transition."""
+    if not words or not media:
         return []
     t0 = words[0].start
     t1 = words[-1].end
     total = t1 - t0
     if total <= 0.1:
         return []
-    n = len(image_paths)
+    n = len(media)
     hook = min(1.6, total * 0.22)   # A-roll intro (see the presenter first)
     close = min(1.4, total * 0.18)  # A-roll outro (CTA on the presenter)
     mid_start = t0 + hook
@@ -65,12 +81,13 @@ def _broll_segments(words: list, image_paths: list[str], transitions: list[str] 
     span = (mid_end - mid_start) / n
     return [
         {
-            "path": p,
+            "path": m["path"],
+            "kind": m.get("kind", "image"),
             "start": mid_start + i * span,
             "end": (mid_start + (i + 1) * span) if i < n - 1 else mid_end,
-            "transition": transitions[i] if i < len(transitions) else "fade",
+            "transition": m.get("transition") or "fade",
         }
-        for i, p in enumerate(image_paths)
+        for i, m in enumerate(media)
     ]
 
 
@@ -155,6 +172,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     db.set_stage(video_id, "compose", 70)
     layout = options.get("layout") or {}
     avatar_side = layout.get("avatarSide", "right")
+    presenter_pos = layout.get("presenterLayout", "side")
     caps = options.get("captions", True)
     if isinstance(caps, bool):  # legacy drafts store captions as a plain boolean
         caps = {"enabled": caps}
@@ -165,23 +183,24 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
         style=caps.get("style", "karaoke"),
         font=caps.get("font") or "General Sans",
         color=caps.get("color"),
+        presenter_pos=presenter_pos,
     )
     reel_path = f"{workdir}/reel.mp4"
-    broll_paths = _resolve_broll_images(options, storage, workdir)
-    broll_transitions = ((options.get("background") or {}).get("transitions")) or []
+    broll_media = _resolve_broll_media(options, storage, workdir)
     effects = options.get("effects") or {}
     compose_reel(
         presenter_path=presenter_path,
         out_path=reel_path,
         width=width,
         height=height,
-        broll=_broll_segments(words, broll_paths, broll_transitions),
+        broll=_broll_segments(words, broll_media),
         transition_sfx=effects.get("transitionSfx", True),
         captions_ass=caps_path if caps.get("enabled", True) else None,
         logo_path=_resolve_logo(options, storage, workdir),
         music_path=_resolve_music(options, storage, workdir),
         music_volume=float((options.get("music") or {}).get("volume", 0.15)),
         avatar_side=avatar_side,
+        presenter_pos=presenter_pos,
     )
 
     # 4) Thumbnail + upload

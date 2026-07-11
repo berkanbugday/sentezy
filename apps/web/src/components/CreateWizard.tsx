@@ -8,7 +8,7 @@ import { ReelPreview } from "@/components/ReelPreview";
 import { type Avatar, AvatarStep, type BgImage, FormatStep, type Presenter, ReviewStep, ScriptStep, SetupStep, VoiceStep, type Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
 import { cfImageUrl } from "@/lib/images";
-import { type MusicTrack, useAvatars, useCreatePresenter, useGenerateVideo, useMusic, usePresenters, useUploadBackground, useVoices } from "@/lib/queries";
+import { type MusicTrack, useAvatars, useCreatePresenter, useGenerateVideo, useMusic, usePresenters, useUploadBackground, useUploadBackgroundVideo, useVoices } from "@/lib/queries";
 import { type CreateReelValues, createReelSchema } from "@/lib/schemas";
 
 const STEPS = ["Başlık & B-roll", "Avatar & ses", "Senaryo", "Önizle"] as const;
@@ -20,13 +20,27 @@ const RATIO_FROM_API: Record<string, CreateReelValues["aspectRatio"]> = {
 
 function buildOptions(v: CreateReelValues, wizardStep: number) {
   const ids = v.backgroundImageIds ?? [];
+  const kinds = v.backgroundKinds ?? [];
+  const trans = v.backgroundTransitions ?? [];
+  // Unified ordered B-roll: each ref is a CF Images id (image) or an R2 key (video).
+  const media = ids.map((ref, i) => ({
+    kind: (kinds[i] === "video" ? "video" : "image") as "image" | "video",
+    ref,
+    transition: trans[i] ?? "fade",
+  }));
   return {
     captions: { enabled: v.captions, style: v.captionStyle ?? "karaoke", font: v.captionFont ?? "General Sans", color: v.captionColor ?? "#FFD54A" },
-    background: ids.length
-      ? { type: "image" as const, value: ids[0], images: ids, transitions: v.backgroundTransitions ?? [] }
+    background: media.length
+      ? {
+          type: "image" as const,
+          value: media[0].ref,
+          images: media.filter((m) => m.kind === "image").map((m) => m.ref),
+          transitions: media.map((m) => m.transition),
+          media,
+        }
       : { type: "color" as const, value: "#0B0B0D" },
     ...(v.musicTrackKey ? { music: { trackKey: v.musicTrackKey, volume: v.musicVolume ?? 0.15 } } : {}),
-    layout: { avatarSide: v.avatarSide, captionPosition: v.captionPosition },
+    layout: { presenterLayout: v.presenterLayout, avatarSide: v.avatarSide, captionPosition: v.captionPosition },
     voice: { emotion: v.voiceEmotion ?? "" },
     effects: { transitionSfx: v.transitionSfx ?? true },
     wizardStep,
@@ -62,6 +76,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
   // Mutations (pending/error handled by TanStack Query, cache updates in the hooks).
   const createPresenter = useCreatePresenter();
   const uploadBg = useUploadBackground();
+  const uploadBgVideo = useUploadBackgroundVideo();
   const generate = useGenerateVideo();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
@@ -80,7 +95,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     formState: { errors, isSubmitting },
   } = useForm<CreateReelValues>({
     resolver: zodResolver(createReelSchema),
-    defaultValues: { aspectRatio: "9:16", captions: true, captionStyle: "karaoke", captionFont: "General Sans", captionColor: "#FFD54A", voiceEmotion: "", backgroundImageIds: [], backgroundTransitions: [], musicVolume: 0.15, avatarSide: "right", captionPosition: "bottom", transitionSfx: true, ...demo?.values },
+    defaultValues: { aspectRatio: "9:16", captions: true, captionStyle: "karaoke", captionFont: "General Sans", captionColor: "#FFD54A", voiceEmotion: "", backgroundImageIds: [], backgroundKinds: [], backgroundTransitions: [], musicVolume: 0.15, presenterLayout: "side", avatarSide: "right", captionPosition: "bottom", transitionSfx: true, ...demo?.values },
   });
   const values = watch();
   const set: (n: keyof CreateReelValues, v: CreateReelValues[keyof CreateReelValues], o?: object) => void = setValue;
@@ -92,14 +107,24 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
   function syncBgImages(next: BgImage[]) {
     setBgImages(next);
     set("backgroundImageIds", next.map((i) => i.id));
-    // Keep the per-photo transitions aligned to the image order for autosave/submit.
+    // Keep kinds + per-item transitions aligned to the B-roll order for autosave/submit.
+    set("backgroundKinds", next.map((i) => i.kind ?? "image"));
     set("backgroundTransitions", next.map((i) => i.transition ?? "fade"));
   }
 
   async function uploadBackgrounds(files: FileList) {
     const uploaded: BgImage[] = [];
     for (const file of Array.from(files)) {
-      uploaded.push({ ...(await uploadBg.mutateAsync(file)), transition: "fade" });
+      uploaded.push({ ...(await uploadBg.mutateAsync(file)), kind: "image", transition: "fade" });
+    }
+    syncBgImages([...bgImages, ...uploaded]);
+  }
+
+  async function uploadBackgroundVideos(files: FileList) {
+    const uploaded: BgImage[] = [];
+    for (const file of Array.from(files)) {
+      const { key, url } = await uploadBgVideo.mutateAsync(file); // R2 key is the B-roll ref
+      uploaded.push({ id: key, url, kind: "video", transition: "fade" });
     }
     syncBgImages([...bgImages, ...uploaded]);
   }
@@ -175,15 +200,15 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
       title: string; script: string; presenterId: string | null; voiceId: string | null;
       aspectRatio: string; status: string; options: Record<string, unknown>;
     };
-    apiFetch<{ video: DraftVideo; brollImageUrls?: string[] }>(`/videos/${draftId}`)
-      .then(({ video, brollImageUrls }) => {
+    apiFetch<{ video: DraftVideo; brollImageUrls?: string[]; brollMedia?: { kind: "image" | "video"; ref: string; transition?: string; url: string }[] }>(`/videos/${draftId}`)
+      .then(({ video, brollImageUrls, brollMedia }) => {
         if (!video || video.status !== "draft") return;
         setValue("title", video.title === "Adsız video" ? "" : video.title);
         setValue("script", video.script ?? "");
         if (video.presenterId) setValue("presenterId", video.presenterId);
         if (video.voiceId) setValue("voiceId", video.voiceId);
         setValue("aspectRatio", RATIO_FROM_API[video.aspectRatio] ?? "9:16");
-        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean"; font?: string; color?: string }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[]; transitions?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" }; voice?: { emotion?: string }; effects?: { transitionSfx?: boolean } };
+        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean"; font?: string; color?: string }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[]; transitions?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { presenterLayout?: "side" | "bottom"; avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" }; voice?: { emotion?: string }; effects?: { transitionSfx?: boolean } };
         // captions: legacy drafts store a boolean; newer ones an object.
         if (typeof o.captions === "boolean") setValue("captions", o.captions);
         else if (o.captions) {
@@ -194,18 +219,34 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         }
         if (o.music?.trackKey) setValue("musicTrackKey", o.music.trackKey);
         if (typeof o.music?.volume === "number") setValue("musicVolume", o.music.volume);
+        if (o.layout?.presenterLayout) setValue("presenterLayout", o.layout.presenterLayout);
         if (o.layout?.avatarSide) setValue("avatarSide", o.layout.avatarSide);
         if (o.layout?.captionPosition) setValue("captionPosition", o.layout.captionPosition);
         if (typeof o.voice?.emotion === "string") setValue("voiceEmotion", o.voice.emotion);
         if (typeof o.effects?.transitionSfx === "boolean") setValue("transitionSfx", o.effects.transitionSfx);
+        // Prefer the unified media list (images + video clips, with signed URLs);
+        // fall back to the legacy images+transitions (older drafts).
         const bg = o.background ?? {};
-        const ids = bg.images ?? (bg.type === "image" && bg.value ? [bg.value] : []);
-        if (ids.length) {
-          const trans = bg.transitions ?? [];
-          setValue("backgroundImageIds", ids);
-          setValue("backgroundTransitions", ids.map((_, i) => trans[i] ?? "fade"));
-          // Prefer server-provided delivery URLs; fall back to the public hash.
-          setBgImages(ids.map((id, i) => ({ id, url: brollImageUrls?.[i] ?? cfImageUrl(id), transition: trans[i] ?? "fade" })));
+        if (brollMedia?.length) {
+          const restored: BgImage[] = brollMedia.map((m) => ({
+            id: m.ref,
+            url: m.url ?? (m.kind === "image" ? cfImageUrl(m.ref) : ""),
+            kind: m.kind,
+            transition: m.transition ?? "fade",
+          }));
+          setValue("backgroundImageIds", restored.map((i) => i.id));
+          setValue("backgroundKinds", restored.map((i) => i.kind ?? "image"));
+          setValue("backgroundTransitions", restored.map((i) => i.transition ?? "fade"));
+          setBgImages(restored);
+        } else {
+          const ids = bg.images ?? (bg.type === "image" && bg.value ? [bg.value] : []);
+          if (ids.length) {
+            const trans = bg.transitions ?? [];
+            setValue("backgroundImageIds", ids);
+            setValue("backgroundKinds", ids.map(() => "image"));
+            setValue("backgroundTransitions", ids.map((_, i) => trans[i] ?? "fade"));
+            setBgImages(ids.map((id, i) => ({ id, url: brollImageUrls?.[i] ?? cfImageUrl(id), kind: "image", transition: trans[i] ?? "fade" })));
+          }
         }
         if (typeof o.wizardStep === "number") {
           const s = Math.min(o.wizardStep, STEPS.length - 1);
@@ -310,6 +351,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
                 setValue={set}
                 bgImages={bgImages}
                 onUpload={uploadBackgrounds}
+                onUploadVideo={uploadBackgroundVideos}
                 onRemove={removeBackground}
                 onTransition={setTransition}
               />
@@ -382,8 +424,9 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
               captionStyle: values.captionStyle ?? "karaoke",
               captionFont: values.captionFont ?? "General Sans",
               captionColor: values.captionColor ?? "#FFD54A",
-              brollImageUrls: bgImages.map((i) => i.url).filter(Boolean),
+              brollMedia: bgImages.filter((i) => i.url).map((i) => ({ url: i.url, kind: i.kind ?? "image" })),
               musicLabel: music.find((t) => t.key === values.musicTrackKey)?.name,
+              presenterLayout: values.presenterLayout ?? "side",
               avatarSide: values.avatarSide ?? "right",
               captionPosition: values.captionPosition ?? "bottom",
             }}
