@@ -109,10 +109,11 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
               style={{
                 height: "76%",
                 width: "auto",
-                left: avatarSide === "left" ? "-3%" : "auto",
-                right: avatarSide === "right" ? "-3%" : "auto",
+                maxWidth: "70%", // cap so a wide portrait is never clipped by the frame edge
+                left: avatarSide === "left" ? "0" : "auto",
+                right: avatarSide === "right" ? "0" : "auto",
                 objectFit: "contain",
-                objectPosition: "bottom",
+                objectPosition: avatarSide === "left" ? "bottom left" : "bottom right",
                 filter: "drop-shadow(0 3px 12px rgba(0,0,0,0.4))",
               }}
             />
