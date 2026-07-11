@@ -39,11 +39,13 @@ def _resolve_broll_images(options: dict, storage: Storage, workdir: str) -> list
     return paths
 
 
-def _broll_segments(words: list, image_paths: list[str]) -> list[dict]:
+def _broll_segments(words: list, image_paths: list[str], transitions: list[str] | None = None) -> list[dict]:
     """Auto-place B-roll — no manual timeline needed. Keep a short hook at the
     start and a close at the end (presenter over the blurred backdrop, no cutaway),
     and fill the middle with EVERY uploaded image, evenly spaced. So anyone can
-    make a B-roll reel by just uploading images, and all of them get used."""
+    make a B-roll reel by just uploading images, and all of them get used. Each
+    image carries its creator-chosen incoming transition (aligned to image order)."""
+    transitions = transitions or []
     if not words or not image_paths:
         return []
     t0 = words[0].start
@@ -61,7 +63,12 @@ def _broll_segments(words: list, image_paths: list[str]) -> list[dict]:
         mid_end = t1
     span = (mid_end - mid_start) / n
     return [
-        {"path": p, "start": mid_start + i * span, "end": (mid_start + (i + 1) * span) if i < n - 1 else mid_end}
+        {
+            "path": p,
+            "start": mid_start + i * span,
+            "end": (mid_start + (i + 1) * span) if i < n - 1 else mid_end,
+            "transition": transitions[i] if i < len(transitions) else "fade",
+        }
         for i, p in enumerate(image_paths)
     ]
 
@@ -141,12 +148,13 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     )
     reel_path = f"{workdir}/reel.mp4"
     broll_paths = _resolve_broll_images(options, storage, workdir)
+    broll_transitions = ((options.get("background") or {}).get("transitions")) or []
     compose_reel(
         presenter_path=presenter_path,
         out_path=reel_path,
         width=width,
         height=height,
-        broll=_broll_segments(words, broll_paths),
+        broll=_broll_segments(words, broll_paths, broll_transitions),
         captions_ass=caps_path if caps.get("enabled", True) else None,
         logo_path=_resolve_logo(options, storage, workdir),
         music_path=_resolve_music(options, storage, workdir),

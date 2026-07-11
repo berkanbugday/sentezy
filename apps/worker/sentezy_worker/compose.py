@@ -173,6 +173,31 @@ def _duration(path: str) -> float:
     return float(out or 0.0)
 
 
+# Creator-selectable B-roll transitions. Kept to xfade names present in the worker's
+# ffmpeg (Debian ffmpeg 5.x) so a render never fails on an unknown transition. The
+# synthetic "cut" maps to a near-instant fade. Anything not here falls back to "fade".
+_XFADE_TRANSITIONS = frozenset({
+    "fade", "fadeblack", "fadewhite", "fadegrays", "distance", "dissolve", "pixelize", "radial", "zoomin",
+    "wipeleft", "wiperight", "wipeup", "wipedown", "wipetl", "wipetr", "wipebl", "wipebr",
+    "slideleft", "slideright", "slideup", "slidedown",
+    "smoothleft", "smoothright", "smoothup", "smoothdown",
+    "circleopen", "circleclose", "circlecrop", "rectcrop",
+    "horzopen", "horzclose", "vertopen", "vertclose",
+    "diagbl", "diagbr", "diagtl", "diagtr",
+    "hlslice", "hrslice", "vuslice", "vdslice",
+    "squeezev", "squeezeh",
+})
+
+
+def _xfade(name: str | None, span_min: float) -> tuple[str, float]:
+    """Validate a creator-chosen transition against the allow-list — never interpolate a
+    raw value into the filtergraph — and pick a duration. 'cut' → a near-instant fade."""
+    if name == "cut":
+        return "fade", 0.02
+    t = name if name in _XFADE_TRANSITIONS else "fade"
+    return t, min(0.35, max(0.08, span_min * 0.5))
+
+
 def compose_reel(
     *,
     presenter_path: str,  # matted alpha .mov (presenter cut-out + voice) from matte.matte_video_to_mov
@@ -210,7 +235,8 @@ def compose_reel(
     # [2..] B-roll stills — looped so a frame exists across their window.
     broll_idxs: list[int] = []
     for b in broll:
-        d = max(0.3, float(b["end"]) - float(b["start"]))
+        # loop each still a bit longer than its window so xfade has overlap footage.
+        d = max(0.3, float(b["end"]) - float(b["start"])) + 0.6
         inputs += ["-loop", "1", "-t", f"{d:.3f}", "-i", b["path"]]
         broll_idxs.append(idx)
         idx += 1
@@ -235,26 +261,44 @@ def compose_reel(
     else:
         fc.append("[0:v]setsar=1,fps=30[base]")
     last = "[base]"
-    # B-roll fills the frame behind the presenter — gated to its window, crossfaded
-    # (alpha) and slowly pushed in (Ken-Burns) so it feels produced.
-    for k, bi in enumerate(broll_idxs):
-        b = broll[k]
-        st = float(b["start"])
-        en = float(b["end"])
-        d = max(0.3, en - st)
-        fd = min(0.22, max(0.05, d / 3))
-        inc = max(0.0004, 0.10 / (d * 30.0))
+    # B-roll slideshow: each photo gets a Ken-Burns push-in, and consecutive photos are
+    # joined by the creator-chosen xfade transition. The finished slideshow is overlaid
+    # onto the base for the mid window, easing in/out of the A-roll hook/close.
+    if broll:
+        mid_start = float(broll[0]["start"])
+        mid_end = float(broll[-1]["end"])
+
+        def _span(b: dict) -> float:
+            return max(0.3, float(b["end"]) - float(b["start"]))
+
+        for k, bi in enumerate(broll_idxs):
+            span = _span(broll[k])
+            inc = max(0.0004, 0.10 / (span * 30.0))
+            fc.append(
+                f"[{bi}:v]{cover},"
+                f"zoompan=z='min(zoom+{inc:.5f},1.12)':d=1:"
+                f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps=30,"
+                # no setpts here — it marks the stream VFR and xfade requires CFR inputs.
+                f"format=yuv420p[p{k}]"
+            )
+        # xfade chain — offsets anchored to each photo's real start time so timing holds.
+        slide = "[p0]"
+        for k in range(1, len(broll_idxs)):
+            tname, tdur = _xfade(broll[k].get("transition"), min(_span(broll[k - 1]), _span(broll[k])))
+            off = max(0.0, (float(broll[k]["start"]) - mid_start) - tdur)
+            fc.append(f"{slide}[p{k}]xfade=transition={tname}:duration={tdur:.3f}:offset={off:.3f}[x{k}]")
+            slide = f"[x{k}]"
+        # ease the whole slideshow in/out (alpha) and place it at the mid window.
+        slen = max(0.3, mid_end - mid_start)
+        ef = min(0.25, slen / 4)
         fc.append(
-            f"[{bi}:v]{cover},"
-            f"zoompan=z='min(zoom+{inc:.5f},1.12)':d=1:"
-            f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps=30,"
-            f"format=yuva420p,"
-            f"fade=t=in:st=0:d={fd:.3f}:alpha=1,"
-            f"fade=t=out:st={d - fd:.3f}:d={fd:.3f}:alpha=1,"
-            f"setpts=PTS-STARTPTS+{st:.3f}/TB[brl{k}]"
+            f"{slide}format=yuva420p,"
+            f"fade=t=in:st=0:d={ef:.3f}:alpha=1,"
+            f"fade=t=out:st={slen - ef:.3f}:d={ef:.3f}:alpha=1,"
+            f"setpts=PTS-STARTPTS+{mid_start:.3f}/TB[slide]"
         )
-        fc.append(f"{last}[brl{k}]overlay=0:0:enable='between(t,{st:.3f},{en:.3f})'[bv{k}]")
-        last = f"[bv{k}]"
+        fc.append(f"{last}[slide]overlay=0:0:enable='between(t,{mid_start:.3f},{mid_end:.3f})'[bv]")
+        last = "[bv]"
     # presenter cut-out, scaled and framed to one side, bottom-anchored; its alpha
     # blends it over the B-roll/background.
     ph = int(height * presenter_scale)

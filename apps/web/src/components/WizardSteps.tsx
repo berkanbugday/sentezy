@@ -32,7 +32,71 @@ const SAMPLE =
   "Yeni sezon koleksiyonumuz geldi! Bu hafta sana özel indirimleri kaçırma. Hemen mağazamıza uğra, favori parçalarını keşfet.";
 
 /* ── 01 · Başlık & Arka plan — title + background images ──────────────── */
-export type BgImage = { id: string; url: string };
+export type BgImage = { id: string; url: string; transition?: string };
+
+// Per-photo transition catalog. `value` MUST match the worker's xfade allow-list
+// (compose._XFADE_TRANSITIONS) plus the synthetic "cut". Grouped for a scannable menu.
+export const DEFAULT_TRANSITION = "fade";
+export const TRANSITIONS: { group: string; items: { value: string; label: string }[] }[] = [
+  { group: "Temel", items: [
+    { value: "fade", label: "Yumuşak geçiş" },
+    { value: "cut", label: "Sert kesme" },
+    { value: "fadeblack", label: "Siyaha geçiş" },
+    { value: "fadewhite", label: "Beyaza geçiş" },
+    { value: "fadegrays", label: "Griye geçiş" },
+  ] },
+  { group: "Kaydırma", items: [
+    { value: "slideleft", label: "Sola kaydır" },
+    { value: "slideright", label: "Sağa kaydır" },
+    { value: "slideup", label: "Yukarı kaydır" },
+    { value: "slidedown", label: "Aşağı kaydır" },
+  ] },
+  { group: "Silme", items: [
+    { value: "wipeleft", label: "Sola sil" },
+    { value: "wiperight", label: "Sağa sil" },
+    { value: "wipeup", label: "Yukarı sil" },
+    { value: "wipedown", label: "Aşağı sil" },
+    { value: "wipetl", label: "Köşe · sol üst" },
+    { value: "wipetr", label: "Köşe · sağ üst" },
+    { value: "wipebl", label: "Köşe · sol alt" },
+    { value: "wipebr", label: "Köşe · sağ alt" },
+  ] },
+  { group: "Yumuşak kaydırma", items: [
+    { value: "smoothleft", label: "Yumuşak sol" },
+    { value: "smoothright", label: "Yumuşak sağ" },
+    { value: "smoothup", label: "Yumuşak yukarı" },
+    { value: "smoothdown", label: "Yumuşak aşağı" },
+  ] },
+  { group: "Şekil", items: [
+    { value: "circleopen", label: "Daire · aç" },
+    { value: "circleclose", label: "Daire · kapat" },
+    { value: "circlecrop", label: "Daire · kırp" },
+    { value: "rectcrop", label: "Dikdörtgen · kırp" },
+    { value: "horzopen", label: "Yatay · aç" },
+    { value: "horzclose", label: "Yatay · kapat" },
+    { value: "vertopen", label: "Dikey · aç" },
+    { value: "vertclose", label: "Dikey · kapat" },
+    { value: "diagtl", label: "Çapraz · sol üst" },
+    { value: "diagtr", label: "Çapraz · sağ üst" },
+    { value: "diagbl", label: "Çapraz · sol alt" },
+    { value: "diagbr", label: "Çapraz · sağ alt" },
+  ] },
+  { group: "Dilim", items: [
+    { value: "hlslice", label: "Yatay dilim · sol" },
+    { value: "hrslice", label: "Yatay dilim · sağ" },
+    { value: "vuslice", label: "Dikey dilim · yukarı" },
+    { value: "vdslice", label: "Dikey dilim · aşağı" },
+  ] },
+  { group: "Efekt", items: [
+    { value: "dissolve", label: "Dağılma" },
+    { value: "pixelize", label: "Pikselleştir" },
+    { value: "radial", label: "Radyal" },
+    { value: "zoomin", label: "Yakınlaştır" },
+    { value: "distance", label: "Mesafe" },
+    { value: "squeezev", label: "Sıkıştır · dikey" },
+    { value: "squeezeh", label: "Sıkıştır · yatay" },
+  ] },
+];
 
 export function SetupStep({
   register,
@@ -40,10 +104,12 @@ export function SetupStep({
   bgImages,
   onUpload,
   onRemove,
+  onTransition,
 }: Common & {
   bgImages: BgImage[];
   onUpload: (files: FileList) => Promise<void>;
   onRemove: (id: string) => void;
+  onTransition: (id: string, transition: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
   return (
@@ -58,22 +124,40 @@ export function SetupStep({
         <label className="mb-1.5 block text-[13px] font-medium text-ink">B-roll görselleri</label>
         <p className="mb-2.5 text-[12px] text-muted">Görselleri yükle — sunucu konuşurken otomatik olarak araya girerler. Düzenleme yok.</p>
         <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-5">
-          {bgImages.map((img) => (
-            <div key={img.id} className="group relative aspect-[9/16] overflow-hidden rounded-xl border border-hairline">
-              {img.url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={img.url} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-mist text-[10px] text-muted">Görsel</div>
-              )}
-              <button
-                type="button"
-                onClick={() => onRemove(img.id)}
-                aria-label="Kaldır"
-                className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-[13px] leading-none text-white transition hover:bg-black/80"
+          {bgImages.map((img, i) => (
+            <div key={img.id} className="flex flex-col gap-1">
+              <div className="group relative aspect-[9/16] overflow-hidden rounded-xl border border-hairline">
+                {img.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={img.url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-mist text-[10px] text-muted">Görsel</div>
+                )}
+                <span className="absolute left-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-black/60 px-1 text-[9px] font-medium text-white">{i + 1}</span>
+                <button
+                  type="button"
+                  onClick={() => onRemove(img.id)}
+                  aria-label="Kaldır"
+                  className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-[13px] leading-none text-white transition hover:bg-black/80"
+                >
+                  ×
+                </button>
+              </div>
+              {/* per-photo entrance transition (how this photo enters from the previous) */}
+              <select
+                value={img.transition ?? DEFAULT_TRANSITION}
+                onChange={(e) => onTransition(img.id, e.target.value)}
+                aria-label={`${i + 1}. görselin geçiş efekti`}
+                className="w-full rounded-md border border-hairline bg-mist px-1 py-1 text-[10px] text-ink outline-none transition focus:border-signal"
               >
-                ×
-              </button>
+                {TRANSITIONS.map((g) => (
+                  <optgroup key={g.group} label={g.group}>
+                    {g.items.map((it) => (
+                      <option key={it.value} value={it.value}>{it.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
             </div>
           ))}
           <label className="flex aspect-[9/16] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-hairline bg-mist text-center transition hover:border-signal">

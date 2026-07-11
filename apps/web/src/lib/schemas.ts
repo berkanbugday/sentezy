@@ -29,6 +29,8 @@ export const createReelSchema = z.object({
   // Cloudflare Images ids for the background — one image, or several shown as a
   // slideshow. Empty = plain dark background.
   backgroundImageIds: z.array(z.string()).default([]),
+  // Per-photo transition effect (xfade name, or "cut"), aligned to backgroundImageIds order.
+  backgroundTransitions: z.array(z.string()).default([]),
   // R2 key of the background music bed, or undefined for none.
   musicTrackKey: z.string().optional(),
   // Music bed level (0..1 of full scale; UI caps at 0.4 so the bed never buries the voice).

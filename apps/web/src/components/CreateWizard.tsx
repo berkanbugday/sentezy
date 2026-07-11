@@ -23,7 +23,7 @@ function buildOptions(v: CreateReelValues, wizardStep: number) {
   return {
     captions: { enabled: v.captions, style: v.captionStyle ?? "karaoke" },
     background: ids.length
-      ? { type: "image" as const, value: ids[0], images: ids }
+      ? { type: "image" as const, value: ids[0], images: ids, transitions: v.backgroundTransitions ?? [] }
       : { type: "color" as const, value: "#0B0B0D" },
     ...(v.musicTrackKey ? { music: { trackKey: v.musicTrackKey, volume: v.musicVolume ?? 0.15 } } : {}),
     layout: { avatarSide: v.avatarSide, captionPosition: v.captionPosition },
@@ -78,7 +78,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     formState: { errors, isSubmitting },
   } = useForm<CreateReelValues>({
     resolver: zodResolver(createReelSchema),
-    defaultValues: { aspectRatio: "9:16", captions: true, captionStyle: "karaoke", backgroundImageIds: [], musicVolume: 0.15, avatarSide: "right", captionPosition: "bottom", ...demo?.values },
+    defaultValues: { aspectRatio: "9:16", captions: true, captionStyle: "karaoke", backgroundImageIds: [], backgroundTransitions: [], musicVolume: 0.15, avatarSide: "right", captionPosition: "bottom", ...demo?.values },
   });
   const values = watch();
   const set: (n: keyof CreateReelValues, v: CreateReelValues[keyof CreateReelValues], o?: object) => void = setValue;
@@ -90,18 +90,24 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
   function syncBgImages(next: BgImage[]) {
     setBgImages(next);
     set("backgroundImageIds", next.map((i) => i.id));
+    // Keep the per-photo transitions aligned to the image order for autosave/submit.
+    set("backgroundTransitions", next.map((i) => i.transition ?? "fade"));
   }
 
   async function uploadBackgrounds(files: FileList) {
     const uploaded: BgImage[] = [];
     for (const file of Array.from(files)) {
-      uploaded.push(await uploadBg.mutateAsync(file));
+      uploaded.push({ ...(await uploadBg.mutateAsync(file)), transition: "fade" });
     }
     syncBgImages([...bgImages, ...uploaded]);
   }
 
   function removeBackground(id: string) {
     syncBgImages(bgImages.filter((i) => i.id !== id));
+  }
+
+  function setTransition(id: string, transition: string) {
+    syncBgImages(bgImages.map((i) => (i.id === id ? { ...i, transition } : i)));
   }
 
   // Lazily create the draft on first save; concurrent callers share the promise.
@@ -175,7 +181,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         if (video.presenterId) setValue("presenterId", video.presenterId);
         if (video.voiceId) setValue("voiceId", video.voiceId);
         setValue("aspectRatio", RATIO_FROM_API[video.aspectRatio] ?? "9:16");
-        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: "karaoke" | "hormozi" | "clean" }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" } };
+        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: "karaoke" | "hormozi" | "clean" }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[]; transitions?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" } };
         // captions: legacy drafts store a boolean; newer ones an object.
         if (typeof o.captions === "boolean") setValue("captions", o.captions);
         else if (o.captions) {
@@ -189,9 +195,11 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         const bg = o.background ?? {};
         const ids = bg.images ?? (bg.type === "image" && bg.value ? [bg.value] : []);
         if (ids.length) {
+          const trans = bg.transitions ?? [];
           setValue("backgroundImageIds", ids);
+          setValue("backgroundTransitions", ids.map((_, i) => trans[i] ?? "fade"));
           // Prefer server-provided delivery URLs; fall back to the public hash.
-          setBgImages(ids.map((id, i) => ({ id, url: brollImageUrls?.[i] ?? cfImageUrl(id) })));
+          setBgImages(ids.map((id, i) => ({ id, url: brollImageUrls?.[i] ?? cfImageUrl(id), transition: trans[i] ?? "fade" })));
         }
         if (typeof o.wizardStep === "number") {
           const s = Math.min(o.wizardStep, STEPS.length - 1);
@@ -297,6 +305,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
                 bgImages={bgImages}
                 onUpload={uploadBackgrounds}
                 onRemove={removeBackground}
+                onTransition={setTransition}
               />
             )}
             {step === 1 && (
