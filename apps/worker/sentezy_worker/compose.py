@@ -106,7 +106,7 @@ _CAPTION_STYLES = {
 _HORMOZI_ACCENT = "#FFD54A"  # default highlight — the reference yellow
 
 # Transition SFX (whoosh) mix level, 0..1 of full scale.
-SFX_VOLUME = 0.25
+SFX_VOLUME = 0.20
 
 
 def build_captions_ass(
