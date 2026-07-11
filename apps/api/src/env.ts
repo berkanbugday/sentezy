@@ -18,7 +18,8 @@ const schema = z.object({
   R2_ACCESS_KEY_ID: z.string().min(1),
   R2_SECRET_ACCESS_KEY: z.string().min(1),
   R2_BUCKET: z.string().min(1),
-  R2_PUBLIC_URL: z.string().url().optional(),
+  // Empty string ⇒ treat as unset (fall back to presigned download URLs).
+  R2_PUBLIC_URL: z.string().url().optional().or(z.literal("")),
 
   CF_IMAGES_API_TOKEN: z.string().min(1),
   CF_IMAGES_ACCOUNT_HASH: z.string().min(1),

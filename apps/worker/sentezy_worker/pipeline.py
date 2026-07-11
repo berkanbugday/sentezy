@@ -12,6 +12,8 @@ from .providers.heygen import HeyGen
 from .storage import Storage
 
 RATIO_DIMS = {"9:16": (1080, 1920), "1:1": (1080, 1080), "16:9": (1920, 1080)}
+# Reverse map (width, height) → HeyGen Avatar IV aspect_ratio label.
+ASPECT_FROM_DIMS = {dims: ratio for ratio, dims in RATIO_DIMS.items()}
 
 
 def _ffprobe_duration(path: str) -> float:
@@ -106,14 +108,12 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     storage.upload_r2(audio_path, audio_key, "audio/mpeg")
     audio_url = storage.signed_get_url(audio_key, 86400)  # HeyGen must fetch this; R2_PUBLIC_URL is the S3 endpoint, not public
 
-    # 2) HeyGen talking photo (audio-driven)
+    # 2) HeyGen Avatar IV — audio-driven talking video straight from the presenter
+    #    photo (no talking-photo upload step; Avatar IV takes the image URL directly).
     db.set_stage(video_id, "avatar", 35)
-    talking_photo_id = presenter.get("heygen_talking_photo_id")
-    if not talking_photo_id:
-        img = storage.download_bytes(storage.cf_image_url(presenter["source_image_id"]))
-        talking_photo_id = hg.upload_talking_photo(img)
-        db.set_presenter_heygen(presenter["id"], talking_photo_id)
-    heygen_video_id = hg.generate(talking_photo_id, audio_url, width, height)
+    image_url = storage.cf_image_url(presenter["source_image_id"])
+    aspect_ratio = ASPECT_FROM_DIMS.get((width, height), "9:16")
+    heygen_video_id = hg.generate(image_url, audio_url, aspect_ratio)
     heygen_url = hg.wait_for_url(heygen_video_id)
     avatar_path = f"{workdir}/avatar.mp4"
     storage.download(heygen_url, avatar_path)
