@@ -17,7 +17,7 @@ export const AspectRatio = z.enum(["9:16", "1:1", "16:9"]);
 export type AspectRatio = z.infer<typeof AspectRatio>;
 
 // ── Captions ────────────────────────────────────────────────────────────────
-export const CaptionStyle = z.enum(["karaoke", "hormozi", "clean"]);
+export const CaptionStyle = z.enum(["karaoke", "tiktok", "beast", "hormozi", "boxed", "clean"]);
 export type CaptionStyle = z.infer<typeof CaptionStyle>;
 
 const CaptionsObject = z.object({
@@ -49,6 +49,8 @@ export const ReelOptions = z.object({
       value: z.string().default("#0B0B0D"), // hex color, or the first Cloudflare Images id for `image`
       // Multiple Cloudflare Images ids → slideshow background (first == value).
       images: z.array(z.string()).optional(),
+      // Per-photo transition effect (xfade name or "cut"), aligned to `images` order.
+      transitions: z.array(z.string()).optional(),
     })
     .default({ type: "color", value: "#0B0B0D" }),
   captions: CaptionsOptions.default(true), // boolean default runs through the preprocess
@@ -73,6 +75,12 @@ export const ReelOptions = z.object({
       captionPosition: z.enum(["top", "bottom"]).default("bottom"),
     })
     .default({ avatarSide: "right", captionPosition: "bottom" }),
+  // Energy effects — whoosh SFX on photo transitions.
+  effects: z
+    .object({
+      transitionSfx: z.boolean().default(true),
+    })
+    .default({ transitionSfx: true }),
   // Which wizard step the draft was last left on, so it can be resumed.
   wizardStep: z.number().int().min(0).max(4).optional(),
 });

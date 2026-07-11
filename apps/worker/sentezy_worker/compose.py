@@ -18,6 +18,19 @@ from dataclasses import dataclass
 # Bundled brand fonts (apps/worker/fonts) — handed to libass via `fontsdir` so
 # caption burn-in uses General Sans even without a system-wide font install.
 _FONTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "fonts"))
+_SFX_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "sfx"))
+
+
+def _transition_sfx_files() -> list[str]:
+    """Bundled transition sound effects (sfx/*.mp3…), sorted — cycled across the
+    photo transitions for variety. Empty list when the directory is missing."""
+    if not os.path.isdir(_SFX_DIR):
+        return []
+    return sorted(
+        os.path.join(_SFX_DIR, f)
+        for f in os.listdir(_SFX_DIR)
+        if f.lower().endswith((".mp3", ".wav", ".m4a", ".ogg", ".aac"))
+    )
 
 
 @dataclass
@@ -91,6 +104,9 @@ _CAPTION_STYLES = {
     "boxed":   {"chunk": 4, "scale": 0.044, "min_size": 34, "bold": 1, "outline": 8, "shadow": 0, "kind": "box"},
 }
 _HORMOZI_ACCENT = "#FFD54A"  # default highlight — the reference yellow
+
+# Transition SFX (whoosh) mix level, 0..1 of full scale.
+SFX_VOLUME = 0.25
 
 
 def build_captions_ass(
@@ -229,6 +245,7 @@ def compose_reel(
     avatar_side: str = "right",  # which side the presenter is framed to
     presenter_scale: float = 0.66,  # presenter height as a fraction of the frame
     bg_color: str = "0x101319",  # branded background shown wherever B-roll isn't
+    transition_sfx: bool = True,  # whoosh SFX at each photo transition
 ) -> None:
     """Cut-out reel composite: B-roll fills the frame (over a branded background),
     the matted presenter is framed to one side (bottom-anchored, always visible),
@@ -236,6 +253,21 @@ def compose_reel(
     over whatever is behind — no rectangular PiP edge."""
     broll = broll or []
     dur = _duration(presenter_path)
+
+    # Transition SFX: one bundled whoosh per photo transition, synced to the slide
+    # start (the xfade for photo k runs over [start_k - tdur, start_k]). The files are
+    # cycled for variety; photo 0 just eases in at mid_start.
+    sfx_files = _transition_sfx_files() if transition_sfx else []
+    sfx_times: list[float] = []
+    if broll and sfx_files:
+        for k, b in enumerate(broll):
+            if k == 0:
+                sfx_times.append(max(0.0, float(b["start"]) - 0.05))
+            else:
+                span_prev = max(0.3, float(broll[k - 1]["end"]) - float(broll[k - 1]["start"]))
+                span_cur = max(0.3, float(b["end"]) - float(b["start"]))
+                _, tdur = _xfade(b.get("transition"), min(span_prev, span_cur))
+                sfx_times.append(max(0.0, float(b["start"]) - tdur))
 
     # [0] backdrop base — shown during the A-roll hook/close (and wherever B-roll isn't).
     # With B-roll: a blurred, darkened take on the first image (warm UGC look);
@@ -268,6 +300,14 @@ def compose_reel(
     if music_path:
         inputs += ["-i", music_path]
         music_idx = idx
+        idx += 1
+
+    # [n..] transition SFX — one input per photo transition, cycling the bundled files
+    # for variety, delayed to its slide in the audio section.
+    sfx_input_idxs: list[int] = []
+    for k in range(len(sfx_times)):
+        inputs += ["-i", sfx_files[k % len(sfx_files)]]
+        sfx_input_idxs.append(idx)
         idx += 1
 
     # ── video filtergraph ──
@@ -339,21 +379,36 @@ def compose_reel(
         fc.append(f"{last}[logo]overlay=W-w-48:48[logov]")
         last = "[logov]"
 
-    # ── audio: presenter voice (+ optional sidechain-ducked music) ──
+    # ── audio: presenter voice (+ optional sidechain-ducked music) (+ transition SFX) ──
     audio_map: list[str]
-    if music_idx is not None:
-        # Voice is consumed twice (mix + sidechain key) → split it. aformat on both
-        # branches: sidechaincompress errors on mismatched rates/layouts.
-        fc.append(f"[{presenter_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,asplit=2[vox][sck]")
-        fc.append(f"[{music_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume={music_volume}[mus]")
-        # The voice keys a compressor on the music, so the bed dips while speaking
-        # and breathes back in pauses.
-        fc.append("[mus][sck]sidechaincompress=threshold=0.04:ratio=10:attack=8:release=350:makeup=1[duck]")
-        # normalize=0: keep the voice at full level (default amix would halve it).
-        fc.append("[vox][duck]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[a]")
-        audio_map = ["-map", "[a]"]
-    else:
+    need_bed = music_idx is not None or bool(sfx_input_idxs)
+    if not need_bed:
         audio_map = ["-map", f"{presenter_idx}:a?"]
+    else:
+        # Build the voice(+music) bed, then mix in a bundled whoosh at each transition.
+        if music_idx is not None:
+            # Voice is consumed twice (mix + sidechain key) → split it. aformat on both
+            # branches: sidechaincompress errors on mismatched rates/layouts.
+            fc.append(f"[{presenter_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,asplit=2[vox][sck]")
+            fc.append(f"[{music_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume={music_volume}[mus]")
+            # The voice keys a compressor on the music, so the bed dips while speaking.
+            fc.append("[mus][sck]sidechaincompress=threshold=0.04:ratio=10:attack=8:release=350:makeup=1[duck]")
+            # normalize=0: keep the voice at full level (default amix would halve it).
+            fc.append("[vox][duck]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[abed]")
+        else:
+            fc.append(f"[{presenter_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo[abed]")
+        if sfx_input_idxs:
+            # Each SFX file → level + delay to its slide start, then mix all into the bed.
+            delayed = []
+            for k, in_idx in enumerate(sfx_input_idxs):
+                ms = max(0, int(round(sfx_times[k] * 1000)))
+                # strip any leading silence so the audible whoosh lands exactly on the slide.
+                fc.append(f"[{in_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,silenceremove=start_periods=1:start_threshold=-50dB,volume={SFX_VOLUME},adelay={ms}|{ms}[wd{k}]")
+                delayed.append(f"[wd{k}]")
+            fc.append(f"[abed]{''.join(delayed)}amix=inputs={1 + len(delayed)}:duration=first:dropout_transition=0:normalize=0[a]")
+            audio_map = ["-map", "[a]"]
+        else:
+            audio_map = ["-map", "[abed]"]
 
     cmd = [
         "ffmpeg", "-y", *inputs,

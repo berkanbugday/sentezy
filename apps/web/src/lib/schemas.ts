@@ -42,6 +42,8 @@ export const createReelSchema = z.object({
   // Reel layout — which side the cut-out presenter sits on, and caption position.
   avatarSide: z.enum(["left", "right"]).default("right"),
   captionPosition: z.enum(["top", "bottom"]).default("bottom"),
+  // Energy effects — whoosh SFX on photo transitions.
+  transitionSfx: z.boolean().default(true),
 });
 export type CreateReelValues = z.infer<typeof createReelSchema>;
 

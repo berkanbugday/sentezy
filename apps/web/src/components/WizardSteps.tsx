@@ -809,6 +809,19 @@ export function FormatStep({ register, values, setValue, music }: Common & { mus
       </div>
 
       <div>
+        <label className="mb-2.5 block text-[13px] font-medium text-ink">Efektler</label>
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center justify-between rounded-xl border border-hairline px-4 py-3">
+            <span>
+              <span className="block text-[14px] font-medium text-ink">Geçiş sesi</span>
+              <span className="block text-[12px] text-muted">Fotoğraf geçişlerinde whoosh ses efekti</span>
+            </span>
+            <input type="checkbox" {...register("transitionSfx")} className="h-5 w-5 accent-[var(--color-signal)]" />
+          </label>
+        </div>
+      </div>
+
+      <div>
         <label className="mb-2.5 block text-[13px] font-medium text-ink">Müzik</label>
         <div className="flex flex-wrap items-center gap-2">
           <button

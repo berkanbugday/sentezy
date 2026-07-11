@@ -149,12 +149,14 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     reel_path = f"{workdir}/reel.mp4"
     broll_paths = _resolve_broll_images(options, storage, workdir)
     broll_transitions = ((options.get("background") or {}).get("transitions")) or []
+    effects = options.get("effects") or {}
     compose_reel(
         presenter_path=presenter_path,
         out_path=reel_path,
         width=width,
         height=height,
         broll=_broll_segments(words, broll_paths, broll_transitions),
+        transition_sfx=effects.get("transitionSfx", True),
         captions_ass=caps_path if caps.get("enabled", True) else None,
         logo_path=_resolve_logo(options, storage, workdir),
         music_path=_resolve_music(options, storage, workdir),
