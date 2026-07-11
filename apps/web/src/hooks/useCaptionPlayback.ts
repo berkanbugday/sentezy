@@ -4,9 +4,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const WORDS_PER_SECOND = 2.4; // rough reel narration pace, matches the compose step's feel
 
+/**
+ * Remove ElevenLabs v3 audio tags ([warmly], [excited], …). They steer TTS delivery
+ * but are never spoken, shown, or counted — the worker strips them from the burned-in
+ * captions too, so the preview must match.
+ */
+export function stripEmotionTags(text: string): string {
+  return text.replace(/\[[^\]]*\]/g, " ");
+}
+
 /** Split a string into caption words the same way the frame renders them. */
 export function toWords(text: string): string[] {
-  return text.trim().split(/\s+/).filter(Boolean);
+  return stripEmotionTags(text).trim().split(/\s+/).filter(Boolean);
 }
 
 /**
@@ -15,7 +24,7 @@ export function toWords(text: string): string[] {
  * sentence only. Splits after sentence punctuation or on line breaks.
  */
 export function toSentences(script: string): string[] {
-  return script
+  return stripEmotionTags(script)
     .split(/(?<=[.!?…])\s+|\n+/)
     .map((s) => s.trim())
     .filter(Boolean);
