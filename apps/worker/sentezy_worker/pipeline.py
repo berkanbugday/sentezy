@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import subprocess
 import tempfile
 
@@ -110,7 +111,26 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     # 1) TTS (audio + word timings)
     db.set_stage(video_id, "tts", 10)
     audio_path = f"{workdir}/audio.mp3"
-    words = el.tts_with_timestamps(video["script"], voice["elevenlabs_voice_id"], audio_path)
+    tone = ((options.get("voice") or {}).get("emotion")) or ""
+    script = video["script"]
+    emotion_tag: str | None = None
+    # If the wizard's "add emotion" pass already annotated the script with v3 tags, use it
+    # as-is — don't re-tag or prepend a leading tag (captions still strip the tags later).
+    already_tagged = bool(re.search(r"\[[a-zA-Z]", script))
+    if tone and not already_tagged:
+        if cfg.openrouter_api_key or cfg.anthropic_api_key:
+            # LLM pass: insert per-sentence v3 audio tags matching the tone (OpenRouter/free
+            # preferred, Anthropic fallback; falls back to the plain script on any failure).
+            # Tags are stripped from captions later.
+            from .emotion import add_emotion_tags
+            script = add_emotion_tags(
+                script, tone,
+                openrouter_key=cfg.openrouter_api_key, openrouter_model=cfg.openrouter_model,
+                anthropic_key=cfg.anthropic_api_key,
+            )
+        else:
+            emotion_tag = tone  # no LLM key → a single leading tag sets the tone
+    words = el.tts_with_timestamps(script, voice["elevenlabs_voice_id"], audio_path, emotion_tag=emotion_tag)
     audio_key = f"audio/{video_id}.mp3"
     storage.upload_r2(audio_path, audio_key, "audio/mpeg")
     audio_url = storage.signed_get_url(audio_key, 86400)  # HeyGen must fetch this; R2_PUBLIC_URL is the S3 endpoint, not public

@@ -75,6 +75,14 @@ export const ReelOptions = z.object({
       captionPosition: z.enum(["top", "bottom"]).default("bottom"),
     })
     .default({ avatarSide: "right", captionPosition: "bottom" }),
+  // Voice delivery — an ElevenLabs v3 audio tag setting the emotional tone
+  // ("" = natural). Prepended to the script; drives both the voice and (audio-driven)
+  // the HeyGen Avatar IV face.
+  voice: z
+    .object({
+      emotion: z.string().default(""),
+    })
+    .default({ emotion: "" }),
   // Energy effects — whoosh SFX on photo transitions.
   effects: z
     .object({

@@ -1,9 +1,17 @@
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { Prisma, prisma } from "@sentezy/db";
 import { type AspectRatio, CreateVideoDraft, CreateVideoRequest, UpdateVideoDraft } from "@sentezy/types";
 import { enqueueVideo } from "../lib/redis";
 import { imageUrl } from "../lib/cloudflareImages";
+import { emotionEnabled, enhanceScriptEmotion } from "../lib/emotion";
 import { publicUrl, signedDownloadUrl } from "../lib/r2";
+
+const EnhanceEmotionBody = z.object({
+  script: z.string().min(1).max(5000),
+  imageIds: z.array(z.string()).max(20).default([]),
+  tone: z.string().max(40).default(""),
+});
 
 const CREDIT_COST = 1;
 
@@ -176,5 +184,20 @@ export async function videoRoutes(app: FastifyInstance) {
       }
       throw e;
     }
+  });
+
+  // Scenario-step "add emotion": analyze the B-roll photos + script with a vision model
+  // and return the script annotated with ElevenLabs v3 audio tags (words preserved).
+  app.post("/videos/enhance-emotion", { preHandler: app.authenticate }, async (req, reply) => {
+    const parsed = EnhanceEmotionBody.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "invalid_body", details: parsed.error.flatten() });
+    }
+    if (!emotionEnabled()) {
+      return reply.send({ script: parsed.data.script, changed: false, enabled: false });
+    }
+    const imageUrls = parsed.data.imageIds.map((id) => imageUrl(id));
+    const result = await enhanceScriptEmotion(parsed.data.script, imageUrls, parsed.data.tone);
+    return reply.send({ ...result, enabled: true });
   });
 }

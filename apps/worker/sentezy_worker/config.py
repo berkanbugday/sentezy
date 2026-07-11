@@ -25,6 +25,11 @@ class Config:
     cf_images_account_hash: str
     elevenlabs_api_key: str
     heygen_api_key: str
+    # Optional — enables the per-sentence emotion-tagging LLM pass (emotion.py).
+    # OpenRouter (free models) is preferred; Anthropic is the fallback provider.
+    openrouter_api_key: str | None
+    openrouter_model: str
+    anthropic_api_key: str | None
     # When true, HeyGen renders in test mode: watermarked output that does not
     # spend paid credits — used for local end-to-end runs (Phase 6).
     heygen_test_mode: bool
@@ -50,5 +55,8 @@ def load_config() -> Config:
         cf_images_account_hash=_get("CF_IMAGES_ACCOUNT_HASH", required=True),  # type: ignore[arg-type]
         elevenlabs_api_key=_get("ELEVENLABS_API_KEY", required=True),  # type: ignore[arg-type]
         heygen_api_key=_get("HEYGEN_API_KEY", required=True),  # type: ignore[arg-type]
+        openrouter_api_key=_get("OPENROUTER_API_KEY"),
+        openrouter_model=_get("OPENROUTER_MODEL", "google/gemma-4-31b-it:free"),  # type: ignore[arg-type]
+        anthropic_api_key=_get("ANTHROPIC_API_KEY"),
         heygen_test_mode=_bool("HEYGEN_TEST_MODE", default=False),
     )

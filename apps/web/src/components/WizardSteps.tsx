@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { estimateDuration, toWords } from "@/hooks/useCaptionPlayback";
-import type { MusicTrack } from "@/lib/queries";
+import { type MusicTrack, useEnhanceEmotion } from "@/lib/queries";
 import type { CreateReelValues } from "@/lib/schemas";
 
 export type Voice = {
@@ -192,18 +192,52 @@ export function ScriptStep({ register, errors, values, setValue }: Common) {
   const chars = values.script?.length ?? 0;
   const words = toWords(values.script ?? "").length;
   const secs = estimateDuration(values.script ?? "");
+  const enhance = useEnhanceEmotion();
+  const hasScript = Boolean(values.script?.trim());
+
+  const runEnhance = () =>
+    enhance.mutate(
+      {
+        script: values.script ?? "",
+        imageIds: values.backgroundImageIds ?? [],
+        tone: values.voiceEmotion ?? "",
+      },
+      { onSuccess: (r) => r.changed && setValue("script", r.script, { shouldValidate: true }) },
+    );
+
+  // Feedback line under the field, derived from the last enhance result.
+  const note = enhance.isError
+    ? { text: "Duygu ekleme başarısız oldu, tekrar dene.", cls: "text-red-600" }
+    : enhance.data
+      ? enhance.data.enabled === false
+        ? { text: "Duygu motoru kapalı (OpenRouter anahtarı yok).", cls: "text-muted" }
+        : enhance.data.changed
+          ? { text: "Duygular eklendi ✓ — [excited] gibi etiketler seste duyulur, altyazıda görünmez.", cls: "text-signal" }
+          : { text: "Uygun bir duygu bulunamadı, metin değişmedi.", cls: "text-muted" }
+      : null;
+
   return (
     <div className="flex flex-col gap-5">
       <div>
         <div className="mb-1.5 flex items-center justify-between">
           <label className="text-[13px] font-medium text-ink">Senaryo</label>
-          <button
-            type="button"
-            onClick={() => setValue("script", SAMPLE, { shouldValidate: true })}
-            className="text-[12px] font-medium text-signal hover:underline"
-          >
-            Örnek metni dene
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={runEnhance}
+              disabled={!hasScript || enhance.isPending}
+              className="text-[12px] font-medium text-signal hover:underline disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {enhance.isPending ? "Analiz ediliyor…" : "✨ Duyguları ekle"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setValue("script", SAMPLE, { shouldValidate: true })}
+              className="text-[12px] font-medium text-signal hover:underline"
+            >
+              Örnek metni dene
+            </button>
+          </div>
         </div>
         <textarea
           rows={9}
@@ -215,6 +249,11 @@ export function ScriptStep({ register, errors, values, setValue }: Common) {
           <span>{errors.script && <span className="text-red-600">{errors.script.message}</span>}</span>
           <span className="mono">{words} kelime · {chars} karakter · ~{secs.toFixed(1)}s</span>
         </div>
+        {note && <p className={`mt-1.5 text-[12px] ${note.cls}`}>{note.text}</p>}
+        <p className="mt-2 text-[12px] leading-relaxed text-muted">
+          Arka plan fotoğraflarını ve metni yapay zekâ analiz eder, cümlelere uygun duygu tonlarını
+          ekler. Sesli anlatım daha insansı olur.
+        </p>
       </div>
     </div>
   );
@@ -665,6 +704,17 @@ const CAPTION_FONTS = [
 // Highlight/accent colours for the caption.
 const CAPTION_COLORS = ["#FFD54A", "#FFFFFF", "#FF5A5A", "#4ADE80", "#5AA9FF", "#FF6BD5", "#FF9A3D"] as const;
 
+// Voice emotion → ElevenLabs v3 audio tag ("" = natural). Also drives the audio-driven
+// HeyGen Avatar IV face, so the presenter looks more emotive too.
+const VOICE_EMOTIONS = [
+  { value: "", label: "Doğal" },
+  { value: "warmly", label: "Sıcak" },
+  { value: "excited", label: "Enerjik" },
+  { value: "cheerfully", label: "Neşeli" },
+  { value: "seriously", label: "Ciddi" },
+  { value: "sincerely", label: "Samimi" },
+] as const;
+
 export function FormatStep({ register, values, setValue, music }: Common & { music: MusicTrack[] }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
@@ -805,6 +855,18 @@ export function FormatStep({ register, values, setValue, music }: Common & { mus
               ))}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-2.5 block text-[13px] font-medium text-ink">Ses tonu</label>
+        <p className="mb-2 text-[12px] text-muted">Sesin duygusu — sunucunun yüz ifadesine de yansır (v3).</p>
+        <div className="flex flex-wrap gap-2">
+          {VOICE_EMOTIONS.map((e) => (
+            <button key={e.value} type="button" onClick={() => setValue("voiceEmotion", e.value)} className={chipClass((values.voiceEmotion ?? "") === e.value)}>
+              {e.label}
+            </button>
+          ))}
         </div>
       </div>
 

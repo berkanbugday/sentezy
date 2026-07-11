@@ -27,6 +27,13 @@ const schema = z.object({
   // Only the worker needs these; optional here so the API can boot without them.
   ELEVENLABS_API_KEY: z.string().optional(),
   HEYGEN_API_KEY: z.string().optional(),
+
+  // Scenario-step "add emotion" vision pass (lib/emotion.ts). OpenRouter is
+  // OpenAI-compatible; the model must accept image_url input. Empty key = button no-ops.
+  OPENROUTER_API_KEY: z.string().optional(),
+  OPENROUTER_VISION_MODEL: z
+    .string()
+    .default("google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free,google/gemini-2.5-flash"),
 });
 
 export const env = schema.parse(process.env);

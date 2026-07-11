@@ -30,6 +30,8 @@ export const createReelSchema = z.object({
   // Caption font family (must be one installed in the worker image) and highlight/accent colour.
   captionFont: z.string().default("General Sans"),
   captionColor: z.string().default("#FFD54A"),
+  // ElevenLabs v3 emotional tone — an audio tag ("" = natural delivery).
+  voiceEmotion: z.string().default(""),
   // Cloudflare Images ids for the background — one image, or several shown as a
   // slideshow. Empty = plain dark background.
   backgroundImageIds: z.array(z.string()).default([]),

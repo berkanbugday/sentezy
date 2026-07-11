@@ -77,6 +77,17 @@ export function useUploadBackground() {
   });
 }
 
+/** Scenario-step "add emotion": vision pass that annotates the script with v3 audio tags. */
+export function useEnhanceEmotion() {
+  return useMutation({
+    mutationFn: (input: { script: string; imageIds: string[]; tone: string }) =>
+      apiFetch<{ script: string; changed: boolean; enabled: boolean }>("/videos/enhance-emotion", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+  });
+}
+
 /** Finalize a draft → queue it for the worker. */
 export function useGenerateVideo() {
   const qc = useQueryClient();
