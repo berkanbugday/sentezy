@@ -24,8 +24,9 @@ export const createReelSchema = z.object({
   voiceId: z.string().uuid("Bir ses seç"),
   aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
   captions: z.boolean().default(true),
-  // Caption look — karaoke (word sweep), hormozi (big uppercase + accent word), clean.
-  captionStyle: z.enum(["karaoke", "hormozi", "clean"]).default("karaoke"),
+  // Caption look — karaoke (word sweep), tiktok (word accent), beast (huge uppercase pop),
+  // hormozi (big uppercase + accent word), boxed (CapCut bubble box), clean (plain phrase).
+  captionStyle: z.enum(["karaoke", "tiktok", "beast", "hormozi", "boxed", "clean"]).default("karaoke"),
   // Cloudflare Images ids for the background — one image, or several shown as a
   // slideshow. Empty = plain dark background.
   backgroundImageIds: z.array(z.string()).default([]),

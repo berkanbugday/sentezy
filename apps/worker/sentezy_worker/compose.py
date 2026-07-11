@@ -73,10 +73,22 @@ def _tr_upper(text: str) -> str:
 #   karaoke — word-by-word \k sweep, dimmed→bright (the current premium style)
 #   hormozi — big, uppercase, 2-word chunks, the spoken word pops in an accent colour
 #   clean   — whole short phrase, plain white, no sweep
+# `kind` drives how each chunk is rendered:
+#   karaoke — word-by-word \k sweep (dim → bright)
+#   wordpop — whole chunk stays white, the spoken word pops in the accent colour
+#             (upper=UPPERCASE, pop=scale-bounce on the active word — TikTok/Beast feel)
+#   phrase  — plain short phrase, no per-word emphasis
+#   box     — phrase inside an opaque box (CapCut "bubble")
 _CAPTION_STYLES = {
-    "karaoke": {"chunk": 3, "scale": 0.045, "min_size": 36, "bold": 1, "outline": 5, "shadow": 0},
-    "hormozi": {"chunk": 2, "scale": 0.062, "min_size": 48, "bold": 1, "outline": 7, "shadow": 2},
-    "clean": {"chunk": 5, "scale": 0.042, "min_size": 34, "bold": 0, "outline": 4, "shadow": 0},
+    "karaoke": {"chunk": 3, "scale": 0.045, "min_size": 36, "bold": 1, "outline": 5, "shadow": 0, "kind": "karaoke"},
+    "hormozi": {"chunk": 2, "scale": 0.062, "min_size": 48, "bold": 1, "outline": 7, "shadow": 2, "kind": "wordpop", "upper": True},
+    "clean":   {"chunk": 5, "scale": 0.042, "min_size": 34, "bold": 0, "outline": 4, "shadow": 0, "kind": "phrase"},
+    # TikTok auto-caption look — word-by-word, active word pops in the accent colour.
+    "tiktok":  {"chunk": 3, "scale": 0.050, "min_size": 40, "bold": 1, "outline": 6, "shadow": 1, "kind": "wordpop", "pop": True},
+    # MrBeast — huge uppercase, 1–2 words, punchy scale pop.
+    "beast":   {"chunk": 2, "scale": 0.078, "min_size": 56, "bold": 1, "outline": 9, "shadow": 2, "kind": "wordpop", "upper": True, "pop": True},
+    # CapCut "bubble" — short phrase inside an opaque rounded box.
+    "boxed":   {"chunk": 4, "scale": 0.044, "min_size": 34, "bold": 1, "outline": 8, "shadow": 0, "kind": "box"},
 }
 _HORMOZI_ACCENT = "#FFD54A"  # default highlight — the reference yellow
 
@@ -110,11 +122,14 @@ def build_captions_ass(
     else:
         # hormozi rides higher off the bottom edge (chunky text placement, per refs)
         margin_v = int(height * (0.18 if style == "hormozi" else 0.12))
+    kind = spec.get("kind", "karaoke")
     white = "&H00FFFFFF"
     primary = _hex_to_ass(color) if (style == "karaoke" and color) else white
     secondary = "&H70FFFFFF"  # karaoke: upcoming word — dimmed white (0x70 alpha)
     outline = "&H00000000"    # black outline
-    back = "&H64000000"
+    # box styles paint an opaque backdrop (BorderStyle 3); others use a soft shadow box.
+    border_style = 3 if kind == "box" else 1
+    back = "&HA0000000" if kind == "box" else "&H64000000"
     accent = _hex_to_ass(color or _HORMOZI_ACCENT)
     header = f"""[Script Info]
 ScriptType: v4.00+
@@ -125,34 +140,36 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Cap,{font},{font_size},{primary},{secondary},{outline},{back},{spec["bold"]},0,0,0,100,100,0,0,1,{spec["outline"]},{spec["shadow"]},{alignment},{margin_l},{margin_r},{margin_v},1
+Style: Cap,{font},{font_size},{primary},{secondary},{outline},{back},{spec["bold"]},0,0,0,100,100,0,0,{border_style},{spec["outline"]},{spec["shadow"]},{alignment},{margin_l},{margin_r},{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     per_chunk = spec["chunk"]
+    upper = spec.get("upper", False)
+    do_pop = spec.get("pop", False)
     lines: list[str] = []
     for i in range(0, len(words), per_chunk):
         chunk = words[i : i + per_chunk]
         if not chunk:
             continue
         texts = [w.text.replace(chr(10), " ") for w in chunk]
-        if style == "hormozi":
+        if upper:
             texts = [_tr_upper(t) for t in texts]
-            # One Dialogue event per word window: the whole chunk stays visible
-            # white, the word being spoken pops in the accent colour.
+        if kind == "wordpop":
+            # One Dialogue event per word window: the chunk stays white, the spoken
+            # word pops in the accent colour (and scales up briefly when `pop`).
             for j, w in enumerate(chunk):
                 start = _ass_time(w.start)
                 end = _ass_time(chunk[j + 1].start if j + 1 < len(chunk) else chunk[-1].end)
-                parts = [
-                    f"{{\\c{accent}&}}{t}{{\\c{white}&}}" if k == j else t
-                    for k, t in enumerate(texts)
-                ]
+                on = f"\\c{accent}&" + ("\\fscx120\\fscy120\\t(0,90,\\fscx100\\fscy100)" if do_pop else "")
+                off = f"\\c{white}&" + ("\\fscx100\\fscy100" if do_pop else "")
+                parts = [f"{{{on}}}{t}{{{off}}}" if k == j else t for k, t in enumerate(texts)]
                 lines.append(f"Dialogue: 0,{start},{end},Cap,,0,0,0,,{' '.join(parts)}")
             continue
         start = _ass_time(chunk[0].start)
         end = _ass_time(chunk[-1].end)
-        if style == "clean":
+        if kind in ("phrase", "box"):
             lines.append(f"Dialogue: 0,{start},{end},Cap,,0,0,0,,{' '.join(texts)}")
             continue
         # karaoke: \k<centiseconds> per word → the highlight sweeps at each word boundary.

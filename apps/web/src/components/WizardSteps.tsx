@@ -650,7 +650,10 @@ const RATIOS: { value: CreateReelValues["aspectRatio"]; label: string; w: number
 
 const CAPTION_STYLES = [
   { value: "karaoke", label: "Karaoke", hint: "Kelime kelime parlar" },
+  { value: "tiktok", label: "TikTok", hint: "Kelime kelime, renkli vurgu" },
+  { value: "beast", label: "Beast", hint: "Kocaman, büyük harf, patlar" },
   { value: "hormozi", label: "Vurgulu", hint: "Büyük, enerjik, renkli" },
+  { value: "boxed", label: "Kutulu", hint: "CapCut baloncuk kutusu" },
   { value: "clean", label: "Sade", hint: "Tüm cümle, sakin" },
 ] as const;
 
@@ -721,8 +724,17 @@ export function FormatStep({ register, values, setValue, music }: Common & { mus
                   {s.value === "karaoke" && (
                     <span className="text-[10px] font-bold"><span className="text-white">Yeni </span><span className="text-white/45">sezon</span></span>
                   )}
+                  {s.value === "tiktok" && (
+                    <span className="text-[10px] font-bold"><span className="text-[#FFD54A]">Yeni </span><span className="text-white">sezon</span></span>
+                  )}
+                  {s.value === "beast" && (
+                    <span className="text-[11px] font-extrabold tracking-tight text-[#FFD54A]">YENİ</span>
+                  )}
                   {s.value === "hormozi" && (
                     <span className="text-[10px] font-extrabold tracking-tight"><span className="text-[#FFD54A]">YENİ </span><span className="text-white">SEZON</span></span>
+                  )}
+                  {s.value === "boxed" && (
+                    <span className="rounded bg-black px-1.5 py-0.5 text-[10px] font-bold text-white ring-1 ring-white/15">Yeni sezon</span>
                   )}
                   {s.value === "clean" && <span className="text-[10px] font-medium text-white">Yeni sezon</span>}
                 </span>

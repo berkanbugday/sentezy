@@ -12,7 +12,7 @@ export type ReelPreviewValues = {
   musicLabel?: string | null;
   aspectRatio: "9:16" | "1:1" | "16:9";
   captions: boolean;
-  captionStyle?: "karaoke" | "hormozi" | "clean";
+  captionStyle?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean";
   // B-roll images — fill the frame behind the cut-out presenter, on their beats.
   brollImageUrls?: string[];
   // Layout: which side the cut-out presenter is framed to, and caption position.
@@ -172,40 +172,48 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
               }}
             >
               {curWords.length > 0 ? (
-                <p
-                  className={`text-center leading-snug ${
-                    captionStyle === "hormozi" ? "text-[19px] font-extrabold tracking-tight" : captionStyle === "clean" ? "text-[14px] font-semibold" : "text-[15px] font-bold"
-                  }`}
-                >
-                  {curWords.map((word, i) => {
-                    const shown = localActive < 0 || i <= localActive;
-                    const active = i === localActive;
-                    // per-style word colour — matches the burned ASS styles
-                    const color =
-                      captionStyle === "hormozi"
-                        ? active
-                          ? "#FFD54A" // the spoken word pops in the accent yellow
-                          : "#fff"
-                        : captionStyle === "clean"
-                          ? "#fff"
-                          : shown
+                (() => {
+                  // Approximate the burned ASS looks in the live preview.
+                  const upper = captionStyle === "hormozi" || captionStyle === "beast";
+                  const wordAccent = captionStyle === "hormozi" || captionStyle === "tiktok" || captionStyle === "beast";
+                  const boxed = captionStyle === "boxed";
+                  const sizeClass =
+                    captionStyle === "beast" ? "text-[22px] font-extrabold tracking-tight" :
+                    captionStyle === "hormozi" ? "text-[19px] font-extrabold tracking-tight" :
+                    captionStyle === "clean" ? "text-[14px] font-semibold" :
+                    "text-[15px] font-bold";
+                  return (
+                    <p className={`text-center leading-snug ${sizeClass}`}>
+                      {curWords.map((word, i) => {
+                        const shown = localActive < 0 || i <= localActive;
+                        const active = i === localActive;
+                        const color = wordAccent
+                          ? active ? "#FFD54A" : "#fff"
+                          : boxed || captionStyle === "clean"
                             ? "#fff"
-                            : "rgba(255,255,255,0.5)"; // karaoke: upcoming words dimmed
-                    return (
-                      <span
-                        key={i}
-                        className="inline-block transition-colors duration-150"
-                        style={{
-                          color,
-                          textShadow: captionStyle === "hormozi" ? "0 0 4px rgba(0,0,0,0.95), 0 2px 3px rgba(0,0,0,0.9)" : "0 0 3px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.85)",
-                          transform: captionStyle === "hormozi" && active ? "scale(1.07)" : undefined,
-                        }}
-                      >
-                        {captionStyle === "hormozi" ? word.toLocaleUpperCase("tr") : word}&nbsp;
-                      </span>
-                    );
-                  })}
-                </p>
+                            : shown ? "#fff" : "rgba(255,255,255,0.5)"; // karaoke: upcoming dimmed
+                        return (
+                          <span
+                            key={i}
+                            className="inline-block transition-colors duration-150"
+                            style={{
+                              color,
+                              textShadow: boxed ? "none" : wordAccent ? "0 0 4px rgba(0,0,0,0.95), 0 2px 3px rgba(0,0,0,0.9)" : "0 0 3px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.85)",
+                              transform: wordAccent && active ? "scale(1.07)" : undefined,
+                              background: boxed ? "rgba(0,0,0,0.85)" : undefined,
+                              padding: boxed ? "1px 5px" : undefined,
+                              borderRadius: boxed ? 5 : undefined,
+                              boxDecorationBreak: boxed ? "clone" : undefined,
+                              WebkitBoxDecorationBreak: boxed ? "clone" : undefined,
+                            }}
+                          >
+                            {upper ? word.toLocaleUpperCase("tr") : word}&nbsp;
+                          </span>
+                        );
+                      })}
+                    </p>
+                  );
+                })()
               ) : (
                 <p className="text-center text-[12.5px] font-medium text-white/45">Senaryo buraya gelecek</p>
               )}
