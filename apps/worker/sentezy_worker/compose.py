@@ -283,6 +283,48 @@ def _xfade(name: str | None, span_min: float) -> tuple[str, float]:
     return t, min(0.35, max(0.08, span_min * 0.5))
 
 
+# "Viral"/CapCut-style effects. These are NOT xfade transitions — each is a punchy
+# *entrance* filter applied to the incoming B-roll clip (see _entrance_fx), paired with a
+# snappy blend (see _effect_blend). Existing xfade names are untouched, so already-chosen
+# transitions render exactly as before; only these opt-in names use the new code paths.
+_EFFECTS = frozenset({"zoompunch", "shake", "glitch", "whip", "flash"})
+
+
+def _entrance_fx(name: str | None, width: int, height: int) -> str:
+    """Post-filters giving a finished CFR slide (width×height, 30fps) a punchy entrance.
+    Returns a chain that starts with ',' — or '' for none. Only fires for _EFFECTS names;
+    everything else (all xfade transitions) returns '' and keeps the classic slide."""
+    # NB: zoompunch's animated zoom lives in the zoompan stage (crop/scale sizes are
+    # evaluated once, not per-frame) — see the slide builder — so no post-filter here.
+    if name == "shake":
+        # decaying handheld shake (upscale a touch so the jitter never shows an edge)
+        return (
+            f",scale=w='ceil(iw*1.06)':h='ceil(ih*1.06)',"
+            f"crop={width}:{height}:"
+            f"x='(iw-ow)/2+10*exp(-3*t)*sin(2*PI*9*t)':"
+            f"y='(ih-oh)/2+8*exp(-3*t)*cos(2*PI*8*t)'"
+        )
+    if name == "glitch":
+        # brief chromatic-aberration split + grain at the cut
+        return (
+            ",rgbashift=rh=7:rv=-3:bh=-7:bv=3:enable='lt(t,0.22)',"
+            "noise=alls=16:allf=t:enable='lt(t,0.16)'"
+        )
+    if name == "whip":
+        # short directional blur — reads as a fast whip-pan alongside the slide blend
+        return ",gblur=sigma=22:enable='lt(t,0.13)'"
+    return ""  # flash has no entrance filter (it's all in the blend)
+
+
+def _effect_blend(name: str, span_min: float) -> tuple[str, float]:
+    """Blend (xfade transition + duration) paired with an _EFFECTS entrance."""
+    if name == "flash":
+        return "fadewhite", 0.14
+    if name == "whip":
+        return "slideleft", min(0.22, max(0.10, span_min * 0.5))
+    return "fade", 0.03  # zoompunch / shake / glitch → near-cut so the entrance pops
+
+
 def compose_reel(
     *,
     presenter_path: str,  # matted alpha .mov (presenter cut-out + voice) from matte.matte_video_to_mov
@@ -395,23 +437,34 @@ def compose_reel(
             return max(0.3, float(b["end"]) - float(b["start"]))
 
         for k, bi in enumerate(broll_idxs):
-            if broll[k].get("kind") == "video":
+            # Punchy entrance for how clip k arrives (k=0 just appears with the slideshow
+            # fade-in). Effect names get post-filters (shake/glitch/whip) and/or a zoom
+            # punch; xfade transitions get '' and render exactly as before.
+            tr = broll[k].get("transition") if k > 0 else None
+            fx = _entrance_fx(tr, width, broll_h)
+            punch = tr == "zoompunch"  # animated zoom overshoot (needs zoompan)
+            if broll[k].get("kind") == "video" and not punch:
                 # video B-roll: no Ken-Burns (it already moves) — cover-fit to CFR 30fps.
-                fc.append(f"[{bi}:v]{cover_broll},fps=30,format=yuv420p[p{k}]")
+                fc.append(f"[{bi}:v]{cover_broll},fps=30{fx},format=yuv420p[p{k}]")
                 continue
             span = _span(broll[k])
             inc = max(0.0004, 0.10 / (span * 30.0))
+            # gentle Ken-Burns by default; zoompunch overshoots (~1.30) and eases back over
+            # ~0.4s using the output-frame counter `on`.
+            zexpr = "if(lt(on,12),1.30-0.025*on,1)" if punch else f"min(zoom+{inc:.5f},1.12)"
             fc.append(
                 f"[{bi}:v]{cover_broll},"
-                f"zoompan=z='min(zoom+{inc:.5f},1.12)':d=1:"
-                f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{broll_h}:fps=30,"
+                f"zoompan=z='{zexpr}':d=1:"
+                f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{broll_h}:fps=30"
                 # no setpts here — it marks the stream VFR and xfade requires CFR inputs.
-                f"format=yuv420p[p{k}]"
+                f"{fx},format=yuv420p[p{k}]"
             )
         # xfade chain — offsets anchored to each photo's real start time so timing holds.
         slide = "[p0]"
         for k in range(1, len(broll_idxs)):
-            tname, tdur = _xfade(broll[k].get("transition"), min(_span(broll[k - 1]), _span(broll[k])))
+            tr = broll[k].get("transition")
+            span_min = min(_span(broll[k - 1]), _span(broll[k]))
+            tname, tdur = _effect_blend(tr, span_min) if tr in _EFFECTS else _xfade(tr, span_min)
             off = max(0.0, (float(broll[k]["start"]) - mid_start) - tdur)
             fc.append(f"{slide}[p{k}]xfade=transition={tname}:duration={tdur:.3f}:offset={off:.3f}[x{k}]")
             slide = f"[x{k}]"

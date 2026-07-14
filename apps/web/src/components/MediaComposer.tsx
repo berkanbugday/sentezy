@@ -2,14 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
+import { useAvatars, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
 import { Icon } from "./icons";
+import { EffectPreview } from "./TransitionPreview";
 import { DEFAULT_TRANSITION, TRANSITIONS } from "./WizardSteps";
 
 type Status = "uploading" | "done" | "error";
 type Media = { url: string; name: string; kind: "image" | "video"; file: File; status: Status; ref?: string; serverUrl?: string; poster?: string };
 
-const PENDING_KEY = "sentezy:pending-media";
+const PENDING_KEY = "sentezy:pending-create";
 
 /** Draw a frame from a video file to a canvas and return a JPEG object URL — a
  *  reliable cross-browser thumbnail (a bare <video> often paints a blank tile). */
@@ -44,26 +45,6 @@ function videoPoster(file: File): Promise<string | null> {
   });
 }
 
-/** Map an xfade transition value to a preview-animation family class. */
-function tpClass(v: string): string {
-  if (v === "cut") return "tp-cut";
-  if (/(tl|tr|bl|br)$/.test(v)) return "tp-diag";
-  if (v.startsWith("circle")) return "tp-circle";
-  if (["rectcrop", "horzopen", "horzclose", "vertopen", "vertclose"].includes(v)) return "tp-box";
-  if (["zoomin", "distance", "squeezev", "squeezeh"].includes(v)) return "tp-zoom";
-  const slide = v.startsWith("slide") || v.startsWith("smooth");
-  const wipe = v.startsWith("wipe") || v.endsWith("slice");
-  if (slide || wipe) {
-    const base = slide ? "tp-slide" : "tp-wipe";
-    if (v.includes("left") || v.startsWith("hl")) return `${base}-l`;
-    if (v.includes("right") || v.startsWith("hr")) return `${base}-r`;
-    if (v.includes("up") || v.startsWith("vu")) return `${base}-u`;
-    if (v.includes("down") || v.startsWith("vd")) return `${base}-d`;
-    return `${base}-l`;
-  }
-  return "tp-fade"; // fade, fadeblack/white/grays, dissolve, pixelize, radial
-}
-
 function Spinner({ size = 18 }: { size?: number }) {
   return (
     <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -81,9 +62,16 @@ export function MediaComposer() {
   const uploadVid = useUploadBackgroundVideo();
   const [items, setItems] = useState<Media[]>([]);
   const [drag, setDrag] = useState(false);
-  const [transition, setTransition] = useState(DEFAULT_TRANSITION);
+  const [transition, setTransition] = useState("whip"); // default to a punchy effect (Savurma)
   const [effectOpen, setEffectOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const [avatarId, setAvatarId] = useState<string | null>(null);
+  const [script, setScript] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const avatarsQ = useAvatars();
+  const avatars = (avatarsQ.data ?? []).filter((a) => a.ready && a.id);
+  const selectedAvatar = avatars.find((a) => a.id === avatarId) ?? null;
 
   // The transition effect only applies between 2+ media — close/hide otherwise.
   const multiple = items.length > 1;
@@ -150,17 +138,21 @@ export function MediaComposer() {
   }
 
   const uploading = items.some((i) => i.status === "uploading");
+  const hasScript = script.trim().length > 0; // controls stay visible but disabled until written
   const pick = () => inputRef.current?.click();
 
   function create() {
     const ready = items.filter((i) => i.status === "done" && i.ref);
+    const tr = multiple ? transition : DEFAULT_TRANSITION; // 1 media = no transition
+    const payload = {
+      media: ready.map((i) => ({ ref: i.ref, url: i.serverUrl, kind: i.kind, transition: tr })),
+      script: script.trim() || undefined,
+      avatar: selectedAvatar ? { id: selectedAvatar.id, name: selectedAvatar.name } : undefined,
+    };
     try {
-      if (ready.length) {
-        // one media = no transition needed; 2+ carry the chosen slide effect
-        const tr = multiple ? transition : DEFAULT_TRANSITION;
-        sessionStorage.setItem(PENDING_KEY, JSON.stringify(ready.map((i) => ({ ref: i.ref, url: i.serverUrl, kind: i.kind, transition: tr }))));
-      } else sessionStorage.removeItem(PENDING_KEY);
-    } catch { }
+      if (payload.media.length || payload.script || payload.avatar) sessionStorage.setItem(PENDING_KEY, JSON.stringify(payload));
+      else sessionStorage.removeItem(PENDING_KEY);
+    } catch {}
     router.push("/create");
   }
 
@@ -194,7 +186,7 @@ export function MediaComposer() {
           </div>
         </button>
       ) : (
-        <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fill,minmax(88px,1fr))]">
+        <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(68px,1fr))]">
           {items.map((m) => (
             <div key={m.url} className="group relative aspect-square overflow-hidden rounded-xl border border-hairline bg-mist">
               {m.kind === "image" ? (
@@ -262,15 +254,52 @@ export function MediaComposer() {
 
       <input ref={inputRef} type="file" accept="video/*,image/*" multiple className="hidden" onChange={(e) => addFiles(e.target.files)} />
 
+      {/* speech / script text — softly appears once media is uploaded */}
+      {items.length > 0 && (
+        <textarea
+          value={script}
+          onChange={(e) => setScript(e.target.value)}
+          rows={2}
+          placeholder="Videoda ne anlatılsın? Konuşma metnini yaz…"
+          className="soft-in mt-3 w-full resize-none rounded-xl bg-transparent px-1 py-1 text-[14px] leading-relaxed text-ink outline-none placeholder:text-muted"
+        />
+      )}
+
+      {/* controls always visible, disabled until there's speech text to work with */}
       <div className="mt-3 flex flex-col gap-2.5 px-1 sm:flex-row sm:items-center">
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={pick} className="btn btn-ghost h-9 !py-0 text-[13px]">
-            <Icon.wand width={16} height={16} />
-            Stil ekle
+          {/* avatar mini-preview chip */}
+          <button
+            type="button"
+            onClick={() => setAvatarOpen(true)}
+            disabled={!hasScript}
+            title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
+            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <span className="flex h-7 w-7 flex-none items-center justify-center overflow-hidden rounded-full bg-mist text-muted">
+              {selectedAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={selectedAvatar.imageUrl} alt={selectedAvatar.name} className="h-full w-full object-cover" />
+              ) : (
+                <Icon.users width={15} height={15} />
+              )}
+            </span>
+            {selectedAvatar ? selectedAvatar.name : "Avatar seç"}
+            <Icon.chevronDown width={14} height={14} className="text-muted" />
           </button>
+          {/* effect mini-preview chip */}
           {multiple && (
-            <button type="button" onClick={() => setEffectOpen(true)} className="slide-in btn btn-ghost h-9 !py-0 text-[13px]">
-              Geçiş: {currentLabel}
+            <button
+              type="button"
+              onClick={() => setEffectOpen(true)}
+              disabled={!hasScript}
+              title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
+              className="slide-in flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <span className="h-7 w-11 flex-none overflow-hidden rounded-full border border-hairline">
+                <EffectPreview value={transition} width={110} height={64} />
+              </span>
+              {currentLabel}
               <Icon.chevronDown width={14} height={14} className="text-muted" />
             </button>
           )}
@@ -284,7 +313,8 @@ export function MediaComposer() {
         <button
           type="button"
           onClick={create}
-          disabled={uploading}
+          disabled={uploading || !hasScript}
+          title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
           className="btn btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto sm:w-auto"
         >
           {uploading ? <Spinner size={16} /> : <Icon.arrowRight width={17} height={17} className="order-2" />}
@@ -307,26 +337,19 @@ export function MediaComposer() {
                   <Icon.close width={18} height={18} className="block" />
                 </button>
               </div>
-              <p className="mb-1 text-[12.5px] text-muted">Slaytlar arası geçiş</p>
             </div>
 
-            <div className="no-scrollbar flex flex-col gap-4 overflow-y-auto px-5 py-4">
+            <div className="no-scrollbar overflow-y-auto px-5 py-4">
               {TRANSITIONS.map((g) => (
-                <div key={g.group}>
-                  <div className="mb-2 text-[12px] font-semibold text-slate">{g.group}</div>
-                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                <div key={g.group} className="mb-6 last:mb-0">
+                  <div className="mb-3 text-[14px] font-semibold text-ink">{g.group}</div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3">
                     {g.items.map((it) => {
                       const sel = transition === it.value;
                       return (
-                        <button
-                          key={it.value}
-                          type="button"
-                          onClick={() => setTransition(it.value)}
-                          className={`overflow-hidden rounded-xl border p-1.5 text-left transition ${sel ? "border-ink ring-1 ring-ink" : "border-hairline hover:bg-mist"}`}
-                        >
-                          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-mist">
-                            <span className="tp-a" />
-                            <span className={`tp-b ${tpClass(it.value)}`} />
+                        <button key={it.value} type="button" onClick={() => setTransition(it.value)} className="text-left">
+                          <div className={`relative aspect-video overflow-hidden rounded-lg border transition ${sel ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"}`}>
+                            <EffectPreview value={it.value} />
                             {sel && (
                               <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-ink text-paper">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
@@ -335,7 +358,7 @@ export function MediaComposer() {
                               </span>
                             )}
                           </div>
-                          <div className="mt-1.5 truncate px-0.5 text-[11.5px] font-medium text-ink">{it.label}</div>
+                          <div className={`mt-1.5 truncate px-0.5 text-[11px] font-medium ${sel ? "text-ink" : "text-slate"}`}>{it.label}</div>
                         </button>
                       );
                     })}
@@ -346,6 +369,60 @@ export function MediaComposer() {
 
             <div className="flex flex-none justify-end px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
               <button type="button" onClick={() => setEffectOpen(false)} className="btn btn-primary min-w-28">
+                Tamam
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* avatar picker */}
+      {avatarOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+          <button type="button" aria-label="Kapat" onClick={() => setAvatarOpen(false)} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+          <div className="sheet-in no-scrollbar relative z-10 flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px] sm:border sm:border-hairline">
+            <div className="flex-none px-5 pt-5">
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
+              <div className="mb-1 flex items-start justify-between gap-3">
+                <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Avatar seç</h3>
+                <button type="button" onClick={() => setAvatarOpen(false)} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
+                  <Icon.close width={18} height={18} className="block" />
+                </button>
+              </div>
+            </div>
+
+            <div className="no-scrollbar overflow-y-auto px-5 py-4">
+              {avatarsQ.isLoading ? (
+                <div className="py-10 text-center text-[14px] text-muted">Yükleniyor…</div>
+              ) : avatars.length === 0 ? (
+                <div className="py-10 text-center text-[14px] text-muted">Avatar bulunamadı</div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                  {avatars.map((a) => {
+                    const sel = avatarId === a.id;
+                    return (
+                      <button key={a.id} type="button" onClick={() => setAvatarId(sel ? null : a.id)} className="text-left">
+                        <div className={`relative aspect-[3/4] overflow-hidden rounded-xl border bg-mist transition ${sel ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"}`}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={a.imageUrl} alt={a.name} className="h-full w-full object-cover" />
+                          {sel && (
+                            <span className="absolute right-1.5 top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-paper">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m5 12 5 5L20 7" />
+                              </svg>
+                            </span>
+                          )}
+                        </div>
+                        <div className={`mt-1.5 truncate px-0.5 text-[12px] font-medium ${sel ? "text-ink" : "text-slate"}`}>{a.name}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-none justify-end px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
+              <button type="button" onClick={() => setAvatarOpen(false)} className="btn btn-primary min-w-28">
                 Tamam
               </button>
             </div>

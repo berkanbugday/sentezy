@@ -38,6 +38,20 @@ export type BgImage = { id: string; url: string; transition?: string; kind?: "im
 // (compose._XFADE_TRANSITIONS) plus the synthetic "cut". Grouped for a scannable menu.
 export const DEFAULT_TRANSITION = "fade";
 export const TRANSITIONS: { group: string; items: { value: string; label: string }[] }[] = [
+  { group: "Efektler", items: [
+    { value: "zoompunch", label: "Zoom vuruş" },
+    { value: "flash", label: "Flaş" },
+    { value: "shake", label: "Sarsıntı" },
+    { value: "whip", label: "Savurma" },
+    { value: "glitch", label: "Glitch" },
+    { value: "dissolve", label: "Dağılma" },
+    { value: "pixelize", label: "Pikselleştir" },
+    { value: "radial", label: "Radyal" },
+    { value: "zoomin", label: "Yakınlaştır" },
+    { value: "distance", label: "Mesafe" },
+    { value: "squeezev", label: "Sıkıştır · dikey" },
+    { value: "squeezeh", label: "Sıkıştır · yatay" },
+  ] },
   { group: "Temel", items: [
     { value: "fade", label: "Yumuşak geçiş" },
     { value: "cut", label: "Sert kesme" },
@@ -86,15 +100,6 @@ export const TRANSITIONS: { group: string; items: { value: string; label: string
     { value: "hrslice", label: "Yatay dilim · sağ" },
     { value: "vuslice", label: "Dikey dilim · yukarı" },
     { value: "vdslice", label: "Dikey dilim · aşağı" },
-  ] },
-  { group: "Efekt", items: [
-    { value: "dissolve", label: "Dağılma" },
-    { value: "pixelize", label: "Pikselleştir" },
-    { value: "radial", label: "Radyal" },
-    { value: "zoomin", label: "Yakınlaştır" },
-    { value: "distance", label: "Mesafe" },
-    { value: "squeezev", label: "Sıkıştır · dikey" },
-    { value: "squeezeh", label: "Sıkıştır · yatay" },
   ] },
 ];
 
