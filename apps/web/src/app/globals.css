@@ -18,12 +18,21 @@
   --color-signal: #18181b;
   --beam: linear-gradient(135deg, #3f3f46, #18181b);
   --wash: rgba(24, 24, 27, 0.06);
-  /* The one color moment: a soft light aurora behind the Home hero. Low-saturation
-     peach → lilac → sky over paper, so ink text keeps AA contrast on top. */
-  --aurora:
-    radial-gradient(90% 120% at 12% -10%, #ecebfe 0%, rgba(236, 235, 254, 0) 55%),
-    radial-gradient(85% 120% at 88% -20%, #fdeadf 0%, rgba(253, 234, 223, 0) 50%),
-    radial-gradient(120% 140% at 55% 130%, #e7f0fb 0%, rgba(231, 240, 251, 0) 55%),
+  /* Inset "floating workspace" (Captions-style): a soft-dark frame + sidebar behind a
+     white content panel. Deep dark base with a cool-blue glow top-left and a warm hint
+     on the right — the frame/sidebar echo the hero's aurora while staying dark. */
+  --frame:
+    radial-gradient(95% 65% at 0% 0%, rgba(52, 104, 184, 0.70) 0%, rgba(52, 104, 184, 0) 58%),
+    radial-gradient(80% 70% at 12% 108%, rgba(96, 64, 168, 0.50) 0%, rgba(96, 64, 168, 0) 55%),
+    radial-gradient(85% 75% at 100% 18%, rgba(170, 86, 96, 0.55) 0%, rgba(170, 86, 96, 0) 55%),
+    linear-gradient(160deg, #16161c 0%, #111116 55%, #0d0d11 100%);
+  /* Aurora hero (Captions-style): cool blue/teal on the left easing into warm
+     amber/pink on the right, fading down into the white panel. */
+  --hero:
+    radial-gradient(75% 100% at 2% -10%, rgba(46, 116, 196, 0.34) 0%, rgba(46, 116, 196, 0) 52%),
+    radial-gradient(55% 85% at 26% -12%, rgba(40, 196, 192, 0.20) 0%, rgba(40, 196, 192, 0) 48%),
+    radial-gradient(85% 100% at 100% -12%, rgba(232, 146, 96, 0.34) 0%, rgba(232, 146, 96, 0) 54%),
+    radial-gradient(48% 78% at 82% -12%, rgba(214, 112, 150, 0.22) 0%, rgba(214, 112, 150, 0) 50%),
     #ffffff;
 }
 
@@ -76,7 +85,19 @@ body {
   cursor: pointer; transition: background 0.15s, color 0.15s;
 }
 .nav-item:hover { background: var(--color-mist); color: var(--color-ink); }
-.nav-item[data-active="true"] { background: var(--wash); color: var(--color-signal); font-weight: 600; }
+/* active = raised lighter pill (reads on the gray frame, mirrors the reference) */
+.nav-item[data-active="true"] {
+  background: var(--color-paper); color: var(--color-ink); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+/* On the dark chrome (sidebar), brighten labels/icons for legibility on the colored
+   gradient, and let hover/active use a translucent white overlay so they always read
+   as *lighter* than the frame, whatever its gradient does. */
+.dark .nav-item { color: rgba(255, 255, 255, 0.86); }
+.dark .nav-item:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+.dark .nav-item[data-active="true"] {
+  background: rgba(255, 255, 255, 0.13); color: #ffffff; box-shadow: none;
+}
 
 .badge {
   display: inline-flex; align-items: center; gap: 6px; border-radius: 999px;
@@ -92,7 +113,20 @@ body {
   background: var(--beam);
 }
 .hero-aurora {
-  background: var(--aurora);
+  background: var(--hero);
+}
+/* hide scrollbars but keep scrolling */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* tooltip (portaled to <body>): dark chip, white text — on-brand, escapes overflow */
+@keyframes tipIn { from { opacity: 0 } to { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { @keyframes tipIn { from { opacity: 1 } to { opacity: 1 } } }
+.tooltip {
+  position: fixed; z-index: 200; pointer-events: none; white-space: nowrap;
+  border-radius: 8px; background: var(--color-ink); color: var(--color-paper);
+  padding: 5px 9px; font-size: 12px; font-weight: 500; line-height: 1;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); animation: tipIn 0.12s ease-out;
 }
 /* B-roll cutaway crossfade in the preview (matches the compositor's dissolve). */
 @keyframes brollIn { from { opacity: 0 } to { opacity: 1 } }

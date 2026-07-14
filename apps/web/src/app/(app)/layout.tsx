@@ -16,11 +16,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const info: UserInfo = { name, email: user.email!, initials: toInitials(name) };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden [background:var(--frame)]">
       <Sidebar user={info} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar user={info} />
-        <main className="flex-1 overflow-y-auto px-6 py-8 md:px-8">{children}</main>
+      {/* inset floating workspace: white panel with a gray gutter around it */}
+      <div className="min-w-0 flex-1 py-2.5 pr-2.5">
+        <div className="relative flex h-full flex-col overflow-hidden rounded-[24px] border border-hairline bg-paper">
+          <Topbar />
+          <main className="no-scrollbar flex-1 overflow-y-auto px-6 pb-12 pt-6 md:px-8">{children}</main>
+        </div>
       </div>
     </div>
   );
