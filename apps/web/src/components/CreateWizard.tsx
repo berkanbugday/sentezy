@@ -278,12 +278,14 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         media?: { ref: string; url?: string; kind: "image" | "video"; transition?: string }[];
         script?: string;
         avatar?: { id: string; name: string };
+        voice?: { id: string };
       };
       const restored: BgImage[] = (p.media ?? [])
         .filter((m) => m?.ref)
         .map((m) => ({ id: m.ref, url: m.url ?? (m.kind === "image" ? cfImageUrl(m.ref) : ""), kind: m.kind, transition: m.transition ?? "fade" }));
       if (restored.length) syncBgImages(restored);
       if (p.script) setValue("script", p.script);
+      if (p.voice?.id) setValue("voiceId", p.voice.id, { shouldValidate: true });
       if (p.avatar?.id) setPendingAvatar(p.avatar);
     } catch {
       /* ignore malformed payloads */

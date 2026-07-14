@@ -2,8 +2,95 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useAvatars, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
+import { useAvatars, useUploadBackground, useUploadBackgroundVideo, useVoicePreview, useVoicesInfinite } from "@/lib/queries";
 import { Icon } from "./icons";
+
+type Gender = "all" | "kadın" | "erkek";
+function normGender(g?: string | null): "kadın" | "erkek" | null {
+  if (!g) return null;
+  const s = g.toLowerCase();
+  if (s.includes("fem") || s === "kadın") return "kadın"; // check "female" before "male"
+  if (s.includes("male") || s === "erkek") return "erkek";
+  return null;
+}
+type Age = "all" | "genç" | "yetişkin" | "olgun";
+function normAge(a?: string | null): "genç" | "yetişkin" | "olgun" | null {
+  if (!a) return null;
+  const s = a.toLowerCase();
+  if (s.includes("young") || s === "genç") return "genç";
+  if (s.includes("middle") || s === "yetişkin") return "yetişkin";
+  if (s.includes("old") || s.includes("mature") || s.includes("senior") || s === "olgun") return "olgun";
+  return null;
+}
+const AGE_OPTS: { v: Age; label: string }[] = [
+  { v: "all", label: "Yaş: Tümü" },
+  { v: "genç", label: "Genç" },
+  { v: "yetişkin", label: "Yetişkin" },
+  { v: "olgun", label: "Olgun" },
+];
+const GENDER_OPTS: { v: Gender; label: string }[] = [
+  { v: "all", label: "Cinsiyet: Tümü" },
+  { v: "kadın", label: "Kadın" },
+  { v: "erkek", label: "Erkek" },
+];
+
+// Voice filters are ElevenLabs shared-voices enum values ("" = no filter), applied
+// server-side so pagination + filtering compose correctly.
+const V_GENDER = [
+  { v: "", label: "Cinsiyet: Tümü" },
+  { v: "female", label: "Kadın" },
+  { v: "male", label: "Erkek" },
+];
+const V_AGE = [
+  { v: "", label: "Yaş: Tümü" },
+  { v: "young", label: "Genç" },
+  { v: "middle_aged", label: "Yetişkin" },
+  { v: "old", label: "Olgun" },
+];
+const V_CATEGORY = [
+  { v: "", label: "Tür: Tümü" },
+  { v: "professional", label: "Profesyonel" },
+  { v: "high_quality", label: "Yüksek kalite" },
+  { v: "famous", label: "Ünlü" },
+];
+const V_USECASE = [
+  { v: "", label: "Kullanım: Tümü" },
+  { v: "conversational", label: "Sohbet" },
+  { v: "narrative_story", label: "Anlatı / Hikaye" },
+  { v: "social_media", label: "Sosyal medya" },
+  { v: "entertainment_tv", label: "Eğlence / TV" },
+  { v: "advertisement", label: "Reklam" },
+  { v: "informative_educational", label: "Bilgilendirici / Eğitim" },
+  { v: "characters_animation", label: "Karakter / Animasyon" },
+];
+const V_LANG = [
+  { v: "", label: "Dil: Tümü" },
+  { v: "tr", label: "Türkçe" },
+  { v: "en", label: "İngilizce" },
+  { v: "es", label: "İspanyolca" },
+  { v: "de", label: "Almanca" },
+  { v: "fr", label: "Fransızca" },
+  { v: "it", label: "İtalyanca" },
+  { v: "pt", label: "Portekizce" },
+  { v: "pl", label: "Lehçe" },
+  { v: "ru", label: "Rusça" },
+  { v: "nl", label: "Felemenkçe" },
+  { v: "ar", label: "Arapça" },
+  { v: "hi", label: "Hintçe" },
+  { v: "ja", label: "Japonca" },
+  { v: "ko", label: "Korece" },
+  { v: "zh", label: "Çince" },
+];
+const V_ACCENT = [
+  { v: "", label: "Aksan: Tümü" },
+  { v: "american", label: "Amerikan" },
+  { v: "british", label: "İngiliz" },
+  { v: "australian", label: "Avustralya" },
+  { v: "canadian", label: "Kanada" },
+  { v: "irish", label: "İrlanda" },
+  { v: "indian", label: "Hint" },
+  { v: "african", label: "Afrika" },
+];
 import { EffectPreview } from "./TransitionPreview";
 import { DEFAULT_TRANSITION, TRANSITIONS } from "./WizardSteps";
 
@@ -45,6 +132,57 @@ function videoPoster(file: File): Promise<string | null> {
   });
 }
 
+/** Small on-brand dropdown menu (replaces native <select> so the caret has room). */
+function Dropdown({ value, options, onChange }: { value: string; options: { v: string; label: string }[]; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+  const current = options.find((o) => o.v === value);
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1.5 pl-3.5 pr-3 text-[12px] font-medium text-slate transition hover:bg-mist">
+        {current?.label ?? ""}
+        <Icon.chevronDown width={13} height={13} className="text-muted" />
+      </button>
+      {open && (
+        <div className="no-scrollbar absolute left-0 top-full z-30 mt-1 max-h-56 min-w-[140px] overflow-y-auto rounded-xl border border-hairline bg-paper py-1 shadow-lg">
+          {options.map((o) => (
+            <button
+              key={o.v}
+              type="button"
+              onClick={() => {
+                onChange(o.v);
+                setOpen(false);
+              }}
+              className={`block w-full whitespace-nowrap px-3 py-1.5 text-left text-[12.5px] transition hover:bg-mist ${o.v === value ? "font-semibold text-ink" : "text-slate"}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VoiceSkeleton() {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-hairline p-2">
+      <span className="h-9 w-9 flex-none animate-pulse rounded-full bg-mist" />
+      <div className="flex-1 space-y-1.5">
+        <div className="h-3 w-2/3 animate-pulse rounded bg-mist" />
+        <div className="h-2.5 w-1/2 animate-pulse rounded bg-mist" />
+      </div>
+    </div>
+  );
+}
+
 function Spinner({ size = 18 }: { size?: number }) {
   return (
     <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -66,12 +204,123 @@ export function MediaComposer() {
   const [effectOpen, setEffectOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [avatarId, setAvatarId] = useState<string | null>(null);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceId, setVoiceId] = useState<string | null>(null);
+  const [playingVoice, setPlayingVoice] = useState<string | null>(null);
   const [script, setScript] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const voiceListRef = useRef<HTMLDivElement>(null);
+  const voiceSentinelRef = useRef<HTMLDivElement>(null);
 
   const avatarsQ = useAvatars();
   const avatars = (avatarsQ.data ?? []).filter((a) => a.ready && a.id);
   const selectedAvatar = avatars.find((a) => a.id === avatarId) ?? null;
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [ttsError, setTtsError] = useState<string | null>(null);
+
+  // avatar filters — client-side over the avatar list
+  const [avatarQ, setAvatarQ] = useState("");
+  const [avatarGender, setAvatarGender] = useState<Gender>("all");
+  const [avatarAge, setAvatarAge] = useState<Age>("all");
+  // voice filters — ElevenLabs enum values, applied server-side (so paging works)
+  const [voiceQ, setVoiceQ] = useState("");
+  const [voiceGender, setVoiceGender] = useState("");
+  const [voiceAge, setVoiceAge] = useState("");
+  const [voiceCategory, setVoiceCategory] = useState("");
+  const [voiceLang, setVoiceLang] = useState("");
+  const [voiceUseCase, setVoiceUseCase] = useState("");
+  const [voiceAccent, setVoiceAccent] = useState("");
+  const [realTts, setRealTts] = useState(false); // preview with the user's own text
+  const [ttsLoading, setTtsLoading] = useState<string | null>(null);
+
+  const voicesQ = useVoicesInfinite({ gender: voiceGender, age: voiceAge, category: voiceCategory, language: voiceLang, use_cases: voiceUseCase, accent: voiceAccent });
+  const voices = voicesQ.data?.pages.flatMap((p) => p.voices) ?? [];
+  const selectedVoice = voices.find((v) => v.id === voiceId) ?? null;
+  const voicePreview = useVoicePreview();
+
+  const voiceFilterGroups = [
+    { title: "Cinsiyet", value: voiceGender, set: setVoiceGender, options: V_GENDER },
+    { title: "Yaş", value: voiceAge, set: setVoiceAge, options: V_AGE },
+    { title: "Dil", value: voiceLang, set: setVoiceLang, options: V_LANG },
+    { title: "Aksan", value: voiceAccent, set: setVoiceAccent, options: V_ACCENT },
+    { title: "Kullanım", value: voiceUseCase, set: setVoiceUseCase, options: V_USECASE },
+    { title: "Tür", value: voiceCategory, set: setVoiceCategory, options: V_CATEGORY },
+  ];
+  const activeVoiceFilters = voiceFilterGroups.filter((g) => g.value !== "").length;
+  function clearVoiceFilters() {
+    setVoiceGender("");
+    setVoiceAge("");
+    setVoiceLang("");
+    setVoiceAccent("");
+    setVoiceUseCase("");
+    setVoiceCategory("");
+  }
+
+  const filteredAvatars = avatars.filter(
+    (a) =>
+      (avatarGender === "all" || normGender(a.gender) === avatarGender) &&
+      (avatarAge === "all" || normAge(a.age) === avatarAge) &&
+      (!avatarQ.trim() || `${a.name} ${a.sectorLabel ?? ""}`.toLowerCase().includes(avatarQ.trim().toLowerCase())),
+  );
+  // voices are already filtered server-side by the dropdowns — only refine by text search
+  const filteredVoices = voices.filter(
+    (v) => !voiceQ.trim() || `${v.label} ${v.style ?? ""} ${v.accent ?? ""} ${v.descriptive ?? ""}`.toLowerCase().includes(voiceQ.trim().toLowerCase()),
+  );
+
+  function stopVoicePreview() {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    setPlayingVoice(null);
+  }
+  async function playVoice(id: string, previewUrl?: string | null) {
+    if (playingVoice === id) return stopVoicePreview();
+    audioRef.current?.pause();
+    setTtsError(null);
+    let url: string | null = null;
+    const text = script.trim();
+    if (realTts && text) {
+      // synthesize the user's own text with this voice (opt-in real TTS)
+      setTtsLoading(id);
+      try {
+        const { audio, mime } = await voicePreview.mutateAsync({ id, text });
+        url = `data:${mime};base64,${audio}`;
+      } catch (e) {
+        setTtsLoading(null);
+        setTtsError(e instanceof Error && e.message ? e.message : "Ses üretilemedi — API'yi yeniden başlat ve ElevenLabs anahtarını kontrol et.");
+        return;
+      }
+      setTtsLoading(null);
+    } else {
+      url = previewUrl ?? null;
+    }
+    if (!url) return;
+    const a = new Audio(url);
+    audioRef.current = a;
+    a.onended = () => setPlayingVoice(null);
+    a.play().catch(() => setTtsError("Tarayıcı otomatik oynatmayı engelledi — tekrar dokun."));
+    setPlayingVoice(id);
+  }
+  useEffect(() => {
+    if (!voiceOpen) stopVoicePreview();
+  }, [voiceOpen]);
+  useEffect(() => () => stopVoicePreview(), []);
+
+  // infinite scroll: load the next page when the sentinel nears the bottom
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = voicesQ;
+  useEffect(() => {
+    if (!voiceOpen) return;
+    const sentinel = voiceSentinelRef.current;
+    if (!sentinel) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage();
+      },
+      { root: voiceListRef.current, rootMargin: "160px" },
+    );
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [voiceOpen, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // The transition effect only applies between 2+ media — close/hide otherwise.
   const multiple = items.length > 1;
@@ -148,11 +397,12 @@ export function MediaComposer() {
       media: ready.map((i) => ({ ref: i.ref, url: i.serverUrl, kind: i.kind, transition: tr })),
       script: script.trim() || undefined,
       avatar: selectedAvatar ? { id: selectedAvatar.id, name: selectedAvatar.name } : undefined,
+      voice: selectedVoice ? { id: selectedVoice.id } : undefined,
     };
     try {
       if (payload.media.length || payload.script || payload.avatar) sessionStorage.setItem(PENDING_KEY, JSON.stringify(payload));
       else sessionStorage.removeItem(PENDING_KEY);
-    } catch {}
+    } catch { }
     router.push("/create");
   }
 
@@ -235,9 +485,9 @@ export function MediaComposer() {
                 type="button"
                 onClick={() => remove(m.url)}
                 aria-label={`${m.name} kaldır`}
-                className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white opacity-100 transition hover:bg-black/75 sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/55 text-white opacity-100 transition hover:bg-black/75 sm:opacity-0 sm:group-hover:opacity-100"
               >
-                <Icon.close width={15} height={15} className="block" />
+                <Icon.close width={12} height={12} className="block" />
               </button>
             </div>
           ))}
@@ -259,9 +509,9 @@ export function MediaComposer() {
         <textarea
           value={script}
           onChange={(e) => setScript(e.target.value)}
-          rows={2}
+          rows={3}
           placeholder="Videoda ne anlatılsın? Konuşma metnini yaz…"
-          className="soft-in mt-3 w-full resize-none rounded-xl bg-transparent px-1 py-1 text-[14px] leading-relaxed text-ink outline-none placeholder:text-muted"
+          className="no-scrollbar soft-in mt-3 max-h-40 min-h-[84px] w-full resize-none overflow-y-auto rounded-xl bg-transparent px-1 py-1 text-[14px] leading-relaxed text-ink outline-none placeholder:text-muted"
         />
       )}
 
@@ -285,6 +535,20 @@ export function MediaComposer() {
               )}
             </span>
             {selectedAvatar ? selectedAvatar.name : "Avatar seç"}
+            <Icon.chevronDown width={14} height={14} className="text-muted" />
+          </button>
+          {/* voice mini chip */}
+          <button
+            type="button"
+            onClick={() => setVoiceOpen(true)}
+            disabled={!hasScript}
+            title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
+            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-mist text-slate">
+              <Icon.voice width={15} height={15} />
+            </span>
+            {selectedVoice ? selectedVoice.label : "Ses seç"}
             <Icon.chevronDown width={14} height={14} className="text-muted" />
           </button>
           {/* effect mini-preview chip */}
@@ -389,16 +653,28 @@ export function MediaComposer() {
                   <Icon.close width={18} height={18} className="block" />
                 </button>
               </div>
+              <div className="mb-3 mt-2 flex flex-col gap-2">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+                    <Icon.search width={15} height={15} />
+                  </span>
+                  <input value={avatarQ} onChange={(e) => setAvatarQ(e.target.value)} placeholder="Avatar ara…" className="w-full rounded-full border border-hairline bg-paper py-2 pl-9 pr-3 text-[13px] text-ink outline-none transition focus:border-signal" />
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Dropdown value={avatarGender} onChange={(v) => setAvatarGender(v as Gender)} options={GENDER_OPTS} />
+                  <Dropdown value={avatarAge} onChange={(v) => setAvatarAge(v as Age)} options={AGE_OPTS} />
+                </div>
+              </div>
             </div>
 
             <div className="no-scrollbar overflow-y-auto px-5 py-4">
               {avatarsQ.isLoading ? (
                 <div className="py-10 text-center text-[14px] text-muted">Yükleniyor…</div>
-              ) : avatars.length === 0 ? (
+              ) : filteredAvatars.length === 0 ? (
                 <div className="py-10 text-center text-[14px] text-muted">Avatar bulunamadı</div>
               ) : (
                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-                  {avatars.map((a) => {
+                  {filteredAvatars.map((a) => {
                     const sel = avatarId === a.id;
                     return (
                       <button key={a.id} type="button" onClick={() => setAvatarId(sel ? null : a.id)} className="text-left">
@@ -424,6 +700,153 @@ export function MediaComposer() {
             <div className="flex flex-none justify-end px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
               <button type="button" onClick={() => setAvatarOpen(false)} className="btn btn-primary min-w-28">
                 Tamam
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* voice picker */}
+      {voiceOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+          <button type="button" aria-label="Kapat" onClick={() => setVoiceOpen(false)} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+          <div className="sheet-in no-scrollbar relative z-10 flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px] sm:border sm:border-hairline">
+            <div className="flex-none px-5 pt-5">
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
+              <div className="mb-1 flex items-start justify-between gap-3">
+                <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Ses seç</h3>
+                <button type="button" onClick={() => setVoiceOpen(false)} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
+                  <Icon.close width={18} height={18} className="block" />
+                </button>
+              </div>
+              <div className="mb-3 mt-2 flex items-center gap-2">
+                <div className="relative flex-1">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+                    <Icon.search width={15} height={15} />
+                  </span>
+                  <input value={voiceQ} onChange={(e) => setVoiceQ(e.target.value)} placeholder="Ses ara…" className="w-full rounded-full border border-hairline bg-paper py-2 pl-9 pr-3 text-[13px] text-ink outline-none transition focus:border-signal" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen(true)}
+                  className="flex flex-none items-center gap-1.5 rounded-full border border-hairline bg-paper px-3.5 py-2 text-[13px] font-medium text-slate transition hover:bg-mist"
+                >
+                  <Icon.filter width={16} height={16} />
+                  Filtrele
+                  {activeVoiceFilters > 0 && (
+                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-bold text-paper">{activeVoiceFilters}</span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div ref={voiceListRef} className="no-scrollbar flex flex-col gap-1.5 overflow-y-auto px-5 py-4">
+              {voicesQ.isLoading ? (
+                <div className="flex flex-col gap-1.5">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <VoiceSkeleton key={i} />
+                  ))}
+                </div>
+              ) : filteredVoices.length === 0 ? (
+                <div className="py-10 text-center text-[14px] text-muted">Ses bulunamadı</div>
+              ) : (
+                filteredVoices.map((v) => {
+                  const sel = voiceId === v.id;
+                  const meta = [v.gender, v.style, v.age].filter(Boolean).join(" · ");
+                  return (
+                    <div key={v.id} className={`flex items-center gap-2 rounded-xl border p-2 transition ${sel ? "border-ink ring-1 ring-ink" : "border-hairline"}`}>
+                      <button type="button" onClick={() => setVoiceId(sel ? null : v.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                        <span className={`flex h-9 w-9 flex-none items-center justify-center rounded-full ${sel ? "bg-ink text-paper" : "bg-mist text-slate"}`}>
+                          <Icon.voice width={16} height={16} />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="truncate text-[13.5px] font-semibold text-ink">{v.label}</div>
+                          {meta && <div className="truncate text-[11.5px] text-muted">{meta}</div>}
+                        </div>
+                      </button>
+                      {(v.previewUrl || realTts) && (
+                        <button
+                          type="button"
+                          onClick={() => playVoice(v.id, v.previewUrl)}
+                          disabled={ttsLoading === v.id}
+                          aria-label="Önizle"
+                          className={`flex h-11 w-11 flex-none items-center justify-center rounded-full border transition disabled:opacity-50 sm:h-9 sm:w-9 ${playingVoice === v.id ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist hover:text-ink"}`}
+                        >
+                          {ttsLoading === v.id ? <Spinner size={16} /> : playingVoice === v.id ? <Icon.pause width={17} height={17} /> : <Icon.play width={17} height={17} />}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+              {voicesQ.isFetchingNextPage && Array.from({ length: 3 }).map((_, i) => <VoiceSkeleton key={`sk-${i}`} />)}
+              <div ref={voiceSentinelRef} className="h-1 w-full" />
+            </div>
+
+            {ttsError && <div className="flex-none px-5 pb-1 text-[12px] text-[#dc2626]">{ttsError}</div>}
+
+            <div className="flex flex-none items-center justify-between gap-3 px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
+              {hasScript ? (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={realTts}
+                  onClick={() => {
+                    setRealTts((r) => !r);
+                    stopVoicePreview();
+                  }}
+                  className="flex items-center gap-2.5 text-[12.5px] font-medium text-ink"
+                >
+                  <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${realTts ? "bg-ink" : "bg-hairline"}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${realTts ? "left-[18px]" : "left-0.5"}`} />
+                  </span>
+                  Yazdığım Metni Oku
+                </button>
+              ) : (
+                <span />
+              )}
+              <button type="button" onClick={() => setVoiceOpen(false)} className="btn btn-primary min-w-28">
+                Tamam
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* voice filters */}
+      {filtersOpen && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4">
+          <button type="button" aria-label="Kapat" onClick={() => setFiltersOpen(false)} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+          <div className="sheet-in no-scrollbar relative z-10 flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px] sm:border sm:border-hairline">
+            <div className="flex-none px-5 pt-5">
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
+              <div className="mb-1 flex items-center justify-between gap-3">
+                <h3 className="disp text-[18px] font-semibold text-ink">Filtreler</h3>
+                <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Kapat" className="grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
+                  <Icon.close width={18} height={18} className="block" />
+                </button>
+              </div>
+            </div>
+            <div className="no-scrollbar flex flex-col gap-4 overflow-y-auto px-5 py-4">
+              {voiceFilterGroups.map((g) => (
+                <div key={g.title}>
+                  <div className="mb-2 text-[13px] font-semibold text-ink">{g.title}</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {g.options.map((o) => (
+                      <button key={o.v} type="button" onClick={() => g.set(o.v)} className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${g.value === o.v ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist"}`}>
+                        {o.v === "" ? "Tümü" : o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-none items-center justify-between gap-3 px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
+              <button type="button" onClick={clearVoiceFilters} className="rounded-full border border-hairline px-4 py-2 text-[13px] font-medium text-slate transition hover:bg-mist hover:text-ink">
+                Temizle
+              </button>
+              <button type="button" onClick={() => setFiltersOpen(false)} className="btn btn-primary min-w-28">
+                Uygula ({filteredVoices.length})
               </button>
             </div>
           </div>

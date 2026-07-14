@@ -84,4 +84,16 @@ export const Icon = {
   panelLeft: (p: SVGProps<SVGSVGElement>) => (
     <svg {...base} {...p}><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="M9 4v16" /></svg>
   ),
+  voice: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
+  ),
+  filter: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+  ),
+  play: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p} fill="currentColor" stroke="none"><path d="M7 5v14l12-7z" /></svg>
+  ),
+  pause: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p} fill="currentColor" stroke="none"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+  ),
 };

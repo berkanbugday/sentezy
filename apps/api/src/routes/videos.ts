@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Prisma, prisma } from "@sentezy/db";
 import { type AspectRatio, CreateVideoDraft, CreateVideoRequest, UpdateVideoDraft } from "@sentezy/types";
 import { enqueueVideo } from "../lib/redis";
+import { SEP, resolveVoice } from "../lib/voices";
 import { imageUrl } from "../lib/cloudflareImages";
 import { emotionEnabled, enhanceScriptEmotion } from "../lib/emotion";
 import { publicUrl, signedDownloadUrl } from "../lib/r2";
@@ -80,6 +81,12 @@ export async function videoRoutes(app: FastifyInstance) {
 
     const presenter = await prisma.presenter.findFirst({ where: { id: input.presenterId, userId } });
     if (!presenter) return reply.code(400).send({ error: "invalid_presenter" });
+    // A shared-library voice ("owner|voice") is added to the account and materialised here.
+    try {
+      input.voiceId = (await resolveVoice(userId, input.voiceId)).dbId;
+    } catch {
+      return reply.code(400).send({ error: "invalid_voice" });
+    }
     const voice = await prisma.voice.findFirst({
       where: { id: input.voiceId, OR: [{ isPublic: true }, { userId }] },
     });
@@ -152,13 +159,23 @@ export async function videoRoutes(app: FastifyInstance) {
     if (!existing) return reply.code(404).send({ error: "not_found" });
     if (existing.status !== "draft") return reply.code(409).send({ error: "not_a_draft" });
     const d = parsed.data;
+    // Adopt a shared-library voice id ("owner|voice") into a real Voice row before storing
+    // it in the uuid column; a plain DB id passes through, a failed adopt keeps the prior.
+    let voiceIdUpdate = d.voiceId;
+    if (d.voiceId && d.voiceId.includes(SEP)) {
+      try {
+        voiceIdUpdate = (await resolveVoice(req.user!.id, d.voiceId)).dbId;
+      } catch {
+        voiceIdUpdate = existing.voiceId ?? undefined;
+      }
+    }
     const video = await prisma.video.update({
       where: { id },
       data: {
         ...(d.title !== undefined ? { title: d.title.trim() || "Adsız video" } : {}),
         ...(d.script !== undefined ? { script: d.script } : {}),
         ...(d.presenterId !== undefined ? { presenterId: d.presenterId } : {}),
-        ...(d.voiceId !== undefined ? { voiceId: d.voiceId } : {}),
+        ...(d.voiceId !== undefined ? { voiceId: voiceIdUpdate } : {}),
         ...(d.aspectRatio !== undefined ? { aspectRatio: RATIO[d.aspectRatio] } : {}),
         ...(d.options !== undefined ? { options: d.options as unknown as Prisma.InputJsonValue } : {}),
       },

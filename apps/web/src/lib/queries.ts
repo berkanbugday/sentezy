@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Avatar, BgImage, Presenter, Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
 import type { ApiVideo } from "@/lib/types";
@@ -32,6 +32,27 @@ export function useMusic(enabled = true) {
 
 export function useVoices(enabled = true) {
   return useQuery({ queryKey: qk.voices, queryFn: () => apiFetch<{ voices: Voice[] }>("/voices").then((r) => r.voices), enabled });
+}
+
+/** Paginated + server-side-filtered shared-voice library browse (lazy "load more"). */
+export function useVoicesInfinite(filters: Record<string, string> = {}) {
+  const active = Object.fromEntries(Object.entries(filters).filter(([, v]) => v));
+  const qs = new URLSearchParams(active).toString();
+  return useInfiniteQuery({
+    queryKey: [...qk.voices, "infinite", active],
+    queryFn: ({ pageParam }) => apiFetch<{ voices: Voice[]; hasMore: boolean }>(`/voices?page=${pageParam}${qs ? `&${qs}` : ""}`),
+    initialPageParam: 0,
+    getNextPageParam: (last, all) => (last.hasMore ? all.length : undefined),
+  });
+}
+
+/** Real TTS preview: synthesize a short clip of the user's own text with a voice.
+ *  A shared-library voice id ("owner|voice") is adopted into the account server-side. */
+export function useVoicePreview() {
+  return useMutation({
+    mutationFn: (input: { id: string; text: string }) =>
+      apiFetch<{ audio: string; mime: string }>("/voices/preview", { method: "POST", body: JSON.stringify(input) }),
+  });
 }
 
 export function useAvatars(enabled = true) {

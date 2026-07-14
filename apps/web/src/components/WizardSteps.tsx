@@ -14,6 +14,11 @@ export type Voice = {
   age?: string | null;
   accent?: string | null;
   useCase?: string | null;
+  descriptive?: string | null;
+  category?: string | null;
+  language?: string | null;
+  locale?: string | null;
+  description?: string | null;
   previewUrl?: string | null;
 };
 export type Presenter = { id: string; name: string; status: string; imageUrl?: string | null; sourceImageId?: string | null };
