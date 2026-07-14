@@ -4,12 +4,25 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { UserInfo } from "@/lib/user";
 
-export function UserMenu({ user }: { user: UserInfo }) {
+export function UserMenu({ user, collapsed }: { user: UserInfo; collapsed?: boolean }) {
   const router = useRouter();
   async function signOut() {
     await createClient().auth.signOut();
     router.push("/login");
     router.refresh();
+  }
+  if (collapsed) {
+    return (
+      <button
+        onClick={signOut}
+        title={`${user.name} — Çıkış yap`}
+        className="mt-1 flex items-center justify-center rounded-xl p-2 hover:bg-mist"
+      >
+        <span className="grad flex h-9 w-9 flex-none items-center justify-center rounded-full text-[13px] font-bold text-white">
+          {user.initials}
+        </span>
+      </button>
+    );
   }
   return (
     <div className="mt-1 flex items-center gap-3 rounded-xl p-2 hover:bg-mist">

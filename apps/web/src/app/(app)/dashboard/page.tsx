@@ -1,11 +1,5 @@
 import Link from "next/link";
-import { Icon } from "@/components/icons";
-
-const STATS = [
-  { label: "Bu ay üretilen video", value: "12", unit: "", sub: "↑ geçen aya göre 3 fazla", icon: Icon.video, up: true },
-  { label: "Kalan kredi", value: "38", unit: "", sub: "50 krediden", icon: Icon.bolt },
-  { label: "İşlenen dakika", value: "47", unit: "dk", sub: "bu ay", icon: Icon.clock },
-];
+import { PromptComposer } from "@/components/PromptComposer";
 
 const VIDEOS = [
   { title: "Kuaför Studio — Tanıtım", date: "8 Tem", ratio: "9:16", status: "ready" as const },
@@ -23,46 +17,19 @@ const STATUS: Record<string, [string, string]> = {
 export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="disp text-[28px] font-semibold text-ink">Merhaba, Deniz 👋</h1>
-      <p className="mt-1 text-[14.5px] text-slate">Bugün ne tanıtalım?</p>
-
-      {/* create CTA */}
-      <div className="grad mt-6 flex items-center gap-5 rounded-[18px] px-7 py-6 text-white">
-        <div className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-white/20">
-          <Icon.plus width={22} height={22} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="disp text-[22px] font-semibold">Yeni video oluştur</h3>
-          <p className="text-[14.5px] text-white/90">Metni yaz ya da bir link yapıştır — gerisini Sentezy halletsin.</p>
-        </div>
-        <Link href="/create" className="flex-none rounded-full bg-white px-5 py-2.5 text-[14px] font-semibold text-ink">Başla →</Link>
-      </div>
-
-      {/* stats */}
-      <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {STATS.map((s) => (
-          <div key={s.label} className="card px-6 py-5">
-            <div className="flex items-center gap-2 text-[13px] font-medium text-slate">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg text-signal" style={{ background: "var(--wash)" }}>
-                <s.icon width={17} height={17} />
-              </span>
-              {s.label}
-            </div>
-            <div className="disp mt-3 text-[34px] font-semibold leading-none text-ink">
-              {s.value}
-              {s.unit && <span className="ml-1 text-[16px] text-muted">{s.unit}</span>}
-            </div>
-            <div className={`mt-2 text-[12px] font-medium ${s.up ? "text-ink" : "text-muted"}`}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* aurora hero — the one color moment; greeting + conversational composer */}
+      <section className="hero-aurora rounded-[22px] border border-hairline px-6 py-8 sm:px-9 sm:py-9">
+        <h1 className="disp text-[28px] font-semibold text-ink">Merhaba, Deniz 👋</h1>
+        <p className="mt-1 text-[14.5px] text-slate">Bugün ne tanıtalım?</p>
+        <PromptComposer />
+      </section>
 
       {/* recent */}
-      <div className="mt-8 mb-4 flex items-center justify-between">
+      <div className="mt-9 mb-4 flex items-center justify-between">
         <h2 className="text-[18px] font-semibold text-ink">Son videoların</h2>
         <Link href="/library" className="text-[13.5px] font-semibold text-signal">Tümünü gör →</Link>
       </div>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(170px,1fr))]">
         {VIDEOS.map((v) => {
           const [label, cls] = STATUS[v.status];
           return (

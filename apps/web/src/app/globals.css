@@ -18,6 +18,13 @@
   --color-signal: #18181b;
   --beam: linear-gradient(135deg, #3f3f46, #18181b);
   --wash: rgba(24, 24, 27, 0.06);
+  /* The one color moment: a soft light aurora behind the Home hero. Low-saturation
+     peach → lilac → sky over paper, so ink text keeps AA contrast on top. */
+  --aurora:
+    radial-gradient(90% 120% at 12% -10%, #ecebfe 0%, rgba(236, 235, 254, 0) 55%),
+    radial-gradient(85% 120% at 88% -20%, #fdeadf 0%, rgba(253, 234, 223, 0) 50%),
+    radial-gradient(120% 140% at 55% 130%, #e7f0fb 0%, rgba(231, 240, 251, 0) 55%),
+    #ffffff;
 }
 
 .dark {
@@ -83,6 +90,9 @@ body {
 
 .grad {
   background: var(--beam);
+}
+.hero-aurora {
+  background: var(--aurora);
 }
 /* B-roll cutaway crossfade in the preview (matches the compositor's dissolve). */
 @keyframes brollIn { from { opacity: 0 } to { opacity: 1 } }

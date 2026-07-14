@@ -54,4 +54,16 @@ export const Icon = {
   clock: (p: SVGProps<SVGSVGElement>) => (
     <svg {...base} {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
   ),
+  chevronLeft: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><path d="m15 6-6 6 6 6" /></svg>
+  ),
+  arrowRight: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+  ),
+  paperclip: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><path d="M21 12.5 12.5 21a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7L9.6 18.3a1.6 1.6 0 0 1-2.3-2.3l7.8-7.8" /></svg>
+  ),
+  wand: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><path d="m15 4 1 2.5L18.5 8 16 9l-1 2.5L14 9l-2.5-1L14 6.5 15 4Z" /><path d="M13 11 4 20" /><path d="M6 5v3M4.5 6.5h3" /></svg>
+  ),
 };

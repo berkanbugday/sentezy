@@ -58,7 +58,7 @@ export type StudioDemo = {
   bgImages?: BgImage[];
 };
 
-export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: string } = {}) {
+export function CreateWizard({ demo, draftId, initialPrompt }: { demo?: StudioDemo; draftId?: string; initialPrompt?: string } = {}) {
   const router = useRouter();
   const [step, setStep] = useState(demo?.step ?? 0);
   // Highest step reached — every step up to here stays clickable in the top rail,
@@ -95,7 +95,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     formState: { errors, isSubmitting },
   } = useForm<CreateReelValues>({
     resolver: zodResolver(createReelSchema),
-    defaultValues: { aspectRatio: "9:16", captions: true, captionStyle: "karaoke", captionFont: "General Sans", captionColor: "#FFD54A", voiceEmotion: "", backgroundImageIds: [], backgroundKinds: [], backgroundTransitions: [], musicVolume: 0.15, presenterLayout: "side", avatarSide: "right", captionPosition: "bottom", transitionSfx: true, ...demo?.values },
+    defaultValues: { aspectRatio: "9:16", captions: true, captionStyle: "karaoke", captionFont: "General Sans", captionColor: "#FFD54A", voiceEmotion: "", backgroundImageIds: [], backgroundKinds: [], backgroundTransitions: [], musicVolume: 0.15, presenterLayout: "side", avatarSide: "right", captionPosition: "bottom", transitionSfx: true, ...(initialPrompt && !draftId ? { script: initialPrompt } : {}), ...demo?.values },
   });
   const values = watch();
   const set: (n: keyof CreateReelValues, v: CreateReelValues[keyof CreateReelValues], o?: object) => void = setValue;
