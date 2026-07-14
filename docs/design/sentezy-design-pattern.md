@@ -20,7 +20,7 @@ color anywhere.**
   blue/teal on the left easing into warm amber/pink on the right, fading down into the white panel.
   It bleeds to the panel edges, behind the floating upgrade chip.
 - **Upload-first, wizard-backed.** Home opens with an import/drag composer ("Videonu sürükle ya da
-  yükle"). It's a friendly on-ramp; the real engine is the 4-step create wizard. "Videomu oluştur"
+  yükle"). It's a friendly on-ramp; the real engine is the 4-step create wizard. "Video oluştur"
   always routes into the wizard.
 - **Turkish copy**, always. General Sans display, Inter body/UI, JetBrains Mono numerics.
 
@@ -86,7 +86,7 @@ grayscale halo bleeding to the panel edges behind the Topbar chip. Holds the wel
 
 ### Media composer (`components/MediaComposer.tsx`)
 Upload-first card: a dashed **dropzone** (`+` tile, "Videonu sürükle ya da yükle", `(.mp4, .mov)`,
-drag-highlight), then a toolbar — "Stil ekle" (`btn btn-ghost`) left, **"Videomu oluştur →"**
+drag-highlight), then a toolbar — "Stil ekle" (`btn btn-ghost`) left, **"Video oluştur →"**
 (`btn btn-primary`, ink) right. Picking a file is optional; the button always proceeds to `/create`.
 
 ### 9:16 card grid

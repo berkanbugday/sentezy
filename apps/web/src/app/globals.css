@@ -128,6 +128,49 @@ button:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { @keyframes sheetIn { from { transform: none } to { transform: none } } }
 .sheet-in { animation: sheetIn 0.22s ease-out; }
 
+/* slide-in (e.g. the transition-effect button appearing when 2+ media) */
+@keyframes slideInX { from { opacity: 0; transform: translateX(-6px) } to { opacity: 1; transform: none } }
+@media (prefers-reduced-motion: reduce) { @keyframes slideInX { from { opacity: 1 } to { opacity: 1 } } }
+.slide-in { animation: slideInX 0.22s ease-out; }
+
+/* ── transition-effect mini previews: two contrasting layers (A light, B dark)
+   with B animated per the effect family so users can see what each does ─────── */
+.tp-a, .tp-b { position: absolute; inset: 0; display: block; }
+.tp-a { background: linear-gradient(135deg, #edecf3, #d6d4de); }
+.tp-b { background: linear-gradient(135deg, #3c3c46, #111116); }
+.tp-b { animation-duration: 2.6s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+@keyframes tpFade { 0%,15%{opacity:0} 42%,72%{opacity:1} 92%,100%{opacity:0} }
+.tp-fade { animation-name: tpFade; }
+@keyframes tpCut { 0%,49%{opacity:0} 50%,94%{opacity:1} 95%,100%{opacity:0} }
+.tp-cut { animation-name: tpCut; animation-timing-function: steps(1,end); }
+@keyframes tpSlideL { 0%,15%{transform:translateX(100%)} 42%,74%{transform:translateX(0)} 95%,100%{transform:translateX(100%)} }
+.tp-slide-l { animation-name: tpSlideL; }
+@keyframes tpSlideR { 0%,15%{transform:translateX(-100%)} 42%,74%{transform:translateX(0)} 95%,100%{transform:translateX(-100%)} }
+.tp-slide-r { animation-name: tpSlideR; }
+@keyframes tpSlideU { 0%,15%{transform:translateY(100%)} 42%,74%{transform:translateY(0)} 95%,100%{transform:translateY(100%)} }
+.tp-slide-u { animation-name: tpSlideU; }
+@keyframes tpSlideD { 0%,15%{transform:translateY(-100%)} 42%,74%{transform:translateY(0)} 95%,100%{transform:translateY(-100%)} }
+.tp-slide-d { animation-name: tpSlideD; }
+@keyframes tpWipeL { 0%,15%{clip-path:inset(0 0 0 100%)} 42%,74%{clip-path:inset(0)} 95%,100%{clip-path:inset(0 0 0 100%)} }
+.tp-wipe-l { animation-name: tpWipeL; }
+@keyframes tpWipeR { 0%,15%{clip-path:inset(0 100% 0 0)} 42%,74%{clip-path:inset(0)} 95%,100%{clip-path:inset(0 100% 0 0)} }
+.tp-wipe-r { animation-name: tpWipeR; }
+@keyframes tpWipeU { 0%,15%{clip-path:inset(100% 0 0 0)} 42%,74%{clip-path:inset(0)} 95%,100%{clip-path:inset(100% 0 0 0)} }
+.tp-wipe-u { animation-name: tpWipeU; }
+@keyframes tpWipeD { 0%,15%{clip-path:inset(0 0 100% 0)} 42%,74%{clip-path:inset(0)} 95%,100%{clip-path:inset(0 0 100% 0)} }
+.tp-wipe-d { animation-name: tpWipeD; }
+@keyframes tpCircle { 0%,15%{clip-path:circle(0% at 50% 50%)} 42%,74%{clip-path:circle(72% at 50% 50%)} 95%,100%{clip-path:circle(0% at 50% 50%)} }
+.tp-circle { animation-name: tpCircle; }
+@keyframes tpBox { 0%,15%{clip-path:inset(50%)} 42%,74%{clip-path:inset(0)} 95%,100%{clip-path:inset(50%)} }
+.tp-box { animation-name: tpBox; }
+@keyframes tpZoom { 0%,15%{opacity:0;transform:scale(1.45)} 42%,74%{opacity:1;transform:scale(1)} 95%,100%{opacity:0;transform:scale(1.45)} }
+.tp-zoom { animation-name: tpZoom; }
+@keyframes tpDiag { 0%,15%{clip-path:polygon(0 0,0 0,0 0)} 42%,74%{clip-path:polygon(0 0,180% 0,0 180%)} 95%,100%{clip-path:polygon(0 0,0 0,0 0)} }
+.tp-diag { animation-name: tpDiag; }
+@media (prefers-reduced-motion: reduce) {
+  .tp-b { animation: none !important; opacity: 0.5; transform: none !important; clip-path: none !important; }
+}
+
 /* tooltip (portaled to <body>): dark chip, white text — on-brand, escapes overflow */
 @keyframes tipIn { from { opacity: 0 } to { opacity: 1 } }
 @media (prefers-reduced-motion: reduce) { @keyframes tipIn { from { opacity: 1 } to { opacity: 1 } } }

@@ -258,6 +258,32 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftId, demo]);
 
+  // Seed B-roll from media uploaded on the Home composer (stashed in sessionStorage
+  // as it navigated here). Only on a fresh video — never clobber a resumed draft.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (demo || draftId || seededRef.current) return;
+    seededRef.current = true;
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem("sentezy:pending-media");
+      sessionStorage.removeItem("sentezy:pending-media");
+    } catch {
+      return;
+    }
+    if (!raw) return;
+    try {
+      const media = JSON.parse(raw) as { ref: string; url?: string; kind: "image" | "video"; transition?: string }[];
+      const restored: BgImage[] = media
+        .filter((m) => m?.ref)
+        .map((m) => ({ id: m.ref, url: m.url ?? (m.kind === "image" ? cfImageUrl(m.ref) : ""), kind: m.kind, transition: m.transition ?? "fade" }));
+      if (restored.length) syncBgImages(restored);
+    } catch {
+      /* ignore malformed payloads */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, demo]);
+
   const presenter = presenters.find((p) => p.id === values.presenterId);
   // Prefer the avatar's matted (transparent) thumbnail for the cut-out preview;
   // fall back to the presenter's source image if it isn't matted yet.
