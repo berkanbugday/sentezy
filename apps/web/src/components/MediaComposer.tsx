@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAvatars, useUploadBackground, useUploadBackgroundVideo, useVoicePreview, useVoicesInfinite } from "@/lib/queries";
+import { CAPTION_COLORS, CAPTION_FAMILIES, CAPTION_FONTS, CAPTION_PRESETS, DEFAULT_PRESET, presetById, type CaptionPreset } from "@/lib/captionStyles";
+import { CaptionAnimated } from "./CaptionSample";
 import { Icon } from "./icons";
 
 type Gender = "all" | "kadın" | "erkek";
@@ -192,6 +194,60 @@ function Spinner({ size = 18 }: { size?: number }) {
   );
 }
 
+// A caption-preset tile: static styled sample that sweeps word-by-word on hover/focus
+// (or while selected), mirroring how the caption plays in the reel.
+function CaptionTile({ preset, words, selected, onSelect }: { preset: CaptionPreset; words: string[]; selected: boolean; onSelect: () => void }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)}
+      onBlur={() => setHover(false)}
+      className="text-left"
+    >
+      <div className={`relative grid aspect-video place-items-center overflow-hidden rounded-lg border bg-black px-2 transition ${selected ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"}`}>
+        <CaptionAnimated base={preset.base} font={preset.font} color={preset.color} words={words} play={hover || selected} />
+        {selected && (
+          <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-ink text-paper">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7" /></svg>
+          </span>
+        )}
+      </div>
+      <div className={`mt-1.5 truncate px-0.5 text-[11px] font-medium ${selected ? "text-ink" : "text-slate"}`}>{preset.family} · {preset.font}</div>
+    </button>
+  );
+}
+
+// A transition-effect tile: static preview that plays only on hover/focus (or while
+// selected), mirroring CaptionTile so the effect grid isn't a wall of motion.
+function EffectTile({ value, label, selected, onSelect }: { value: string; label: string; selected: boolean; onSelect: () => void }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)}
+      onBlur={() => setHover(false)}
+      className="text-left"
+    >
+      <div className={`relative aspect-video overflow-hidden rounded-lg border transition ${selected ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"}`}>
+        <EffectPreview value={value} play={hover || selected} />
+        {selected && (
+          <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-ink text-paper">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7" /></svg>
+          </span>
+        )}
+      </div>
+      <div className={`mt-1.5 truncate px-0.5 text-[11px] font-medium ${selected ? "text-ink" : "text-slate"}`}>{label}</div>
+    </button>
+  );
+}
+
 /** Upload-first hero composer: accepts multiple images + videos, uploads each to
  *  storage (with per-tile progress), and carries the uploaded refs into /create. */
 export function MediaComposer() {
@@ -207,11 +263,22 @@ export function MediaComposer() {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [voiceId, setVoiceId] = useState<string | null>(null);
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
+  const [captionOpen, setCaptionOpen] = useState(false);
+  const [captionId, setCaptionId] = useState(DEFAULT_PRESET.id);
+  const [captionQ, setCaptionQ] = useState("");
+  const [captionFamily, setCaptionFamily] = useState(""); // "" = all
+  const [captionFontF, setCaptionFontF] = useState("");
+  const [captionColorF, setCaptionColorF] = useState("");
+  const [captionFiltersOpen, setCaptionFiltersOpen] = useState(false);
+  const [captionShown, setCaptionShown] = useState(60); // incremental reveal count
+  const [captionRealText, setCaptionRealText] = useState(false); // preview tiles with the user's own script
   const [script, setScript] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const voiceListRef = useRef<HTMLDivElement>(null);
   const voiceSentinelRef = useRef<HTMLDivElement>(null);
+  const captionSentinelRef = useRef<HTMLDivElement>(null);
+  const selectedCaption = presetById(captionId);
 
   const avatarsQ = useAvatars();
   const avatars = (avatarsQ.data ?? []).filter((a) => a.ready && a.id);
@@ -256,6 +323,29 @@ export function MediaComposer() {
     setVoiceUseCase("");
     setVoiceCategory("");
   }
+
+  // Caption presets — filter the local catalog; reveal incrementally on scroll.
+  const CAPTION_SAMPLE = ["Bunu", "MUTLAKA", "görmelisin"];
+  // Tiles preview either a fixed sample or the first few words of the real script.
+  const captionWords =
+    captionRealText && script.trim() ? script.trim().split(/\s+/).slice(0, 4) : CAPTION_SAMPLE;
+  const filteredCaptions = CAPTION_PRESETS.filter(
+    (p) =>
+      (!captionFamily || p.family === captionFamily) &&
+      (!captionFontF || p.font === captionFontF) &&
+      (!captionColorF || p.color === captionColorF) &&
+      (!captionQ.trim() || p.name.toLocaleLowerCase("tr").includes(captionQ.trim().toLocaleLowerCase("tr"))),
+  );
+  const activeCaptionFilters = [captionFamily, captionFontF, captionColorF].filter(Boolean).length;
+  useEffect(() => { setCaptionShown(60); }, [captionQ, captionFamily, captionFontF, captionColorF]);
+  useEffect(() => {
+    if (!captionOpen) return;
+    const el = captionSentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((es) => { if (es[0]?.isIntersecting) setCaptionShown((n) => n + 60); });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [captionOpen, filteredCaptions.length]);
 
   const filteredAvatars = avatars.filter(
     (a) =>
@@ -393,11 +483,13 @@ export function MediaComposer() {
   function create() {
     const ready = items.filter((i) => i.status === "done" && i.ref);
     const tr = multiple ? transition : DEFAULT_TRANSITION; // 1 media = no transition
+    const preset = presetById(captionId);
     const payload = {
       media: ready.map((i) => ({ ref: i.ref, url: i.serverUrl, kind: i.kind, transition: tr })),
       script: script.trim() || undefined,
       avatar: selectedAvatar ? { id: selectedAvatar.id, name: selectedAvatar.name } : undefined,
       voice: selectedVoice ? { id: selectedVoice.id } : undefined,
+      caption: { style: preset.base, font: preset.font, color: preset.color },
     };
     try {
       if (payload.media.length || payload.script || payload.avatar) sessionStorage.setItem(PENDING_KEY, JSON.stringify(payload));
@@ -551,6 +643,20 @@ export function MediaComposer() {
             {selectedVoice ? selectedVoice.label : "Ses seç"}
             <Icon.chevronDown width={14} height={14} className="text-muted" />
           </button>
+          {/* caption style chip */}
+          <button
+            type="button"
+            onClick={() => setCaptionOpen(true)}
+            disabled={!hasScript}
+            title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
+            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <span className="grid h-7 w-11 flex-none place-items-center overflow-hidden rounded-full bg-black">
+              <span style={{ color: selectedCaption.color, fontFamily: `"${selectedCaption.font}", sans-serif`, fontWeight: 800, fontSize: 12, lineHeight: 1 }}>Aa</span>
+            </span>
+            {selectedCaption.family}
+            <Icon.chevronDown width={14} height={14} className="text-muted" />
+          </button>
           {/* effect mini-preview chip */}
           {multiple && (
             <button
@@ -561,7 +667,7 @@ export function MediaComposer() {
               className="slide-in flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
             >
               <span className="h-7 w-11 flex-none overflow-hidden rounded-full border border-hairline">
-                <EffectPreview value={transition} width={110} height={64} />
+                <EffectPreview value={transition} width={110} height={64} play={false} />
               </span>
               {currentLabel}
               <Icon.chevronDown width={14} height={14} className="text-muted" />
@@ -608,24 +714,9 @@ export function MediaComposer() {
                 <div key={g.group} className="mb-6 last:mb-0">
                   <div className="mb-3 text-[14px] font-semibold text-ink">{g.group}</div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3">
-                    {g.items.map((it) => {
-                      const sel = transition === it.value;
-                      return (
-                        <button key={it.value} type="button" onClick={() => setTransition(it.value)} className="text-left">
-                          <div className={`relative aspect-video overflow-hidden rounded-lg border transition ${sel ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"}`}>
-                            <EffectPreview value={it.value} />
-                            {sel && (
-                              <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-ink text-paper">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="m5 12 5 5L20 7" />
-                                </svg>
-                              </span>
-                            )}
-                          </div>
-                          <div className={`mt-1.5 truncate px-0.5 text-[11px] font-medium ${sel ? "text-ink" : "text-slate"}`}>{it.label}</div>
-                        </button>
-                      );
-                    })}
+                    {g.items.map((it) => (
+                      <EffectTile key={it.value} value={it.value} label={it.label} selected={transition === it.value} onSelect={() => setTransition(it.value)} />
+                    ))}
                   </div>
                 </div>
               ))}
@@ -800,7 +891,7 @@ export function MediaComposer() {
                   <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${realTts ? "bg-ink" : "bg-hairline"}`}>
                     <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${realTts ? "left-[18px]" : "left-0.5"}`} />
                   </span>
-                  Yazdığım Metni Oku
+                  Yazdığım metni oku
                 </button>
               ) : (
                 <span />
@@ -850,6 +941,124 @@ export function MediaComposer() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* caption style picker */}
+      {captionOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+          <button type="button" aria-label="Kapat" onClick={() => setCaptionOpen(false)} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+          <div className="sheet-in no-scrollbar relative z-10 flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px] sm:border sm:border-hairline">
+            <div className="flex-none px-5 pt-5">
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
+              <div className="mb-1 flex items-start justify-between gap-3">
+                <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Altyazı stili</h3>
+                <button type="button" onClick={() => setCaptionOpen(false)} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
+                  <Icon.close width={18} height={18} className="block" />
+                </button>
+              </div>
+              <div className="mb-3 mt-2 flex items-center gap-2">
+                <div className="relative flex-1">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+                    <Icon.search width={15} height={15} />
+                  </span>
+                  <input value={captionQ} onChange={(e) => setCaptionQ(e.target.value)} placeholder="Stil ara…" className="w-full rounded-full border border-hairline bg-paper py-2 pl-9 pr-3 text-[13px] text-ink outline-none transition focus:border-signal" />
+                </div>
+                <button type="button" onClick={() => setCaptionFiltersOpen(true)} className="flex flex-none items-center gap-1.5 rounded-full border border-hairline bg-paper px-3.5 py-2 text-[13px] font-medium text-slate transition hover:bg-mist">
+                  <Icon.filter width={16} height={16} />
+                  Filtrele
+                  {activeCaptionFilters > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-bold text-paper">{activeCaptionFilters}</span>}
+                </button>
+              </div>
+            </div>
+
+            <div className="no-scrollbar overflow-y-auto px-5 py-4">
+              {filteredCaptions.length === 0 ? (
+                <div className="py-10 text-center text-[14px] text-muted">Stil bulunamadı</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {filteredCaptions.slice(0, captionShown).map((p) => (
+                      <CaptionTile key={p.id} preset={p} words={captionWords} selected={captionId === p.id} onSelect={() => setCaptionId(p.id)} />
+                    ))}
+                  </div>
+                  {captionShown < filteredCaptions.length && <div ref={captionSentinelRef} className="h-8" />}
+                </>
+              )}
+            </div>
+
+            <div className="flex flex-none items-center justify-between gap-3 px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
+              {hasScript ? (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={captionRealText}
+                  onClick={() => setCaptionRealText((r) => !r)}
+                  className="flex items-center gap-2.5 text-[12.5px] font-medium text-ink"
+                >
+                  <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${captionRealText ? "bg-ink" : "bg-hairline"}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${captionRealText ? "left-[18px]" : "left-0.5"}`} />
+                  </span>
+                  Yazdığım metni göster
+                </button>
+              ) : (
+                <span className="text-[12px] text-muted">{filteredCaptions.length} stil</span>
+              )}
+              <button type="button" onClick={() => setCaptionOpen(false)} className="btn btn-primary min-w-28">Tamam</button>
+            </div>
+          </div>
+
+          {/* nested filters sheet — mirrors the voice modal's Filtreler sheet */}
+          {captionFiltersOpen && (
+            <div className="absolute inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4">
+              <button type="button" aria-label="Kapat" onClick={() => setCaptionFiltersOpen(false)} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+              <div className="sheet-in no-scrollbar relative z-10 flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px] sm:border sm:border-hairline">
+                <div className="flex-none px-5 pt-5">
+                  <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
+                  <div className="mb-1 flex items-center justify-between gap-3">
+                    <h3 className="disp text-[18px] font-semibold text-ink">Filtreler</h3>
+                    <button type="button" onClick={() => setCaptionFiltersOpen(false)} aria-label="Kapat" className="grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
+                      <Icon.close width={18} height={18} className="block" />
+                    </button>
+                  </div>
+                </div>
+                <div className="no-scrollbar flex flex-col gap-4 overflow-y-auto px-5 py-4">
+                  <div>
+                    <div className="mb-2 text-[13px] font-semibold text-ink">Tür</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {CAPTION_FAMILIES.map((f) => (
+                        <button key={f.key} type="button" onClick={() => setCaptionFamily(captionFamily === f.label ? "" : f.label)} className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${captionFamily === f.label ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist"}`}>{f.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="mb-2 text-[13px] font-semibold text-ink">Yazı tipi</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {CAPTION_FONTS.map((f) => (
+                        <button key={f} type="button" onClick={() => setCaptionFontF(captionFontF === f ? "" : f)} style={{ fontFamily: `"${f}", sans-serif` }} className={`rounded-full border px-3 py-1.5 text-[13px] transition ${captionFontF === f ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist"}`}>{f}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="mb-2 text-[13px] font-semibold text-ink">Renk</div>
+                    <div className="flex flex-wrap gap-2">
+                      {CAPTION_COLORS.map((c) => (
+                        <button key={c.hex} type="button" onClick={() => setCaptionColorF(captionColorF === c.hex ? "" : c.hex)} aria-label={c.name} title={c.name} className={`h-7 w-7 rounded-full border-2 transition ${captionColorF === c.hex ? "border-ink" : "border-hairline"}`} style={{ background: c.hex }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-none items-center justify-between gap-3 px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
+                  <button type="button" onClick={() => { setCaptionFamily(""); setCaptionFontF(""); setCaptionColorF(""); }} className="rounded-full border border-hairline px-4 py-2 text-[13px] font-medium text-slate transition hover:bg-mist hover:text-ink">
+                    Temizle
+                  </button>
+                  <button type="button" onClick={() => setCaptionFiltersOpen(false)} className="btn btn-primary min-w-28">
+                    Uygula ({filteredCaptions.length})
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

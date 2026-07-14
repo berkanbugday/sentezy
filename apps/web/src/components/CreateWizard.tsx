@@ -208,7 +208,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         if (video.presenterId) setValue("presenterId", video.presenterId);
         if (video.voiceId) setValue("voiceId", video.voiceId);
         setValue("aspectRatio", RATIO_FROM_API[video.aspectRatio] ?? "9:16");
-        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean" | "keyword"; font?: string; color?: string }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[]; transitions?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { presenterLayout?: "side" | "bottom"; avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" }; voice?: { emotion?: string }; effects?: { transitionSfx?: boolean } };
+        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: CreateReelValues["captionStyle"]; font?: string; color?: string }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[]; transitions?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { presenterLayout?: "side" | "bottom"; avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" }; voice?: { emotion?: string }; effects?: { transitionSfx?: boolean } };
         // captions: legacy drafts store a boolean; newer ones an object.
         if (typeof o.captions === "boolean") setValue("captions", o.captions);
         else if (o.captions) {
@@ -279,6 +279,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         script?: string;
         avatar?: { id: string; name: string };
         voice?: { id: string };
+        caption?: { style?: CreateReelValues["captionStyle"]; font?: string; color?: string };
       };
       const restored: BgImage[] = (p.media ?? [])
         .filter((m) => m?.ref)
@@ -287,6 +288,9 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
       if (p.script) setValue("script", p.script);
       if (p.voice?.id) setValue("voiceId", p.voice.id, { shouldValidate: true });
       if (p.avatar?.id) setPendingAvatar(p.avatar);
+      if (p.caption?.style) setValue("captionStyle", p.caption.style);
+      if (p.caption?.font) setValue("captionFont", p.caption.font);
+      if (p.caption?.color) setValue("captionColor", p.caption.color);
     } catch {
       /* ignore malformed payloads */
     }

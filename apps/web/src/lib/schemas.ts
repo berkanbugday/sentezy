@@ -26,7 +26,7 @@ export const createReelSchema = z.object({
   captions: z.boolean().default(true),
   // Caption look — karaoke (word sweep), tiktok (word accent), beast (huge uppercase pop),
   // hormozi (big uppercase + accent word), boxed (CapCut bubble box), clean (plain phrase).
-  captionStyle: z.enum(["karaoke", "tiktok", "beast", "hormozi", "boxed", "clean", "keyword"]).default("karaoke"),
+  captionStyle: z.enum(["karaoke", "tiktok", "beast", "hormozi", "boxed", "clean", "keyword", "bubble", "highlight", "typewriter"]).default("karaoke"),
   // Caption font family (must be one installed in the worker image) and highlight/accent colour.
   captionFont: z.string().default("General Sans"),
   captionColor: z.string().default("#FFD54A"),

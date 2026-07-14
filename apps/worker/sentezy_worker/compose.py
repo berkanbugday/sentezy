@@ -1,5 +1,5 @@
-"""ffmpeg reel composition — stdlib only (no third-party deps), so it can be
-verified independently of Redis/DB/providers.
+"""ffmpeg reel composition — stdlib only save for fontTools (caption glyph metrics),
+so it can be verified independently of Redis/DB/providers.
 
 Builds a 9:16 reel in the cut-out model: the matted presenter (alpha .mov carrying
 the ElevenLabs voice) is framed to one side over auto-timed full-frame B-roll
@@ -15,10 +15,63 @@ import os
 import subprocess
 from dataclasses import dataclass
 
+from fontTools.ttLib import TTFont
+
 # Bundled brand fonts (apps/worker/fonts) — handed to libass via `fontsdir` so
 # caption burn-in uses General Sans even without a system-wide font install.
 _FONTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "fonts"))
 _SFX_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "sfx"))
+
+# Caption family → bundled font file, for glyph-width measurement (the pill/marker
+# kinds draw ASS vector backgrounds that must hug the text). General Sans maps to its
+# semibold weight to approximate the `Bold=1` render. Unknown families fall back to it.
+_FONT_FILES = {
+    "General Sans": "GeneralSans-Semibold.otf", "Anton": "Anton.ttf",
+    "Archivo Black": "ArchivoBlack.ttf", "Bebas Neue": "BebasNeue.ttf",
+    "Fredoka": "Fredoka.ttf", "Inter": "Inter.ttf", "Kanit": "Kanit.ttf",
+    "Montserrat": "Montserrat.ttf", "Oswald": "Oswald.ttf", "Poppins": "Poppins.ttf",
+    "Rubik": "Rubik.ttf", "Sora": "Sora.ttf", "Teko": "Teko.ttf",
+}
+_font_cache: dict[str, tuple] = {}
+
+
+def _font_metrics(family: str) -> tuple:
+    """(cmap, hmtx, units_per_em) for a caption family; caches parsed fonts."""
+    fname = _FONT_FILES.get(family) or _FONT_FILES["General Sans"]
+    if fname not in _font_cache:
+        tt = TTFont(os.path.join(_FONTS_DIR, fname), lazy=True)
+        _font_cache[fname] = (tt.getBestCmap(), tt["hmtx"], tt["head"].unitsPerEm)
+    return _font_cache[fname]
+
+
+def _text_width(family: str, text: str, size_px: float) -> float:
+    """Advance-width of `text` at `size_px` (ignores kerning — absorbed by pill padding)."""
+    cmap, hmtx, upm = _font_metrics(family)
+    total = 0
+    for ch in text:
+        gname = cmap.get(ord(ch)) or cmap.get(ord("?")) or cmap.get(ord(" "))
+        if gname is None:
+            continue
+        total += hmtx[gname][0]
+    return total * size_px / upm
+
+
+def _rounded_rect(w: float, h: float, r: float) -> str:
+    """ASS `\\p1` drawing path for a w×h rounded rectangle (corner radius r) from (0,0)."""
+    r = max(0.0, min(r, w / 2, h / 2))
+    k = r * 0.5523  # circle→cubic-bezier control offset
+    def n(x: float) -> str:
+        return f"{x:.0f}"
+    return (
+        f"m {n(r)} 0 l {n(w - r)} 0 "
+        f"b {n(w - r + k)} 0 {n(w)} {n(r - k)} {n(w)} {n(r)} "
+        f"l {n(w)} {n(h - r)} "
+        f"b {n(w)} {n(h - r + k)} {n(w - r + k)} {n(h)} {n(w - r)} {n(h)} "
+        f"l {n(r)} {n(h)} "
+        f"b {n(r - k)} {n(h)} 0 {n(h - r + k)} 0 {n(h - r)} "
+        f"l 0 {n(r)} "
+        f"b 0 {n(r - k)} {n(r - k)} 0 {n(r)} 0"
+    )
 
 
 def _transition_sfx_files() -> list[str]:
@@ -128,6 +181,13 @@ _CAPTION_STYLES = {
     # Keyword accent — whole phrase white, the one important word stays in the accent
     # colour the whole phrase, and the spoken word gives a subtle scale pop (UGC/CapCut).
     "keyword": {"chunk": 4, "scale": 0.050, "min_size": 40, "bold": 1, "outline": 6, "shadow": 1, "kind": "keyword"},
+    # Bubble — every word wears an accent "sticker" (fat accent outline, dark text).
+    # CapCut sticker-caption look; distinct from `boxed` (one box around the phrase).
+    "bubble":     {"chunk": 3, "scale": 0.046, "min_size": 36, "bold": 1, "outline": 6, "shadow": 0, "kind": "bubble"},
+    # Highlight — plain white phrase; the spoken word gets a filled accent marker.
+    "highlight":  {"chunk": 4, "scale": 0.048, "min_size": 38, "bold": 1, "outline": 5, "shadow": 0, "kind": "highlight"},
+    # Typewriter — words appear one-by-one, cumulative, no dimmed upcoming preview.
+    "typewriter": {"chunk": 5, "scale": 0.044, "min_size": 34, "bold": 1, "outline": 5, "shadow": 0, "kind": "typewriter"},
 }
 _HORMOZI_ACCENT = "#FFD54A"  # default highlight — the reference yellow
 
@@ -178,10 +238,12 @@ def build_captions_ass(
     primary = _hex_to_ass(color) if (style == "karaoke" and color) else white
     secondary = "&H70FFFFFF"  # karaoke: upcoming word — dimmed white (0x70 alpha)
     outline = "&H00000000"    # black outline
-    # box styles paint an opaque backdrop (BorderStyle 3); others use a soft shadow box.
+    # box style paints an opaque backdrop (BorderStyle 3); others use a soft shadow box.
+    # bubble/highlight draw their own vector pills (\p) and position via \pos, so they
+    # use the plain outline style here.
+    accent = _hex_to_ass(color or _HORMOZI_ACCENT)
     border_style = 3 if kind == "box" else 1
     back = "&HA0000000" if kind == "box" else "&H64000000"
-    accent = _hex_to_ass(color or _HORMOZI_ACCENT)
     header = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {width}
@@ -196,6 +258,13 @@ Style: Cap,{font},{font_size},{primary},{secondary},{outline},{back},{spec["bold
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
+    # Horizontal band the captions live in — same as the Style margins imply — so the
+    # \pos-positioned pills (bubble/highlight) sit where centred text would.
+    if presenter_pos == "bottom":
+        clear_x0, clear_x1 = edge, width - edge
+    else:
+        reserve = int(width * 0.50)
+        clear_x0, clear_x1 = (edge, width - reserve) if avatar_side == "right" else (reserve, width - edge)
     per_chunk = spec["chunk"]
     upper = spec.get("upper", False)
     do_pop = spec.get("pop", False)
@@ -207,6 +276,71 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         texts = [w.text.replace(chr(10), " ") for w in chunk]
         if upper:
             texts = [_tr_upper(t) for t in texts]
+        if kind in ("bubble", "highlight"):
+            # Manual layout: measure widths, greedy-wrap into the clear band, then draw
+            # vector pills (\p, Layer 0) with the text on top (Layer 1) via \pos.
+            sp = _text_width(font, " ", font_size)
+            wds = [_text_width(font, t, font_size) for t in texts]
+            avail = clear_x1 - clear_x0
+            cx = (clear_x0 + clear_x1) / 2
+            line_idx: list[list[int]] = []
+            cur: list[int] = []
+            curw = 0.0
+            for k, wpx in enumerate(wds):
+                add = wpx + (sp if cur else 0)
+                if cur and curw + add > avail:
+                    line_idx.append(cur)
+                    cur, curw, add = [], 0.0, wpx
+                cur.append(k)
+                curw += add
+            if cur:
+                line_idx.append(cur)
+            line_h = int(font_size * 1.25)
+            block_h = len(line_idx) * line_h
+            y0 = margin_v if alignment == 8 else height - margin_v - block_h
+            geo = []  # per line: (left_x, [word_left_x...], center_y, line_width)
+            for li, idxs in enumerate(line_idx):
+                lw = sum(wds[k] for k in idxs) + sp * (len(idxs) - 1)
+                left = cx - lw / 2
+                xs, x = [], left
+                for k in idxs:
+                    xs.append(x)
+                    x += wds[k] + sp
+                geo.append((left, xs, y0 + li * line_h + line_h / 2, lw))
+            start = _ass_time(chunk[0].start)
+            end = _ass_time(chunk[-1].end)
+
+            if kind == "bubble":
+                # One accent pill behind the whole phrase (the "fill sentence" look).
+                maxlw = max(g[3] for g in geo)
+                padx, pady, rad = int(font_size * 0.40), int(font_size * 0.22), int(font_size * 0.34)
+                box_w, box_h = maxlw + 2 * padx, block_h + 2 * pady
+                box_x, box_y = cx - box_w / 2, y0 - pady
+                pill_ov = "{" + f"\\an7\\pos({box_x:.0f},{box_y:.0f})\\1c{accent}&\\bord0\\shad0\\p1" + "}"
+                lines.append(f"Dialogue: 0,{start},{end},Cap,,0,0,0,,{pill_ov}{_rounded_rect(box_w, box_h, rad)}" + "{\\p0}")
+                for li, idxs in enumerate(line_idx):
+                    txt_ov = "{" + f"\\an5\\pos({cx:.0f},{geo[li][2]:.0f})\\1c&H000000&\\bord0\\shad0" + "}"
+                    lines.append(f"Dialogue: 1,{start},{end},Cap,,0,0,0,,{txt_ov}" + " ".join(texts[k] for k in idxs))
+                continue
+
+            # highlight — white phrase; the spoken word rides a filled accent marker.
+            padx, pady, rad = int(font_size * 0.20), int(font_size * 0.14), int(font_size * 0.24)
+            mh = font_size + 2 * pady
+            for j, w in enumerate(chunk):
+                wstart = _ass_time(w.start)
+                wend = _ass_time(chunk[j + 1].start if j + 1 < len(chunk) else chunk[-1].end)
+                for li, idxs in enumerate(line_idx):
+                    if j in idxs:
+                        left, xs, cy, lw = geo[li]
+                        mx, my = xs[idxs.index(j)] - padx, cy - mh / 2
+                        mk_ov = "{" + f"\\an7\\pos({mx:.0f},{my:.0f})\\1c{accent}&\\bord0\\shad0\\p1" + "}"
+                        lines.append(f"Dialogue: 0,{wstart},{wend},Cap,,0,0,0,,{mk_ov}{_rounded_rect(wds[j] + 2 * padx, mh, rad)}" + "{\\p0}")
+                        break
+                for li, idxs in enumerate(line_idx):
+                    parts = ["{\\1c&H000000&}" + texts[k] + "{\\1c&HFFFFFF&}" if k == j else texts[k] for k in idxs]
+                    txt_ov = "{" + f"\\an5\\pos({cx:.0f},{geo[li][2]:.0f})" + "}"
+                    lines.append(f"Dialogue: 1,{wstart},{wend},Cap,,0,0,0,,{txt_ov}" + " ".join(parts))
+            continue
         if kind == "wordpop":
             # One Dialogue event per word window: the chunk stays white, the spoken
             # word pops in the accent colour (and scales up briefly when `pop`).
@@ -234,6 +368,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                         tag = f"\\c{col}&\\fscx100\\fscy100"
                     parts.append(f"{{{tag}}}{t}")
                 lines.append(f"Dialogue: 0,{start},{end},Cap,,0,0,0,,{' '.join(parts)}")
+            continue
+        if kind == "typewriter":
+            # Cumulative reveal: at word j, show words 0..j only (no dimmed preview).
+            for j, w in enumerate(chunk):
+                start = _ass_time(w.start)
+                end = _ass_time(chunk[j + 1].start if j + 1 < len(chunk) else chunk[-1].end)
+                lines.append(f"Dialogue: 0,{start},{end},Cap,,0,0,0,,{' '.join(texts[: j + 1])}")
             continue
         start = _ass_time(chunk[0].start)
         end = _ass_time(chunk[-1].end)

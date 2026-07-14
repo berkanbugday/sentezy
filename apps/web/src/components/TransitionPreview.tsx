@@ -314,14 +314,28 @@ function subscribe(fn: Cb) {
   };
 }
 
-/** Canvas preview that plays `value` on a ping-pong loop with two distinct demo frames. */
-export function EffectPreview({ value, width = 300, height = 170 }: { value: string; width?: number; height?: number }) {
+/** Canvas preview of `value`. Static by default (one mid-transition frame); when `play`
+ *  is true it animates on the shared ping-pong clock. Only playing instances subscribe,
+ *  so the rAF loop idles when nothing is hovered/selected. */
+export function EffectPreview({ value, width = 300, height = 170, play = false }: { value: string; width?: number; height?: number; play?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const { a, b } = demos();
+    const paint = (p: number) => {
+      const c = canvasRef.current;
+      if (c) {
+        const ctx = c.getContext("2d");
+        if (ctx) draw(ctx, a, b, value, ease(p), c.width, c.height);
+      }
+    };
+    if (!play) {
+      // Static: a single mid-transition frame so the effect's character reads.
+      paint(0.5);
+      return;
+    }
     let start = 0;
     const cycle = HOLD + DUR + HOLD + DUR;
-    const { a, b } = demos();
     const cb = (t: number) => {
       if (!start) start = t;
       const e = (t - start) % cycle;
@@ -330,14 +344,10 @@ export function EffectPreview({ value, width = 300, height = 170 }: { value: str
       else if (e < HOLD + DUR) p = (e - HOLD) / DUR;
       else if (e < HOLD + DUR + HOLD) p = 1;
       else p = 1 - (e - HOLD - DUR - HOLD) / DUR;
-      const c = canvasRef.current;
-      if (c) {
-        const ctx = c.getContext("2d");
-        if (ctx) draw(ctx, a, b, value, ease(p), c.width, c.height);
-      }
+      paint(p);
     };
     return subscribe(cb);
-  }, [value]);
+  }, [value, play]);
 
   return <canvas ref={canvasRef} width={width} height={height} className="h-full w-full object-cover" />;
 }
