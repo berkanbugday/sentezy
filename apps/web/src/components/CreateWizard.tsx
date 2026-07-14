@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { ReelPreview } from "@/components/ReelPreview";
 import { type Avatar, AvatarStep, type BgImage, FormatStep, type Presenter, ReviewStep, ScriptStep, SetupStep, VoiceStep, type Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
+import { type ComposerSettings } from "@/lib/composerSettings";
 import { cfImageUrl } from "@/lib/images";
 import { type MusicTrack, useAvatars, useCreatePresenter, useGenerateVideo, useMusic, usePresenters, useUploadBackground, useUploadBackgroundVideo, useVoices } from "@/lib/queries";
 import { type CreateReelValues, createReelSchema } from "@/lib/schemas";
@@ -280,6 +281,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         avatar?: { id: string; name: string };
         voice?: { id: string };
         caption?: { style?: CreateReelValues["captionStyle"]; font?: string; color?: string };
+        settings?: Partial<ComposerSettings>;
       };
       const restored: BgImage[] = (p.media ?? [])
         .filter((m) => m?.ref)
@@ -291,6 +293,17 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
       if (p.caption?.style) setValue("captionStyle", p.caption.style);
       if (p.caption?.font) setValue("captionFont", p.caption.font);
       if (p.caption?.color) setValue("captionColor", p.caption.color);
+      const s = p.settings;
+      if (s) {
+        if (s.aspectRatio) setValue("aspectRatio", s.aspectRatio);
+        if (s.presenterLayout) setValue("presenterLayout", s.presenterLayout);
+        if (s.avatarSide) setValue("avatarSide", s.avatarSide);
+        if (s.captionPosition) setValue("captionPosition", s.captionPosition);
+        if (typeof s.voiceEmotion === "string") setValue("voiceEmotion", s.voiceEmotion);
+        if (s.musicTrackKey) setValue("musicTrackKey", s.musicTrackKey);
+        if (typeof s.musicVolume === "number") setValue("musicVolume", s.musicVolume);
+        if (typeof s.transitionSfx === "boolean") setValue("transitionSfx", s.transitionSfx);
+      }
     } catch {
       /* ignore malformed payloads */
     }

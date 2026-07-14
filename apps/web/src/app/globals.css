@@ -128,6 +128,11 @@ button:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { @keyframes sheetIn { from { transform: none } to { transform: none } } }
 .sheet-in { animation: sheetIn 0.22s ease-out; }
 
+/* right-side drawer slide-in (additional-settings panel) */
+@keyframes drawerIn { from { transform: translateX(100%) } to { transform: translateX(0) } }
+@media (prefers-reduced-motion: reduce) { @keyframes drawerIn { from { transform: none } to { transform: none } } }
+.drawer-in { animation: drawerIn 0.24s ease-out; }
+
 /* slide-in (e.g. the transition-effect button appearing when 2+ media) */
 @keyframes slideInX { from { opacity: 0; transform: translateX(-6px) } to { opacity: 1; transform: none } }
 @media (prefers-reduced-motion: reduce) { @keyframes slideInX { from { opacity: 1 } to { opacity: 1 } } }
