@@ -19,14 +19,14 @@ export default function DashboardPage() {
   return (
     <div>
       {/* full-bleed neutral hero — welcome + style dropdown + import composer */}
-      <section className="hero-aurora -mx-6 -mt-6 px-6 pb-10 pt-20 md:-mx-8 md:px-8">
+      <section className="hero-aurora -mx-5 -mt-6 px-5 pb-10 pt-10 sm:-mx-6 sm:px-6 sm:pt-12 md:-mx-8 md:px-8">
         <div className="mx-auto max-w-4xl">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="disp text-[34px] font-semibold leading-tight text-ink">Sentezy&apos;e hoş geldin</h1>
-              <p className="mt-1.5 text-[15px] text-slate">Medyanı içe aktar ve bir stil seç</p>
+              <h1 className="disp text-[26px] font-semibold leading-tight text-ink sm:text-[34px]">Sentezy&apos;e hoş geldin</h1>
+              <p className="mt-1.5 text-[14px] text-slate sm:text-[15px]">Medyanı içe aktar ve bir stil seç</p>
             </div>
-            <button className="flex flex-none items-center gap-2 rounded-full border border-hairline bg-paper px-4 py-2 text-[13.5px] font-medium text-ink transition hover:bg-mist">
+            <button className="flex flex-none items-center gap-2 rounded-full border border-hairline bg-paper px-3.5 py-2 text-[13px] font-medium text-ink transition hover:bg-mist sm:px-4 sm:text-[13.5px]">
               Stil
               <Icon.chevronDown width={15} height={15} className="text-muted" />
             </button>

@@ -75,4 +75,13 @@ export const Icon = {
   help: (p: SVGProps<SVGSVGElement>) => (
     <svg {...base} {...p}><circle cx="12" cy="12" r="9" /><path d="M9.6 9a2.4 2.4 0 1 1 3.4 2.2c-.8.4-1 .9-1 1.6" /><path d="M12 17h.01" /></svg>
   ),
+  close: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><path d="M6 6l12 12M18 6 6 18" /></svg>
+  ),
+  more: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p} fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
+  ),
+  panelLeft: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="M9 4v16" /></svg>
+  ),
 };

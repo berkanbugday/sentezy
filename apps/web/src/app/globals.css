@@ -55,6 +55,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* hand cursor on every interactive control (buttons, links, icons within them) */
+button:not(:disabled), [role="button"], a[href], label[for], summary { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
 /* ── primitives (auto light/dark via ink/paper swap) ─────────────────────── */
 .disp { font-family: var(--font-display); }
 .mono { font-family: var(--font-mono); }
@@ -118,6 +122,11 @@ body {
 /* hide scrollbars but keep scrolling */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* mobile account sheet slide-up */
+@keyframes sheetIn { from { transform: translateY(100%) } to { transform: translateY(0) } }
+@media (prefers-reduced-motion: reduce) { @keyframes sheetIn { from { transform: none } to { transform: none } } }
+.sheet-in { animation: sheetIn 0.22s ease-out; }
 
 /* tooltip (portaled to <body>): dark chip, white text — on-brand, escapes overflow */
 @keyframes tipIn { from { opacity: 0 } to { opacity: 1 } }
