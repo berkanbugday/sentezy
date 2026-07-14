@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useAvatars, useUploadBackground, useUploadBackgroundVideo, useVoicePreview, useVoicesInfinite } from "@/lib/queries";
 import { CAPTION_COLORS, CAPTION_FAMILIES, CAPTION_FONTS, CAPTION_PRESETS, DEFAULT_PRESET, presetById, type CaptionPreset } from "@/lib/captionStyles";
 import { CaptionAnimated } from "./CaptionSample";
@@ -97,9 +97,19 @@ import { EffectPreview } from "./TransitionPreview";
 import { DEFAULT_TRANSITION, TRANSITIONS } from "./WizardSteps";
 
 type Status = "uploading" | "done" | "error";
-type Media = { url: string; name: string; kind: "image" | "video"; file: File; status: Status; ref?: string; serverUrl?: string; poster?: string };
+type Media = { url: string; name: string; kind: "image" | "video"; file: File; status: Status; ref?: string; serverUrl?: string; poster?: string; transition?: string };
 
 const PENDING_KEY = "sentezy:pending-create";
+
+// value → human label (e.g. "whip" → "Savurma") for the between-clip transition buttons.
+const TRANSITION_LABELS: Record<string, string> = Object.fromEntries(
+  TRANSITIONS.flatMap((g) => g.items).map((it) => [it.value, it.label]),
+);
+
+// Connector line between clips — echoes the sidebar's --frame palette (blue→purple→warm).
+const TR_GRADIENT = "linear-gradient(90deg, rgb(52,104,184), rgb(96,64,168), rgb(170,86,96))";
+// Soft tint of the same palette for the transition node button.
+const TR_GRADIENT_SOFT = "linear-gradient(135deg, rgba(52,104,184,0.16), rgba(96,64,168,0.16), rgba(170,86,96,0.16))";
 
 /** Draw a frame from a video file to a canvas and return a JPEG object URL — a
  *  reliable cross-browser thumbnail (a bare <video> often paints a blank tile). */
@@ -256,8 +266,8 @@ export function MediaComposer() {
   const uploadVid = useUploadBackgroundVideo();
   const [items, setItems] = useState<Media[]>([]);
   const [drag, setDrag] = useState(false);
-  const [transition, setTransition] = useState("whip"); // default to a punchy effect (Savurma)
   const [effectOpen, setEffectOpen] = useState(false);
+  const [activeBoundary, setActiveBoundary] = useState<string | null>(null); // media url whose incoming transition is being edited
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [avatarId, setAvatarId] = useState<string | null>(null);
   const [voiceOpen, setVoiceOpen] = useState(false);
@@ -417,7 +427,8 @@ export function MediaComposer() {
   useEffect(() => {
     if (!multiple) setEffectOpen(false);
   }, [multiple]);
-  const currentLabel = TRANSITIONS.flatMap((g) => g.items).find((t) => t.value === transition)?.label ?? "";
+  // The boundary currently being edited (its incoming transition), for the effect modal.
+  const activeTransition = items.find((x) => x.url === activeBoundary)?.transition ?? DEFAULT_TRANSITION;
 
   // Revoke object URLs on unmount (ref keeps the latest list for the cleanup).
   const itemsRef = useRef<Media[]>([]);
@@ -452,7 +463,7 @@ export function MediaComposer() {
     const next: Media[] = [];
     for (const f of Array.from(files)) {
       const kind = f.type.startsWith("image/") ? "image" : f.type.startsWith("video/") ? "video" : null;
-      if (kind) next.push({ url: URL.createObjectURL(f), name: f.name, kind, file: f, status: "uploading" });
+      if (kind) next.push({ url: URL.createObjectURL(f), name: f.name, kind, file: f, status: "uploading", transition: "whip" });
     }
     if (next.length) {
       setItems((prev) => [...prev, ...next]);
@@ -482,10 +493,10 @@ export function MediaComposer() {
 
   function create() {
     const ready = items.filter((i) => i.status === "done" && i.ref);
-    const tr = multiple ? transition : DEFAULT_TRANSITION; // 1 media = no transition
     const preset = presetById(captionId);
     const payload = {
-      media: ready.map((i) => ({ ref: i.ref, url: i.serverUrl, kind: i.kind, transition: tr })),
+      // Each clip carries its own incoming transition; the first clip's is unused.
+      media: ready.map((i, idx) => ({ ref: i.ref, url: i.serverUrl, kind: i.kind, transition: idx === 0 ? DEFAULT_TRANSITION : i.transition ?? DEFAULT_TRANSITION })),
       script: script.trim() || undefined,
       avatar: selectedAvatar ? { id: selectedAvatar.id, name: selectedAvatar.name } : undefined,
       voice: selectedVoice ? { id: selectedVoice.id } : undefined,
@@ -528,9 +539,31 @@ export function MediaComposer() {
           </div>
         </button>
       ) : (
-        <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(68px,1fr))]">
-          {items.map((m) => (
-            <div key={m.url} className="group relative aspect-square overflow-hidden rounded-xl border border-hairline bg-mist">
+        <div className="no-scrollbar flex flex-nowrap items-center overflow-x-auto pb-1">
+          {items.map((m, i) => (
+            <Fragment key={m.url}>
+              {/* transition connector between two clips — a gradient line with this gap's effect node */}
+              {i > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setActiveBoundary(m.url); setEffectOpen(true); }}
+                  title={`Geçiş: ${TRANSITION_LABELS[m.transition ?? DEFAULT_TRANSITION] ?? ""}`}
+                  aria-label="Geçiş efekti seç"
+                  className="group/tr flex flex-none flex-col items-center gap-1 px-0.5"
+                >
+                  <span className="flex items-center">
+                    <span className="h-0.5 w-3 rounded-full" style={{ background: TR_GRADIENT }} />
+                    <span className="mx-0.5 grid h-7 w-7 place-items-center rounded-full border border-hairline text-slate transition group-hover/tr:text-ink" style={{ background: TR_GRADIENT_SOFT }}>
+                      <Icon.wand width={13} height={13} />
+                    </span>
+                    <span className="h-0.5 w-3 rounded-full" style={{ background: TR_GRADIENT }} />
+                  </span>
+                  <span className="max-w-[60px] truncate text-[9px] font-medium leading-none text-muted group-hover/tr:text-slate">
+                    {TRANSITION_LABELS[m.transition ?? DEFAULT_TRANSITION] ?? ""}
+                  </span>
+                </button>
+              )}
+              <div className="group relative h-[68px] w-[68px] flex-none overflow-hidden rounded-xl border border-hairline bg-mist">
               {m.kind === "image" ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={m.url} alt={m.name} className="h-full w-full object-cover" />
@@ -581,15 +614,16 @@ export function MediaComposer() {
               >
                 <Icon.close width={12} height={12} className="block" />
               </button>
-            </div>
+              </div>
+            </Fragment>
           ))}
           <button
             type="button"
             onClick={pick}
-            className="flex aspect-square flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-hairline text-muted transition hover:bg-mist hover:text-slate"
+            className="ml-2 flex h-[68px] w-[68px] flex-none flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-hairline text-muted transition hover:bg-mist hover:text-slate"
           >
-            <Icon.plus width={22} height={22} />
-            <span className="text-[11px] font-medium">Ekle</span>
+            <Icon.plus width={20} height={20} />
+            <span className="text-[10px] font-medium">Ekle</span>
           </button>
         </div>
       )}
@@ -657,22 +691,6 @@ export function MediaComposer() {
             {selectedCaption.family}
             <Icon.chevronDown width={14} height={14} className="text-muted" />
           </button>
-          {/* effect mini-preview chip */}
-          {multiple && (
-            <button
-              type="button"
-              onClick={() => setEffectOpen(true)}
-              disabled={!hasScript}
-              title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
-              className="slide-in flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              <span className="h-7 w-11 flex-none overflow-hidden rounded-full border border-hairline">
-                <EffectPreview value={transition} width={110} height={64} play={false} />
-              </span>
-              {currentLabel}
-              <Icon.chevronDown width={14} height={14} className="text-muted" />
-            </button>
-          )}
           {items.length > 0 && (
             <span className="flex items-center gap-1.5 whitespace-nowrap text-[12px] text-muted">
               {uploading && <Spinner size={13} />}
@@ -702,6 +720,11 @@ export function MediaComposer() {
               <div className="mb-1 flex items-start justify-between gap-3">
                 <div>
                   <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Geçiş Efekti</h3>
+                  {activeBoundary && (
+                    <p className="mt-0.5 text-[12px] text-muted">
+                      {items.findIndex((x) => x.url === activeBoundary)}. ve {items.findIndex((x) => x.url === activeBoundary) + 1}. klip arası
+                    </p>
+                  )}
                 </div>
                 <button type="button" onClick={() => setEffectOpen(false)} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
                   <Icon.close width={18} height={18} className="block" />
@@ -715,7 +738,7 @@ export function MediaComposer() {
                   <div className="mb-3 text-[14px] font-semibold text-ink">{g.group}</div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3">
                     {g.items.map((it) => (
-                      <EffectTile key={it.value} value={it.value} label={it.label} selected={transition === it.value} onSelect={() => setTransition(it.value)} />
+                      <EffectTile key={it.value} value={it.value} label={it.label} selected={activeTransition === it.value} onSelect={() => { if (activeBoundary) patch(activeBoundary, { transition: it.value }); }} />
                     ))}
                   </div>
                 </div>
