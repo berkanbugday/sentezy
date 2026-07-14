@@ -208,7 +208,7 @@ export function CreateWizard({ demo, draftId }: { demo?: StudioDemo; draftId?: s
         if (video.presenterId) setValue("presenterId", video.presenterId);
         if (video.voiceId) setValue("voiceId", video.voiceId);
         setValue("aspectRatio", RATIO_FROM_API[video.aspectRatio] ?? "9:16");
-        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean"; font?: string; color?: string }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[]; transitions?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { presenterLayout?: "side" | "bottom"; avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" }; voice?: { emotion?: string }; effects?: { transitionSfx?: boolean } };
+        const o = (video.options ?? {}) as { captions?: boolean | { enabled?: boolean; style?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean" | "keyword"; font?: string; color?: string }; wizardStep?: number; background?: { type?: string; value?: string; images?: string[]; transitions?: string[] }; music?: { trackKey?: string | null; volume?: number }; layout?: { presenterLayout?: "side" | "bottom"; avatarSide?: "left" | "right"; captionPosition?: "top" | "bottom" }; voice?: { emotion?: string }; effects?: { transitionSfx?: boolean } };
         // captions: legacy drafts store a boolean; newer ones an object.
         if (typeof o.captions === "boolean") setValue("captions", o.captions);
         else if (o.captions) {

@@ -17,7 +17,7 @@ export const AspectRatio = z.enum(["9:16", "1:1", "16:9"]);
 export type AspectRatio = z.infer<typeof AspectRatio>;
 
 // ── Captions ────────────────────────────────────────────────────────────────
-export const CaptionStyle = z.enum(["karaoke", "tiktok", "beast", "hormozi", "boxed", "clean"]);
+export const CaptionStyle = z.enum(["karaoke", "tiktok", "beast", "hormozi", "boxed", "clean", "keyword"]);
 export type CaptionStyle = z.infer<typeof CaptionStyle>;
 
 const CaptionsObject = z.object({

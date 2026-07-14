@@ -4,7 +4,7 @@ FROM python:3.12-slim
 # ffmpeg from apt includes libass/libfreetype (unlike the local Homebrew build),
 # so caption burn-in works in production.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core fontconfig \
+    && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core fonts-noto-color-emoji fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
 # uv for fast, reproducible installs

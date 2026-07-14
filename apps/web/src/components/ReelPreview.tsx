@@ -12,7 +12,7 @@ export type ReelPreviewValues = {
   musicLabel?: string | null;
   aspectRatio: "9:16" | "1:1" | "16:9";
   captions: boolean;
-  captionStyle?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean";
+  captionStyle?: "karaoke" | "tiktok" | "beast" | "hormozi" | "boxed" | "clean" | "keyword";
   captionFont?: string;
   captionColor?: string;
   // B-roll — images and/or video clips — fill the frame/top-band on their beats.
@@ -31,6 +31,25 @@ const RATIO: Record<ReelPreviewValues["aspectRatio"], number> = {
   "1:1": 1,
   "16:9": 16 / 9,
 };
+
+// Common Turkish/English function words — skipped when picking a phrase's accent keyword.
+const STOPWORDS = new Set([
+  "ve", "ile", "bir", "bu", "şu", "o", "da", "de", "ki", "mi", "mı", "mu", "mü", "için",
+  "ama", "çok", "en", "gibi", "ya", "ne", "her", "daha", "kadar", "sonra", "artık",
+  "the", "a", "an", "to", "of", "is", "are", "and", "or", "in", "on", "it", "you", "your",
+]);
+
+/** Pick a phrase's accent keyword — the longest non-stopword — mirroring the worker. */
+function keywordIndex(words: string[]): number {
+  let best = -1, bestLen = -1, fallback = 0, fbLen = -1;
+  words.forEach((w, i) => {
+    const t = w.replace(/[.,!?…:;"'()]/g, "").toLocaleLowerCase("tr");
+    if (t.length > fbLen) { fbLen = t.length; fallback = i; }
+    if (STOPWORDS.has(t)) return;
+    if (t.length > bestLen) { bestLen = t.length; best = i; }
+  });
+  return best >= 0 ? best : fallback;
+}
 
 /** Fit the device screen into a bounding box while preserving aspect ratio. */
 function fit(ratio: number, boxW = 320, boxH = 540) {
@@ -216,6 +235,9 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
                   const upper = captionStyle === "hormozi" || captionStyle === "beast";
                   const wordAccent = captionStyle === "hormozi" || captionStyle === "tiktok" || captionStyle === "beast";
                   const boxed = captionStyle === "boxed";
+                  // keyword: the one important word stays accent-coloured across the phrase.
+                  const keyword = captionStyle === "keyword";
+                  const kwIndex = keyword ? keywordIndex(curWords) : -1;
                   const sizeClass =
                     captionStyle === "beast" ? "text-[22px] font-extrabold tracking-tight" :
                     captionStyle === "hormozi" ? "text-[19px] font-extrabold tracking-tight" :
@@ -245,19 +267,21 @@ export function ReelPreview({ values, step }: { values: ReelPreviewValues; step:
                       {curWords.map((word, i) => {
                         const shown = localActive < 0 || i <= localActive;
                         const active = i === localActive;
-                        const color = wordAccent
-                          ? active ? captionColor : "#fff"
-                          : captionStyle === "clean"
-                            ? "#fff"
-                            : shown ? "#fff" : "rgba(255,255,255,0.5)"; // karaoke: upcoming dimmed
+                        const color = keyword
+                          ? i === kwIndex ? captionColor : "#fff"
+                          : wordAccent
+                            ? active ? captionColor : "#fff"
+                            : captionStyle === "clean"
+                              ? "#fff"
+                              : shown ? "#fff" : "rgba(255,255,255,0.5)"; // karaoke: upcoming dimmed
                         return (
                           <span
                             key={i}
                             className="inline-block transition-colors duration-150"
                             style={{
                               color,
-                              textShadow: wordAccent ? "0 0 4px rgba(0,0,0,0.95), 0 2px 3px rgba(0,0,0,0.9)" : "0 0 3px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.85)",
-                              transform: wordAccent && active ? "scale(1.07)" : undefined,
+                              textShadow: wordAccent || keyword ? "0 0 4px rgba(0,0,0,0.95), 0 2px 3px rgba(0,0,0,0.9)" : "0 0 3px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.85)",
+                              transform: (wordAccent || keyword) && active ? "scale(1.07)" : undefined,
                             }}
                           >
                             {upper ? word.toLocaleUpperCase("tr") : word}&nbsp;

@@ -722,6 +722,7 @@ const CAPTION_STYLES = [
   { value: "beast", label: "Beast", hint: "Kocaman, büyük harf, patlar" },
   { value: "hormozi", label: "Vurgulu", hint: "Büyük, enerjik, renkli" },
   { value: "boxed", label: "Kutulu", hint: "CapCut baloncuk kutusu" },
+  { value: "keyword", label: "Anahtar", hint: "Önemli kelime renkli kalır" },
   { value: "clean", label: "Sade", hint: "Tüm cümle, sakin" },
 ] as const;
 

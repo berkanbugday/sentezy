@@ -82,6 +82,29 @@ def _tr_upper(text: str) -> str:
     return text.translate(str.maketrans("iı", "İI")).upper()
 
 
+# Common Turkish/English function words — skipped when picking a phrase's accent keyword.
+_STOPWORDS = {
+    "ve", "ile", "bir", "bu", "şu", "o", "da", "de", "ki", "mi", "mı", "mu", "mü", "için",
+    "ama", "çok", "en", "gibi", "ya", "ne", "her", "daha", "kadar", "sonra", "artık",
+    "the", "a", "an", "to", "of", "is", "are", "and", "or", "in", "on", "it", "you", "your",
+}
+
+
+def _keyword_index(chunk: list["Word"]) -> int:
+    """Pick the phrase's semantic keyword — the longest non-stopword — to accent-colour
+    (a CapCut/UGC look where one important word pops per phrase). Falls back to the longest."""
+    best_i, best_len, fallback_i, fallback_len = -1, -1, 0, -1
+    for i, w in enumerate(chunk):
+        t = w.text.strip(".,!?…:;\"'()").lower()
+        if len(t) > fallback_len:
+            fallback_len, fallback_i = len(t), i
+        if t in _STOPWORDS:
+            continue
+        if len(t) > best_len:
+            best_len, best_i = len(t), i
+    return best_i if best_i >= 0 else fallback_i
+
+
 # Per-style caption specs (viral UGC reference looks):
 #   karaoke — word-by-word \k sweep, dimmed→bright (the current premium style)
 #   hormozi — big, uppercase, 2-word chunks, the spoken word pops in an accent colour
@@ -102,6 +125,9 @@ _CAPTION_STYLES = {
     "beast":   {"chunk": 2, "scale": 0.078, "min_size": 56, "bold": 1, "outline": 9, "shadow": 2, "kind": "wordpop", "upper": True, "pop": True},
     # CapCut "bubble" — short phrase inside an opaque rounded box.
     "boxed":   {"chunk": 4, "scale": 0.044, "min_size": 34, "bold": 1, "outline": 8, "shadow": 0, "kind": "box"},
+    # Keyword accent — whole phrase white, the one important word stays in the accent
+    # colour the whole phrase, and the spoken word gives a subtle scale pop (UGC/CapCut).
+    "keyword": {"chunk": 4, "scale": 0.050, "min_size": 40, "bold": 1, "outline": 6, "shadow": 1, "kind": "keyword"},
 }
 _HORMOZI_ACCENT = "#FFD54A"  # default highlight — the reference yellow
 
@@ -190,6 +216,23 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 on = f"\\c{accent}&" + ("\\fscx120\\fscy120\\t(0,90,\\fscx100\\fscy100)" if do_pop else "")
                 off = f"\\c{white}&" + ("\\fscx100\\fscy100" if do_pop else "")
                 parts = [f"{{{on}}}{t}{{{off}}}" if k == j else t for k, t in enumerate(texts)]
+                lines.append(f"Dialogue: 0,{start},{end},Cap,,0,0,0,,{' '.join(parts)}")
+            continue
+        if kind == "keyword":
+            # The semantic keyword stays accent-coloured across the whole phrase; every
+            # word carries an explicit colour/scale (no state bleed); the spoken word pops.
+            ki = _keyword_index(chunk)
+            for j, w in enumerate(chunk):
+                start = _ass_time(w.start)
+                end = _ass_time(chunk[j + 1].start if j + 1 < len(chunk) else chunk[-1].end)
+                parts = []
+                for k, t in enumerate(texts):
+                    col = accent if k == ki else white
+                    if k == j:
+                        tag = f"\\c{col}&\\fscx115\\fscy115\\t(0,90,\\fscx100\\fscy100)"
+                    else:
+                        tag = f"\\c{col}&\\fscx100\\fscy100"
+                    parts.append(f"{{{tag}}}{t}")
                 lines.append(f"Dialogue: 0,{start},{end},Cap,,0,0,0,,{' '.join(parts)}")
             continue
         start = _ass_time(chunk[0].start)
