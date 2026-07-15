@@ -17,7 +17,10 @@ export const AspectRatio = z.enum(["9:16", "1:1", "16:9"]);
 export type AspectRatio = z.infer<typeof AspectRatio>;
 
 // ── Captions ────────────────────────────────────────────────────────────────
-export const CaptionStyle = z.enum(["karaoke", "tiktok", "beast", "hormozi", "boxed", "clean", "keyword"]);
+// Keep in sync with the web caption catalog (CAPTION_FAMILIES / createReelSchema.captionStyle)
+// and the worker's _CAPTION_STYLES — bubble/highlight/typewriter were added with the caption
+// picker; the default preset is "highlight", so omitting them here rejects every create.
+export const CaptionStyle = z.enum(["karaoke", "tiktok", "beast", "hormozi", "boxed", "clean", "keyword", "bubble", "highlight", "typewriter"]);
 export type CaptionStyle = z.infer<typeof CaptionStyle>;
 
 const CaptionsObject = z.object({

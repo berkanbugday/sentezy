@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { type Avatar, type Voice } from "@/components/wizard/types";
+import { apiFetch } from "@/lib/api";
 import { DEFAULT_PRESET, presetById } from "@/lib/captionStyles";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
-import { type Media, PENDING_KEY } from "@/lib/composer/media";
+import { type Media } from "@/lib/composer/media";
 import { TR_GRADIENT, TR_GRADIENT_SOFT, TRANSITION_LABELS } from "@/lib/composer/transitions";
-import { useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
+import { useCreatePresenter, useGenerateVideo, usePresenters, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
 import { videoPoster } from "@/lib/videoPoster";
 import { DEFAULT_TRANSITION } from "./WizardSteps";
 import { AvatarPicker } from "./composer/AvatarPicker";
@@ -18,11 +19,14 @@ import { VoicePicker } from "./composer/VoicePicker";
 import { Icon } from "./icons";
 
 /** Upload-first hero composer: accepts multiple images + videos, uploads each to
- *  storage (with per-tile progress), and carries the uploaded refs into /create. */
+ *  storage (with per-tile progress), then builds a draft and queues it for render. */
 export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSettings }) {
   const router = useRouter();
   const uploadImg = useUploadBackground();
   const uploadVid = useUploadBackgroundVideo();
+  const createPresenter = useCreatePresenter();
+  const generate = useGenerateVideo();
+  const presenters = usePresenters().data ?? [];
   const [items, setItems] = useState<Media[]>([]);
   const [drag, setDrag] = useState(false);
   const [effectOpen, setEffectOpen] = useState(false);
@@ -34,6 +38,8 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
   const [captionOpen, setCaptionOpen] = useState(false);
   const [captionId, setCaptionId] = useState(DEFAULT_PRESET.id);
   const [script, setScript] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedCaption = presetById(captionId);
 
@@ -105,25 +111,92 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
 
   const uploading = items.some((i) => i.status === "uploading");
   const hasScript = script.trim().length > 0; // controls stay visible but disabled until written
+  // Generation requires a presenter (avatar) + voice + script — the API rejects a draft that
+  // is missing any of these, so gate the button and point the user at what's still needed.
+  const canCreate = hasScript && !!selectedAvatar && !!selectedVoice;
+  const createHint = !hasScript ? "Önce konuşma metnini yaz" : !selectedAvatar ? "Bir avatar seç" : !selectedVoice ? "Bir ses seç" : undefined;
   const pick = () => inputRef.current?.click();
 
-  function create() {
-    const ready = items.filter((i) => i.status === "done" && i.ref);
-    const preset = presetById(captionId);
-    const payload = {
-      // Each clip carries its own incoming transition; the first clip's is unused.
-      media: ready.map((i, idx) => ({ ref: i.ref, url: i.serverUrl, kind: i.kind, transition: idx === 0 ? DEFAULT_TRANSITION : i.transition ?? DEFAULT_TRANSITION })),
-      script: script.trim() || undefined,
-      avatar: selectedAvatar ? { id: selectedAvatar.id, name: selectedAvatar.name } : undefined,
-      voice: selectedVoice ? { id: selectedVoice.id } : undefined,
-      caption: { style: preset.base, font: preset.font, color: preset.color },
-      settings: extraSettings ?? DEFAULT_SETTINGS,
-    };
+  // Build the draft straight from the composer state, debit + queue it, then send
+  // the user to the library to watch it render. (Replaces the old /create wizard.)
+  async function create() {
+    if (submitting) return;
+    setSubmitError(null);
+    setSubmitting(true);
     try {
-      if (payload.media.length || payload.script || payload.avatar) sessionStorage.setItem(PENDING_KEY, JSON.stringify(payload));
-      else sessionStorage.removeItem(PENDING_KEY);
-    } catch { }
-    router.push("/create");
+      const ready = items.filter((i) => i.status === "done" && i.ref);
+      const preset = presetById(captionId);
+      const settings = extraSettings ?? DEFAULT_SETTINGS;
+
+      // A chosen avatar becomes a presenter — reuse one for the same portrait, else create it.
+      let presenterId: string | null = null;
+      if (selectedAvatar?.id && selectedAvatar.ready) {
+        const existing = presenters.find((p) => p.sourceImageId === selectedAvatar.id);
+        presenterId = existing?.id ?? (await createPresenter.mutateAsync({ name: selectedAvatar.name, sourceImageId: selectedAvatar.id })).presenter.id;
+      }
+
+      // A shared-library voice id is "owner|voice" — adopt it into the account to get the
+      // real DB voice uuid the API/render pipeline references (it rejects the composite id).
+      let voiceId: string | null = null;
+      if (selectedVoice?.id) {
+        const adopted = await apiFetch<{ id: string }>("/voices/adopt", { method: "POST", body: JSON.stringify({ id: selectedVoice.id, name: selectedVoice.label }) });
+        voiceId = adopted.id;
+      }
+
+      // Ordered B-roll: each ref is a CF Images id (image) or R2 key (video); first clip's transition is unused.
+      const media = ready.map((i, idx) => ({
+        kind: i.kind,
+        ref: i.ref as string,
+        transition: idx === 0 ? DEFAULT_TRANSITION : i.transition ?? DEFAULT_TRANSITION,
+      }));
+      const options = {
+        captions: { enabled: true, style: preset.base, font: preset.font, color: preset.color },
+        background: media.length
+          ? {
+              type: "image" as const,
+              value: media[0].ref,
+              images: media.filter((m) => m.kind === "image").map((m) => m.ref),
+              transitions: media.map((m) => m.transition),
+              media,
+            }
+          : { type: "color" as const, value: "#0B0B0D" },
+        ...(settings.musicTrackKey ? { music: { trackKey: settings.musicTrackKey, volume: settings.musicVolume ?? 0.15 } } : {}),
+        layout: { presenterLayout: settings.presenterLayout, avatarSide: settings.avatarSide, captionPosition: settings.captionPosition },
+        voice: { emotion: settings.voiceEmotion ?? "" },
+        effects: { transitionSfx: settings.transitionSfx ?? true },
+      };
+
+      const text = script.trim();
+      const title = text.split("\n")[0].slice(0, 80) || "Yeni video";
+      const { video: draft } = await apiFetch<{ video: { id: string } }>("/videos/draft", {
+        method: "POST",
+        body: JSON.stringify({ title, script: text }),
+      });
+      await apiFetch(`/videos/${draft.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          title,
+          script: text,
+          presenterId,
+          voiceId,
+          aspectRatio: settings.aspectRatio,
+          options,
+        }),
+      });
+      await generate.mutateAsync(draft.id);
+      router.push("/library");
+    } catch (e) {
+      const code = e instanceof Error ? e.message : "";
+      const messages: Record<string, string> = {
+        insufficient_credits: "Yeterli krediniz yok.",
+        incomplete_draft: "Avatar, ses ve konuşma metni gerekli.",
+        adopt_failed: "Ses seçilemedi, lütfen tekrar dene.",
+        tts_unavailable: "Ses servisi şu an kullanılamıyor.",
+        invalid_body: "Geçersiz istek, seçimlerini kontrol et.",
+      };
+      setSubmitError(messages[code] ?? "Video oluşturulamadı, lütfen tekrar dene.");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -318,14 +391,15 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
         <button
           type="button"
           onClick={create}
-          disabled={uploading || !hasScript}
-          title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
+          disabled={uploading || submitting || !canCreate}
+          title={createHint}
           className="btn btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto sm:w-auto"
         >
-          {uploading ? <Spinner size={16} /> : <Icon.arrowRight width={17} height={17} className="order-2" />}
-          <span className="order-1">Video oluştur</span>
+          {uploading || submitting ? <Spinner size={16} /> : <Icon.arrowRight width={17} height={17} className="order-2" />}
+          <span className="order-1">{submitting ? "Oluşturuluyor…" : "Video oluştur"}</span>
         </button>
       </div>
+      {submitError && <p className="mt-2 px-1 text-[13px] text-red-500">{submitError}</p>}
 
       <EffectPicker
         open={effectOpen && multiple}

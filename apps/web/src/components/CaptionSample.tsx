@@ -2,8 +2,8 @@
 
 import { Fragment, useEffect, useState } from "react";
 
-// One place owns the on-frame caption look, shared by the live ReelPreview and the
-// caption-style picker tiles so what you preview is what the worker burns in. The
+// One place owns the on-frame caption look, shared by the caption-style picker
+// tiles so what you preview is what the worker burns in. The
 // per-kind rendering mirrors apps/worker/sentezy_worker/compose.py `_CAPTION_STYLES`
 // (approximated in CSS, as the burn does in ASS).
 

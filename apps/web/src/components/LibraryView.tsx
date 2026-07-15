@@ -14,7 +14,7 @@ export function LibraryView() {
           <h1 className="disp text-[28px] font-semibold text-ink">Videolarım</h1>
           <p className="mt-1 text-[14.5px] text-slate">Oluşturduğun tüm videolar.</p>
         </div>
-        <Link href="/create" className="btn btn-primary">+ Yeni video</Link>
+        <Link href="/dashboard" className="btn btn-primary">+ Yeni video</Link>
       </div>
 
       {isLoading && <p className="text-[14px] text-muted">Yükleniyor…</p>}
@@ -23,7 +23,7 @@ export function LibraryView() {
         <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
           <p className="disp text-[18px] font-semibold text-ink">Henüz video yok</p>
           <p className="max-w-sm text-[14px] text-slate">İlk reelini oluştur — bir senaryo yaz, sunucu ve ses seç.</p>
-          <Link href="/create" className="btn btn-primary mt-1">İlk videonu oluştur</Link>
+          <Link href="/dashboard" className="btn btn-primary mt-1">İlk videonu oluştur</Link>
         </div>
       )}
 
@@ -31,8 +31,7 @@ export function LibraryView() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {videos.map((v) => {
             const [label, cls] = STATUS_LABEL[v.status];
-            // Drafts reopen in the wizard; finished videos go to their detail page.
-            const href = v.status === "draft" ? `/create?draft=${v.id}` : `/videos/${v.id}`;
+            const href = `/videos/${v.id}`;
             return (
               <Link key={v.id} href={href} className="card overflow-hidden transition hover:-translate-y-0.5">
                 <div className="ph-stripe relative aspect-[9/16]">
