@@ -59,7 +59,7 @@ def _resolve_broll_media(options: dict, storage: Storage, workdir: str) -> list[
 
 def _broll_segments(words: list, media: list[dict]) -> list[dict]:
     """Auto-place B-roll — no manual timeline needed. Keep a short hook at the
-    start and a close at the end (presenter over the blurred backdrop, no cutaway),
+    start and a close at the end (avatar over the blurred backdrop, no cutaway),
     and fill the middle with EVERY uploaded clip/image, evenly spaced. So anyone can
     make a B-roll reel by just uploading media, and all of it gets used. Each item
     carries its kind (image|video) and creator-chosen incoming transition."""
@@ -71,8 +71,8 @@ def _broll_segments(words: list, media: list[dict]) -> list[dict]:
     if total <= 0.1:
         return []
     n = len(media)
-    hook = min(1.6, total * 0.22)   # A-roll intro (see the presenter first)
-    close = min(1.4, total * 0.18)  # A-roll outro (CTA on the presenter)
+    hook = min(1.6, total * 0.22)   # A-roll intro (see the avatar first)
+    close = min(1.4, total * 0.18)  # A-roll outro (CTA on the avatar)
     mid_start = t0 + hook
     mid_end = t1 - close
     if mid_end - mid_start < 0.6:    # very short script — just keep a tiny hook
@@ -110,7 +110,7 @@ def _resolve_music(options: dict, storage: Storage, workdir: str) -> str | None:
 
 
 def _still_avatar_video(photo_path: str, audio_path: str, out_path: str) -> None:
-    """Dev-mode presenter A-roll: hold the presenter photo as a still for the audio's
+    """Dev-mode avatar A-roll: hold the avatar photo as a still for the audio's
     duration, muxing the voice in. A drop-in for the HeyGen talking video so the matte
     and composite stages run unchanged — no lip-sync, no HeyGen credits."""
     subprocess.run(
@@ -135,10 +135,10 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     if video["status"] == "ready":
         return
 
-    presenter = db.get_presenter(video["presenter_id"])
+    avatar = db.get_avatar(video["avatar_id"])
     voice = db.get_voice(video["voice_id"])
-    if not presenter or not voice:
-        raise RuntimeError("missing_presenter_or_voice")
+    if not avatar or not voice:
+        raise RuntimeError("missing_avatar_or_voice")
 
     width, height = RATIO_DIMS.get(video["aspect_ratio"], (1080, 1920))
     options = video.get("options") or {}
@@ -171,15 +171,15 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     storage.upload_r2(audio_path, audio_key, "audio/mpeg")
     audio_url = storage.signed_get_url(audio_key, 86400)  # HeyGen must fetch this; R2_PUBLIC_URL is the S3 endpoint, not public
 
-    # 2) Presenter A-roll. Prod: HeyGen Avatar IV turns the presenter photo + audio into
+    # 2) Avatar A-roll. Prod: HeyGen Avatar IV turns the avatar photo + audio into
     #    a talking video (Avatar IV takes the image URL directly). Dev (NODE_ENV=development):
-    #    skip HeyGen — hold the presenter photo as a still for the audio's length, so the
+    #    skip HeyGen — hold the avatar photo as a still for the audio's length, so the
     #    rest of the pipeline runs identically without spending HeyGen credits.
     db.set_stage(video_id, "avatar", 35)
-    image_url = storage.image_url(presenter["source_image_id"])
+    image_url = storage.image_url(avatar["source_image_id"])
     avatar_path = f"{workdir}/avatar.mp4"
     if cfg.is_dev:
-        photo_path = f"{workdir}/presenter_src.png"
+        photo_path = f"{workdir}/avatar_src.png"
         storage.download(image_url, photo_path)
         _still_avatar_video(photo_path, audio_path, avatar_path)
     else:
@@ -188,17 +188,17 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
         heygen_url = hg.wait_for_url(heygen_video_id)
         storage.download(heygen_url, avatar_path)
 
-    # 2b) Matte the presenter out of the green screen → alpha clip (keeps the voice),
-    #     so the reel composites the cut-out presenter over the B-roll.
+    # 2b) Matte the avatar out of the green screen → alpha clip (keeps the voice),
+    #     so the reel composites the cut-out avatar over the B-roll.
     db.set_stage(video_id, "avatar", 55)
-    presenter_path = f"{workdir}/presenter.mov"
-    matte_video_to_mov(avatar_path, presenter_path)
+    avatar_cutout_path = f"{workdir}/avatar_cutout.mov"
+    matte_video_to_mov(avatar_path, avatar_cutout_path)
 
-    # 3) Compose reel — B-roll fills the frame, presenter framed to one side.
+    # 3) Compose reel — B-roll fills the frame, avatar framed to one side.
     db.set_stage(video_id, "compose", 70)
     layout = options.get("layout") or {}
     avatar_side = layout.get("avatarSide", "right")
-    presenter_pos = layout.get("presenterLayout", "side")
+    avatar_layout = layout.get("avatarLayout", "side")
     caps = options.get("captions", True)
     if isinstance(caps, bool):  # legacy drafts store captions as a plain boolean
         caps = {"enabled": caps}
@@ -209,13 +209,13 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
         style=caps.get("style", "karaoke"),
         font=caps.get("font") or "General Sans",
         color=caps.get("color"),
-        presenter_pos=presenter_pos,
+        avatar_layout=avatar_layout,
     )
     reel_path = f"{workdir}/reel.mp4"
     broll_media = _resolve_broll_media(options, storage, workdir)
     effects = options.get("effects") or {}
     compose_reel(
-        presenter_path=presenter_path,
+        avatar_cutout_path=avatar_cutout_path,
         out_path=reel_path,
         width=width,
         height=height,
@@ -226,7 +226,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
         music_path=_resolve_music(options, storage, workdir),
         music_volume=float((options.get("music") or {}).get("volume", 0.15)),
         avatar_side=avatar_side,
-        presenter_pos=presenter_pos,
+        avatar_layout=avatar_layout,
     )
 
     # 4) Thumbnail + upload

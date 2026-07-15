@@ -1,7 +1,7 @@
-"""AI background removal (matting) for the presenter.
+"""AI background removal (matting) for the avatar.
 
 Uses RobustVideoMatting (mobilenetv3 ONNX, via onnxruntime — no torch) to cut the
-presenter out of their green-screen backdrop so the reel can composite them over
+avatar out of their green-screen backdrop so the reel can composite them over
 B-roll. Works on a still (for the avatar picker thumbnail) and on the HeyGen A-roll
 video (for the reel), with a green-spill removal pass so hair edges stay neutral.
 
@@ -97,10 +97,10 @@ def matte_image_to_png(in_path: str, out_path: str) -> None:
 
 
 def matte_video_to_mov(in_path: str, out_path: str) -> None:
-    """Cut the presenter out of the A-roll → ProRes 4444 .mov (alpha) carrying the voice.
+    """Cut the avatar out of the A-roll → ProRes 4444 .mov (alpha) carrying the voice.
 
     Streams frames through ffmpeg pipes, matting each with recurrent state for temporal
-    stability; audio is copied from the source so the reel keeps the presenter's voice.
+    stability; audio is copied from the source so the reel keeps the avatar's voice.
     """
     w, h, fps = _probe(in_path)
     dsr = _downsample_ratio(h)

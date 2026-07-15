@@ -1,7 +1,7 @@
 "use client";
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Avatar, BgImage, Presenter, Voice } from "@/components/WizardSteps";
+import type { Avatar, BgImage, UserAvatar, Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
 import type { ApiVideo } from "@/lib/types";
 
@@ -20,7 +20,7 @@ export type MusicTrack = { key: string; name: string; previewUrl: string };
 export const qk = {
   voices: ["voices"] as const,
   avatars: ["avatars"] as const,
-  presenters: ["presenters"] as const,
+  myAvatars: ["my-avatars"] as const,
   music: ["music"] as const,
   videos: ["videos"] as const,
   video: (id: string) => ["video", id] as const,
@@ -55,12 +55,19 @@ export function useVoicePreview() {
   });
 }
 
-export function useAvatars(enabled = true) {
-  return useQuery({ queryKey: qk.avatars, queryFn: () => apiFetch<{ avatars: Avatar[] }>("/avatars").then((r) => r.avatars), enabled });
+/** Avatar catalog browse — filters (sector/gender/age/hijab) are applied in the DB. */
+export function useAvatars(filters: Record<string, string> = {}, enabled = true) {
+  const active = Object.fromEntries(Object.entries(filters).filter(([, v]) => v && v !== "all"));
+  const qs = new URLSearchParams(active).toString();
+  return useQuery({
+    queryKey: [...qk.avatars, active],
+    queryFn: () => apiFetch<{ avatars: Avatar[] }>(`/avatars${qs ? `?${qs}` : ""}`).then((r) => r.avatars),
+    enabled,
+  });
 }
 
-export function usePresenters(enabled = true) {
-  return useQuery({ queryKey: qk.presenters, queryFn: () => apiFetch<{ presenters: Presenter[] }>("/presenters").then((r) => r.presenters), enabled });
+export function useMyAvatars(enabled = true) {
+  return useQuery({ queryKey: qk.myAvatars, queryFn: () => apiFetch<{ avatars: UserAvatar[] }>("/avatars/mine").then((r) => r.avatars), enabled });
 }
 
 export function useVideos() {
@@ -73,14 +80,14 @@ export function useVideo(id: string) {
 
 // ── Mutations ──────────────────────────────────────────────────────────────
 
-/** Create a presenter from a preset avatar and add it to the presenters cache. */
-export function useCreatePresenter() {
+/** Create an avatar from a preset (or upload) and add it to the user's avatars cache. */
+export function useCreateAvatar() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: { name: string; sourceImageId: string }) =>
-      apiFetch<{ presenter: Presenter; imageUrl: string }>("/presenters", { method: "POST", body: JSON.stringify(input) }),
-    onSuccess: ({ presenter, imageUrl }) =>
-      qc.setQueryData<Presenter[]>(qk.presenters, (old) => [{ ...presenter, imageUrl }, ...(old ?? [])]),
+      apiFetch<{ avatar: UserAvatar; imageUrl: string }>("/avatars", { method: "POST", body: JSON.stringify(input) }),
+    onSuccess: ({ avatar, imageUrl }) =>
+      qc.setQueryData<UserAvatar[]>(qk.myAvatars, (old) => [{ ...avatar, imageUrl }, ...(old ?? [])]),
   });
 }
 

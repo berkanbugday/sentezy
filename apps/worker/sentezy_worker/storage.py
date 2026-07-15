@@ -37,7 +37,7 @@ class Storage:
         )
 
     def image_url(self, key: str, expires: int = 86400) -> str:
-        """Signed GET URL for an image stored in R2 (avatars, presenters, B-roll photos).
+        """Signed GET URL for an image stored in R2 (avatars, B-roll photos).
         Long-lived by default so external providers (HeyGen) can fetch it."""
         return self.signed_get_url(key, expires)
 

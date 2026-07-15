@@ -20,7 +20,7 @@ export type SignupValues = z.infer<typeof signupSchema>;
 export const createReelSchema = z.object({
   title: z.string().min(1, "Başlık gerekli").max(120, "Başlık çok uzun"),
   script: z.string().min(1, "Senaryo gerekli").max(5000, "Senaryo 5000 karakteri aşamaz"),
-  presenterId: z.string().uuid("Bir sunucu seç"),
+  avatarId: z.string().uuid("Bir avatar seç"),
   voiceId: z.string().uuid("Bir ses seç"),
   aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
   captions: z.boolean().default(true),
@@ -43,9 +43,9 @@ export const createReelSchema = z.object({
   musicTrackKey: z.string().optional(),
   // Music bed level (0..1 of full scale; UI caps at 0.4 so the bed never buries the voice).
   musicVolume: z.number().min(0).max(1).default(0.15),
-  // Reel layout — presenter framed to a side over full-frame B-roll ("side"), or
+  // Reel layout — avatar framed to a side over full-frame B-roll ("side"), or
   // bottom-centred with B-roll filling a top band ("bottom"). Plus which side + caption pos.
-  presenterLayout: z.enum(["side", "bottom"]).default("side"),
+  avatarLayout: z.enum(["side", "bottom"]).default("side"),
   avatarSide: z.enum(["left", "right"]).default("right"),
   captionPosition: z.enum(["top", "bottom"]).default("bottom"),
   // Energy effects — whoosh SFX on photo transitions.
@@ -53,8 +53,8 @@ export const createReelSchema = z.object({
 });
 export type CreateReelValues = z.infer<typeof createReelSchema>;
 
-// name for the "add presenter" mini-form
-export const presenterSchema = z.object({
+// name for the "add avatar" mini-form
+export const avatarNameSchema = z.object({
   name: z.string().min(1, "İsim gerekli").max(80),
 });
-export type PresenterValues = z.infer<typeof presenterSchema>;
+export type AvatarNameValues = z.infer<typeof avatarNameSchema>;

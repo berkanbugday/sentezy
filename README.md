@@ -1,7 +1,7 @@
 # Sentezy
 
-Create short‑form **reels featuring an AI presenter**. Give a script, pick a presenter photo and a
-voice — Sentezy generates a finished vertical (9:16) reel with the presenter speaking, auto captions,
+Create short‑form **reels featuring an AI avatar**. Give a script, pick a avatar photo and a
+voice — Sentezy generates a finished vertical (9:16) reel with the avatar speaking, auto captions,
 branding, and music.
 
 ## Monorepo layout
@@ -22,7 +22,7 @@ branding, and music.
 
 ## Pipeline
 
-`script + presenter + voice` → ElevenLabs TTS → HeyGen talking photo (audio‑driven) → Python/ffmpeg
+`script + avatar + voice` → ElevenLabs TTS → HeyGen talking photo (audio‑driven) → Python/ffmpeg
 compose (9:16 + background + captions + branding + music) + thumbnail → R2 → realtime progress in web.
 
 ## Getting started

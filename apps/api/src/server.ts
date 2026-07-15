@@ -4,7 +4,7 @@ import authPlugin from "./plugins/auth";
 import { backgroundRoutes } from "./routes/backgrounds";
 import { healthRoutes } from "./routes/health";
 import { musicRoutes } from "./routes/music";
-import { presenterRoutes } from "./routes/presenters";
+import { avatarRoutes } from "./routes/avatars";
 import { videoRoutes } from "./routes/videos";
 import { voiceRoutes } from "./routes/voices";
 
@@ -18,7 +18,7 @@ export function buildServer() {
   app.register(voiceRoutes);
   app.register(backgroundRoutes);
   app.register(musicRoutes);
-  app.register(presenterRoutes);
+  app.register(avatarRoutes);
   app.register(videoRoutes);
 
   return app;

@@ -5,12 +5,12 @@ Redis Streams consumer that renders reels. Not part of the pnpm workspace (manag
 ## Pipeline (`sentezy_worker/pipeline.py`)
 
 1. **TTS** — ElevenLabs `with-timestamps` → audio (mp3) + word timings → upload to R2.
-2. **Avatar** — HeyGen **Avatar IV** (v3 `/v3/videos` image-to-video): the presenter photo URL +
+2. **Avatar** — HeyGen **Avatar IV** (v3 `/v3/videos` image-to-video): the avatar photo URL +
    the ElevenLabs audio URL drive a photorealistic talking video; poll, download; then matte the
-   green screen off (`matte.py`, RobustVideoMatting) → alpha presenter clip carrying the voice.
+   green screen off (`matte.py`, RobustVideoMatting) → alpha avatar clip carrying the voice.
    Avatar IV has **no test mode** — every render spends real HeyGen credits (~$4/min).
 3. **Compose** — ffmpeg: blurred-B-roll (or branded color) backdrop → auto-timed full-frame
-   B-roll cutaways (crossfade + Ken-Burns) → presenter cut-out framed to one side → burned
+   B-roll cutaways (crossfade + Ken-Burns) → avatar cut-out framed to one side → burned
    captions (karaoke/hormozi/clean ASS from word timings) → optional logo + sidechain-ducked
    music. (`compose.py`)
 4. **Thumbnail** — poster frame → Cloudflare Images.

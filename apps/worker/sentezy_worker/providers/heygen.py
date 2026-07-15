@@ -6,7 +6,7 @@ import httpx
 
 # HeyGen Avatar IV — v3 image-to-video: a single photo + audio drives a
 # photorealistic talking video. Docs: https://developers.heygen.com/image-to-video
-# Flow: POST /v3/videos with the presenter image URL + ElevenLabs audio URL →
+# Flow: POST /v3/videos with the avatar image URL + ElevenLabs audio URL →
 # video_id, then poll GET /v3/videos/{id} until completed.
 # NOTE: v3 Avatar IV has no test/sandbox mode — every render spends real credits.
 

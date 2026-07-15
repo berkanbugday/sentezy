@@ -82,17 +82,17 @@ export const ReelOptions = z.object({
       volume: z.number().min(0).max(1).default(0.15),
     })
     .default({ trackKey: null, volume: 0.15 }),
-  // Reel layout: which side the cut-out presenter is framed to, and where the
-  // captions sit (on the clear side, opposite the presenter).
+  // Reel layout: which side the cut-out avatar is framed to, and where the
+  // captions sit (on the clear side, opposite the avatar).
   layout: z
     .object({
-      // "side" = presenter framed left/right over full-frame B-roll;
-      // "bottom" = presenter bottom-centred with B-roll filling a top band.
-      presenterLayout: z.enum(["side", "bottom"]).default("side"),
+      // "side" = avatar framed left/right over full-frame B-roll;
+      // "bottom" = avatar bottom-centred with B-roll filling a top band.
+      avatarLayout: z.enum(["side", "bottom"]).default("side"),
       avatarSide: z.enum(["left", "right"]).default("right"),
       captionPosition: z.enum(["top", "bottom"]).default("bottom"),
     })
-    .default({ presenterLayout: "side", avatarSide: "right", captionPosition: "bottom" }),
+    .default({ avatarLayout: "side", avatarSide: "right", captionPosition: "bottom" }),
   // Voice delivery — an ElevenLabs v3 audio tag setting the emotional tone
   // ("" = natural). Prepended to the script; drives both the voice and (audio-driven)
   // the HeyGen Avatar IV face.
@@ -116,7 +116,7 @@ export type ReelOptions = z.infer<typeof ReelOptions>;
 export const CreateVideoRequest = z.object({
   title: z.string().min(1).max(120),
   script: z.string().min(1).max(5000),
-  presenterId: z.string().uuid(),
+  avatarId: z.string().uuid(),
   voiceId: z.string().uuid(),
   aspectRatio: AspectRatio.default("9:16"),
   options: ReelOptions.default({}),
@@ -135,7 +135,7 @@ export type CreateVideoDraft = z.infer<typeof CreateVideoDraft>;
 export const UpdateVideoDraft = z.object({
   title: z.string().max(120).optional(),
   script: z.string().max(5000).optional(),
-  presenterId: z.string().uuid().nullable().optional(),
+  avatarId: z.string().uuid().nullable().optional(),
   voiceId: z.string().uuid().nullable().optional(),
   aspectRatio: AspectRatio.optional(),
   options: ReelOptions.optional(),

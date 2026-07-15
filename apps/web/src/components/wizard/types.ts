@@ -19,7 +19,9 @@ export type Voice = {
   previewUrl?: string | null;
 };
 
-export type Presenter = { id: string; name: string; status: string; imageUrl?: string | null; sourceImageId?: string | null };
+// A user's created avatar record (instantiated from a catalog pick or upload) — distinct
+// from the catalog `Avatar` above, which is a library entry the picker browses.
+export type UserAvatar = { id: string; name: string; status: string; imageUrl?: string | null; sourceImageId?: string | null };
 
 export type Common = {
   register: UseFormRegister<CreateReelValues>;
@@ -39,5 +41,6 @@ export type Avatar = {
   sectorLabel: string;
   gender: "kadın" | "erkek";
   age: "genç" | "yetişkin" | "olgun";
+  hijab: boolean;
   ready: boolean;
 };

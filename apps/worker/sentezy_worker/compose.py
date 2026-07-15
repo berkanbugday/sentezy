@@ -1,7 +1,7 @@
 """ffmpeg reel composition — stdlib only save for fontTools (caption glyph metrics),
 so it can be verified independently of Redis/DB/providers.
 
-Builds a 9:16 reel in the cut-out model: the matted presenter (alpha .mov carrying
+Builds a 9:16 reel in the cut-out model: the matted avatar (alpha .mov carrying
 the ElevenLabs voice) is framed to one side over auto-timed full-frame B-roll
 cutaways (crossfade + Ken-Burns); a blurred first B-roll image backs the A-roll
 hook/close beats. Word-synced captions (karaoke / hormozi / clean styles) burn on
@@ -218,24 +218,24 @@ def build_captions_ass(
     style: str = "karaoke",
     font: str = "General Sans",
     color: str | None = None,
-    presenter_pos: str = "side",
+    avatar_layout: str = "side",
 ) -> None:
     """Write an ASS subtitle file in one of the caption styles above. In the "side"
-    layout captions sit on the clear side opposite the presenter; in the "bottom"
-    layout the presenter is bottom-centred, so captions span the full width, placed
-    high over the top-band B-roll (well above the presenter's head)."""
+    layout captions sit on the clear side opposite the avatar; in the "bottom"
+    layout the avatar is bottom-centred, so captions span the full width, placed
+    high over the top-band B-roll (well above the avatar's head)."""
     if style not in _CAPTION_STYLES:
         style = "karaoke"
     spec = _CAPTION_STYLES[style]
     font_size = max(spec["min_size"], int(height * spec["scale"]))
     edge = int(width * 0.06)
-    if presenter_pos == "bottom":
+    if avatar_layout == "bottom":
         # full-width, top-anchored; margin_v sets how far down into the B-roll band.
         margin_l = margin_r = edge
         alignment = 8
         margin_v = int(height * (0.08 if position == "top" else 0.34))
     else:
-        # keep captions off the presenter: reserve the presenter's half horizontally,
+        # keep captions off the avatar: reserve the avatar's half horizontally,
         # so the text centres in the clear half.
         reserve = int(width * 0.50)
         margin_l, margin_r = (edge, reserve) if avatar_side == "right" else (reserve, edge)
@@ -272,7 +272,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     # Horizontal band the captions live in — same as the Style margins imply — so the
     # \pos-positioned pills (bubble/highlight) sit where centred text would.
-    if presenter_pos == "bottom":
+    if avatar_layout == "bottom":
         clear_x0, clear_x1 = edge, width - edge
     else:
         reserve = int(width * 0.50)
@@ -480,7 +480,7 @@ def _effect_blend(name: str, span_min: float) -> tuple[str, float]:
 
 def compose_reel(
     *,
-    presenter_path: str,  # matted alpha .mov (presenter cut-out + voice) from matte.matte_video_to_mov
+    avatar_cutout_path: str,  # matted alpha .mov (avatar cut-out + voice) from matte.matte_video_to_mov
     out_path: str,
     width: int = 1080,
     height: int = 1920,
@@ -489,18 +489,18 @@ def compose_reel(
     logo_path: str | None = None,
     music_path: str | None = None,
     music_volume: float = 0.15,
-    avatar_side: str = "right",  # which side the presenter is framed to (side layout)
-    presenter_pos: str = "side",  # "side" = framed left/right; "bottom" = centred, B-roll in a top band
-    presenter_scale: float = 0.66,  # presenter height as a fraction of the frame
+    avatar_side: str = "right",  # which side the avatar is framed to (side layout)
+    avatar_layout: str = "side",  # "side" = framed left/right; "bottom" = centred, B-roll in a top band
+    avatar_scale: float = 0.66,  # avatar height as a fraction of the frame
     bg_color: str = "0x101319",  # branded background shown wherever B-roll isn't
     transition_sfx: bool = True,  # whoosh SFX at each photo transition
 ) -> None:
     """Cut-out reel composite: B-roll fills the frame (over a branded background),
-    the matted presenter is framed to one side (bottom-anchored, always visible),
-    and captions burn on top. The presenter's alpha is used to blend the cut-out
+    the matted avatar is framed to one side (bottom-anchored, always visible),
+    and captions burn on top. The avatar's alpha is used to blend the cut-out
     over whatever is behind — no rectangular PiP edge."""
     broll = broll or []
-    dur = _duration(presenter_path)
+    dur = _duration(avatar_cutout_path)
 
     # Transition SFX: one bundled whoosh per photo transition, synced to the slide
     # start (the xfade for photo k runs over [start_k - tdur, start_k]). The files are
@@ -528,9 +528,9 @@ def compose_reel(
             inputs = ["-loop", "1", "-t", f"{dur:.3f}", "-i", str(broll[0]["path"])]
     else:
         inputs = ["-f", "lavfi", "-i", f"color=c={bg_color}:s={width}x{height}:r=30:d={dur:.3f}"]
-    # [1] presenter cut-out (alpha video) + voice audio
-    inputs += ["-i", presenter_path]
-    presenter_idx = 1
+    # [1] avatar cut-out (alpha video) + voice audio
+    inputs += ["-i", avatar_cutout_path]
+    avatar_idx = 1
     idx = 2
 
     # [2..] B-roll stills — looped so a frame exists across their window.
@@ -568,10 +568,10 @@ def compose_reel(
 
     # ── video filtergraph ──
     fc: list[str] = []
-    # In the "bottom" layout the sharp B-roll fills only a top band; the presenter sits
+    # In the "bottom" layout the sharp B-roll fills only a top band; the avatar sits
     # bottom-centre with its head overlapping the seam. The blurred base still fills the
-    # whole frame (so the area around/below the presenter reads as a soft backdrop).
-    broll_h = int(height * 0.58) if presenter_pos == "bottom" else height
+    # whole frame (so the area around/below the avatar reads as a soft backdrop).
+    broll_h = int(height * 0.58) if avatar_layout == "bottom" else height
     cover_full = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1,fps=30"
     cover_broll = f"scale={width}:{broll_h}:force_original_aspect_ratio=increase,crop={width}:{broll_h},setsar=1,fps=30"
     if broll:
@@ -632,16 +632,16 @@ def compose_reel(
         )
         fc.append(f"{last}[slide]overlay=0:0:enable='between(t,{mid_start:.3f},{mid_end:.3f})'[bv]")
         last = "[bv]"
-    # presenter cut-out, bottom-anchored; its alpha blends it over the B-roll/background.
+    # avatar cut-out, bottom-anchored; its alpha blends it over the B-roll/background.
     # "side" → framed left/right with a slight edge bleed; "bottom" → centred under the
     # top-band B-roll, head crossing the seam so there's no hard rectangular edge.
-    if presenter_pos == "bottom":
+    if avatar_layout == "bottom":
         ph = int(height * 0.54)
         px = "(W-w)/2"
     else:
-        ph = int(height * presenter_scale)
+        ph = int(height * avatar_scale)
         px = "-40" if avatar_side == "left" else "W-w+40"
-    fc.append(f"[{presenter_idx}:v]scale=-2:{ph}:flags=lanczos,setsar=1[pv]")
+    fc.append(f"[{avatar_idx}:v]scale=-2:{ph}:flags=lanczos,setsar=1[pv]")
     fc.append(f"{last}[pv]overlay=x={px}:y=H-h[pp]")
     last = "[pp]"
     if captions_ass and has_filter("subtitles"):
@@ -660,24 +660,24 @@ def compose_reel(
         fc.append(f"{last}[logo]overlay=W-w-48:48[logov]")
         last = "[logov]"
 
-    # ── audio: presenter voice (+ optional sidechain-ducked music) (+ transition SFX) ──
+    # ── audio: avatar voice (+ optional sidechain-ducked music) (+ transition SFX) ──
     audio_map: list[str]
     need_bed = music_idx is not None or bool(sfx_input_idxs)
     if not need_bed:
-        audio_map = ["-map", f"{presenter_idx}:a?"]
+        audio_map = ["-map", f"{avatar_idx}:a?"]
     else:
         # Build the voice(+music) bed, then mix in a bundled whoosh at each transition.
         if music_idx is not None:
             # Voice is consumed twice (mix + sidechain key) → split it. aformat on both
             # branches: sidechaincompress errors on mismatched rates/layouts.
-            fc.append(f"[{presenter_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,asplit=2[vox][sck]")
+            fc.append(f"[{avatar_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,asplit=2[vox][sck]")
             fc.append(f"[{music_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume={music_volume}[mus]")
             # The voice keys a compressor on the music, so the bed dips while speaking.
             fc.append("[mus][sck]sidechaincompress=threshold=0.04:ratio=10:attack=8:release=350:makeup=1[duck]")
             # normalize=0: keep the voice at full level (default amix would halve it).
             fc.append("[vox][duck]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[abed]")
         else:
-            fc.append(f"[{presenter_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo[abed]")
+            fc.append(f"[{avatar_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo[abed]")
         if sfx_input_idxs:
             # Each SFX file → level + delay to its slide start, then mix all into the bed.
             delayed = []

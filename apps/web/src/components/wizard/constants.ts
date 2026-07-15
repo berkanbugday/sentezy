@@ -95,7 +95,7 @@ export const CAPTION_STYLES = [
 ] as const;
 
 // Voice emotion → ElevenLabs v3 audio tag ("" = natural). Also drives the audio-driven
-// HeyGen Avatar IV face, so the presenter looks more emotive too.
+// HeyGen Avatar IV face, so the avatar looks more emotive too.
 export const VOICE_EMOTIONS = [
   { value: "", label: "Doğal" },
   { value: "warmly", label: "Sıcak" },

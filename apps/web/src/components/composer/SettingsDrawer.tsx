@@ -34,7 +34,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const LAYOUT_OPTS: Opt<ComposerSettings["presenterLayout"]>[] = [
+const LAYOUT_OPTS: Opt<ComposerSettings["avatarLayout"]>[] = [
   { value: "side", label: "Kenar" },
   { value: "bottom", label: "Alt" },
 ];
@@ -87,8 +87,8 @@ export function SettingsDrawer({ settings, onChange }: { settings: ComposerSetti
               <Field label="En / boy">
                 <Pills options={RATIOS.map((r) => ({ value: r.value, label: r.label }))} value={settings.aspectRatio} onChange={(v) => set("aspectRatio", v)} />
               </Field>
-              <Field label="Sunucu yerleşimi">
-                <Pills options={LAYOUT_OPTS} value={settings.presenterLayout} onChange={(v) => set("presenterLayout", v)} />
+              <Field label="Avatar yerleşimi">
+                <Pills options={LAYOUT_OPTS} value={settings.avatarLayout} onChange={(v) => set("avatarLayout", v)} />
               </Field>
               <Field label="Avatar tarafı">
                 <Pills options={SIDE_OPTS} value={settings.avatarSide} onChange={(v) => set("avatarSide", v)} />

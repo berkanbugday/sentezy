@@ -55,8 +55,8 @@ class Db:
     def get_video(self, video_id: str) -> dict | None:
         return self._one("select * from public.videos where id = %s", video_id)
 
-    def get_presenter(self, presenter_id: str) -> dict | None:
-        return self._one("select * from public.presenters where id = %s", presenter_id)
+    def get_avatar(self, avatar_id: str) -> dict | None:
+        return self._one("select * from public.avatars where id = %s", avatar_id)
 
     def get_voice(self, voice_id: str) -> dict | None:
         return self._one("select * from public.voices where id = %s", voice_id)
@@ -82,10 +82,10 @@ class Db:
             error[:1000], video_id,
         )
 
-    def set_presenter_heygen(self, presenter_id: str, talking_photo_id: str, status: str = "ready") -> None:
+    def set_avatar_heygen(self, avatar_id: str, talking_photo_id: str, status: str = "ready") -> None:
         self._exec(
-            "update public.presenters set heygen_talking_photo_id=%s, status=%s::presenter_status where id=%s",
-            talking_photo_id, status, presenter_id,
+            "update public.avatars set heygen_talking_photo_id=%s, status=%s::avatar_status where id=%s",
+            talking_photo_id, status, avatar_id,
         )
 
     def refund_credit(self, user_id: str, video_id: str, amount: int = 1) -> None:

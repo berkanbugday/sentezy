@@ -28,20 +28,42 @@ model Profile {
   @@map("profiles")
 }
 
-model Presenter {
-  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId               String          @map("user_id") @db.Uuid
+model Avatar {
+  id                   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String       @map("user_id") @db.Uuid
   name                 String
-  sourceImageId        String          @map("source_image_id")
-  previewImageId       String?         @map("preview_image_id")
-  heygenTalkingPhotoId String?         @map("heygen_talking_photo_id")
-  status               PresenterStatus @default(pending)
-  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  sourceImageId        String       @map("source_image_id")
+  previewImageId       String?      @map("preview_image_id")
+  heygenTalkingPhotoId String?      @map("heygen_talking_photo_id")
+  status               AvatarStatus @default(pending)
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
   videos               Video[]
 
   @@index([userId])
-  @@map("presenters")
+  @@map("avatars")
+}
+
+// The browseable avatar library (the 124 curated personas). Public reference data,
+// seeded from apps/api/src/data/avatars.json — distinct from the per-user `Avatar`
+// records above. `/avatars` filters this table (sector/gender/age/hijab) in the DB.
+model CatalogAvatar {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug            String   @unique
+  name            String
+  sector          String
+  sectorLabel     String   @map("sector_label")
+  gender          String
+  age             String
+  ethnicity       String
+  hijab           Boolean  @default(false)
+  imageKey        String   @default("") @map("image_key") // R2 green-screen source key ("" = pending generation)
+  displayImageKey String   @default("") @map("display_image_key") // R2 matted thumbnail key (picker)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([sector])
+  @@map("avatar_catalog")
 }
 
 model Voice {
@@ -64,7 +86,7 @@ model Video {
   userId           String         @map("user_id") @db.Uuid
   title            String
   script           String
-  presenterId      String?        @map("presenter_id") @db.Uuid
+  avatarId         String?        @map("avatar_id") @db.Uuid
   voiceId          String?        @map("voice_id") @db.Uuid
   aspectRatio      AspectRatio    @default(r9_16) @map("aspect_ratio")
   options          Json           @default("{}")
@@ -78,7 +100,7 @@ model Video {
   error            String?
   createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
-  presenter        Presenter?     @relation(fields: [presenterId], references: [id], onDelete: SetNull)
+  avatar           Avatar?        @relation(fields: [avatarId], references: [id], onDelete: SetNull)
   voice            Voice?         @relation(fields: [voiceId], references: [id], onDelete: SetNull)
   jobs             Job[]
   creditLedger     CreditLedger[]
@@ -134,12 +156,12 @@ enum VideoStage {
   @@map("video_stage")
 }
 
-enum PresenterStatus {
+enum AvatarStatus {
   pending
   ready
   failed
 
-  @@map("presenter_status")
+  @@map("avatar_status")
 }
 
 enum AspectRatio {

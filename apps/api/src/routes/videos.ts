@@ -78,8 +78,8 @@ export async function videoRoutes(app: FastifyInstance) {
     const userId = req.user!.id;
     const input = parsed.data;
 
-    const presenter = await prisma.presenter.findFirst({ where: { id: input.presenterId, userId } });
-    if (!presenter) return reply.code(400).send({ error: "invalid_presenter" });
+    const avatar = await prisma.avatar.findFirst({ where: { id: input.avatarId, userId } });
+    if (!avatar) return reply.code(400).send({ error: "invalid_avatar" });
     // A shared-library voice ("owner|voice") is added to the account and materialised here.
     try {
       input.voiceId = (await resolveVoice(userId, input.voiceId)).dbId;
@@ -103,7 +103,7 @@ export async function videoRoutes(app: FastifyInstance) {
             userId,
             title: input.title,
             script: input.script,
-            presenterId: input.presenterId,
+            avatarId: input.avatarId,
             voiceId: input.voiceId,
             aspectRatio: RATIO[input.aspectRatio],
             options: input.options as unknown as Prisma.InputJsonValue,
@@ -173,7 +173,7 @@ export async function videoRoutes(app: FastifyInstance) {
       data: {
         ...(d.title !== undefined ? { title: d.title.trim() || "Adsız video" } : {}),
         ...(d.script !== undefined ? { script: d.script } : {}),
-        ...(d.presenterId !== undefined ? { presenterId: d.presenterId } : {}),
+        ...(d.avatarId !== undefined ? { avatarId: d.avatarId } : {}),
         ...(d.voiceId !== undefined ? { voiceId: voiceIdUpdate } : {}),
         ...(d.aspectRatio !== undefined ? { aspectRatio: RATIO[d.aspectRatio] } : {}),
         ...(d.options !== undefined ? { options: d.options as unknown as Prisma.InputJsonValue } : {}),
@@ -189,11 +189,11 @@ export async function videoRoutes(app: FastifyInstance) {
     const draft = await prisma.video.findFirst({ where: { id, userId } });
     if (!draft) return reply.code(404).send({ error: "not_found" });
     if (draft.status !== "draft") return reply.code(409).send({ error: "already_generated" });
-    if (!draft.presenterId || !draft.voiceId || !draft.script.trim()) {
+    if (!draft.avatarId || !draft.voiceId || !draft.script.trim()) {
       return reply.code(400).send({ error: "incomplete_draft" });
     }
-    const presenter = await prisma.presenter.findFirst({ where: { id: draft.presenterId, userId } });
-    if (!presenter) return reply.code(400).send({ error: "invalid_presenter" });
+    const avatar = await prisma.avatar.findFirst({ where: { id: draft.avatarId, userId } });
+    if (!avatar) return reply.code(400).send({ error: "invalid_avatar" });
     const voice = await prisma.voice.findFirst({
       where: { id: draft.voiceId, OR: [{ isPublic: true }, { userId }] },
     });

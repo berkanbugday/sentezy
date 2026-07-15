@@ -8,7 +8,7 @@ import { DEFAULT_PRESET, presetById } from "@/lib/captionStyles";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
 import { type Media } from "@/lib/composer/media";
 import { TR_GRADIENT, TR_GRADIENT_SOFT, TRANSITION_LABELS } from "@/lib/composer/transitions";
-import { useCreatePresenter, useGenerateVideo, usePresenters, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
+import { useCreateAvatar, useGenerateVideo, useMyAvatars, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
 import { videoPoster } from "@/lib/videoPoster";
 import { DEFAULT_TRANSITION } from "./WizardSteps";
 import { AvatarPicker } from "./composer/AvatarPicker";
@@ -24,9 +24,9 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
   const router = useRouter();
   const uploadImg = useUploadBackground();
   const uploadVid = useUploadBackgroundVideo();
-  const createPresenter = useCreatePresenter();
+  const createAvatar = useCreateAvatar();
   const generate = useGenerateVideo();
-  const presenters = usePresenters().data ?? [];
+  const myAvatars = useMyAvatars().data ?? [];
   const [items, setItems] = useState<Media[]>([]);
   const [drag, setDrag] = useState(false);
   const [effectOpen, setEffectOpen] = useState(false);
@@ -111,7 +111,7 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
 
   const uploading = items.some((i) => i.status === "uploading");
   const hasScript = script.trim().length > 0; // controls stay visible but disabled until written
-  // Generation requires a presenter (avatar) + voice + script — the API rejects a draft that
+  // Generation requires an avatar + voice + script — the API rejects a draft that
   // is missing any of these, so gate the button and point the user at what's still needed.
   const canCreate = hasScript && !!selectedAvatar && !!selectedVoice;
   const createHint = !hasScript ? "Önce konuşma metnini yaz" : !selectedAvatar ? "Bir avatar seç" : !selectedVoice ? "Bir ses seç" : undefined;
@@ -128,11 +128,11 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
       const preset = presetById(captionId);
       const settings = extraSettings ?? DEFAULT_SETTINGS;
 
-      // A chosen avatar becomes a presenter — reuse one for the same portrait, else create it.
-      let presenterId: string | null = null;
+      // A chosen catalog avatar becomes a user avatar record — reuse one for the same portrait, else create it.
+      let avatarId: string | null = null;
       if (selectedAvatar?.id && selectedAvatar.ready) {
-        const existing = presenters.find((p) => p.sourceImageId === selectedAvatar.id);
-        presenterId = existing?.id ?? (await createPresenter.mutateAsync({ name: selectedAvatar.name, sourceImageId: selectedAvatar.id })).presenter.id;
+        const existing = myAvatars.find((a) => a.sourceImageId === selectedAvatar.id);
+        avatarId = existing?.id ?? (await createAvatar.mutateAsync({ name: selectedAvatar.name, sourceImageId: selectedAvatar.id })).avatar.id;
       }
 
       // A shared-library voice id is "owner|voice" — adopt it into the account to get the
@@ -161,7 +161,7 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
             }
           : { type: "color" as const, value: "#0B0B0D" },
         ...(settings.musicTrackKey ? { music: { trackKey: settings.musicTrackKey, volume: settings.musicVolume ?? 0.15 } } : {}),
-        layout: { presenterLayout: settings.presenterLayout, avatarSide: settings.avatarSide, captionPosition: settings.captionPosition },
+        layout: { avatarLayout: settings.avatarLayout, avatarSide: settings.avatarSide, captionPosition: settings.captionPosition },
         voice: { emotion: settings.voiceEmotion ?? "" },
         effects: { transitionSfx: settings.transitionSfx ?? true },
       };
@@ -177,7 +177,7 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
         body: JSON.stringify({
           title,
           script: text,
-          presenterId,
+          avatarId,
           voiceId,
           aspectRatio: settings.aspectRatio,
           options,

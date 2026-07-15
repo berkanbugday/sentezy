@@ -3,24 +3,24 @@
 import { useState } from "react";
 import { type Avatar } from "@/components/wizard/types";
 import { Icon } from "@/components/icons";
-import { AGE_OPTS, type Age, GENDER_OPTS, type Gender, normAge, normGender } from "@/lib/composer/avatarFilters";
+import { AGE_OPTS, type Age, GENDER_OPTS, type Gender, HIJAB_OPTS, type Hijab } from "@/lib/composer/avatarFilters";
 import { useAvatars } from "@/lib/queries";
 import { Dropdown } from "./Dropdown";
 
-/** Avatar picker — owns the avatar list + client-side filters. `onSelect` passes the
- *  chosen avatar up (or null when deselected) so the caller can label its chip. */
+/** Avatar picker — owns the avatar list. Gender/age/hijab filter in the DB (query
+ *  params); text search stays client-side. `onSelect` passes the chosen avatar up
+ *  (or null when deselected) so the caller can label its chip. */
 export function AvatarPicker({ open, onClose, selectedId, onSelect }: { open: boolean; onClose: () => void; selectedId: string | null; onSelect: (a: Avatar | null) => void }) {
-  const avatarsQ = useAvatars();
-  const avatars = (avatarsQ.data ?? []).filter((a) => a.ready && a.id);
   const [avatarQ, setAvatarQ] = useState("");
   const [avatarGender, setAvatarGender] = useState<Gender>("all");
   const [avatarAge, setAvatarAge] = useState<Age>("all");
+  const [avatarHijab, setAvatarHijab] = useState<Hijab>("all");
+
+  const avatarsQ = useAvatars({ gender: avatarGender, age: avatarAge, hijab: avatarHijab });
+  const avatars = (avatarsQ.data ?? []).filter((a) => a.ready && a.id);
 
   const filteredAvatars = avatars.filter(
-    (a) =>
-      (avatarGender === "all" || normGender(a.gender) === avatarGender) &&
-      (avatarAge === "all" || normAge(a.age) === avatarAge) &&
-      (!avatarQ.trim() || `${a.name} ${a.sectorLabel ?? ""}`.toLowerCase().includes(avatarQ.trim().toLowerCase())),
+    (a) => !avatarQ.trim() || `${a.name} ${a.sectorLabel ?? ""}`.toLowerCase().includes(avatarQ.trim().toLowerCase()),
   );
 
   if (!open) return null;
@@ -46,6 +46,7 @@ export function AvatarPicker({ open, onClose, selectedId, onSelect }: { open: bo
             <div className="flex flex-wrap items-center gap-1.5">
               <Dropdown value={avatarGender} onChange={(v) => setAvatarGender(v as Gender)} options={GENDER_OPTS} />
               <Dropdown value={avatarAge} onChange={(v) => setAvatarAge(v as Age)} options={AGE_OPTS} />
+              <Dropdown value={avatarHijab} onChange={(v) => setAvatarHijab(v as Hijab)} options={HIJAB_OPTS} />
             </div>
           </div>
         </div>

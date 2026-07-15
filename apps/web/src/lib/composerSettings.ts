@@ -4,7 +4,7 @@
 
 export type ComposerSettings = {
   aspectRatio: "9:16" | "1:1" | "16:9";
-  presenterLayout: "side" | "bottom";
+  avatarLayout: "side" | "bottom";
   avatarSide: "left" | "right";
   captionPosition: "top" | "bottom";
   voiceEmotion: string;
@@ -15,7 +15,7 @@ export type ComposerSettings = {
 
 export const DEFAULT_SETTINGS: ComposerSettings = {
   aspectRatio: "9:16",
-  presenterLayout: "side",
+  avatarLayout: "side",
   avatarSide: "right",
   captionPosition: "bottom",
   voiceEmotion: "",

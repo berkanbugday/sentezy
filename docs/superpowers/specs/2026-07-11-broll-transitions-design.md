@@ -8,7 +8,7 @@ polish pass.
 
 ## Current behaviour
 - `pipeline._broll_segments` places photos **back-to-back** in the middle window (`[mid_start, mid_end]`),
-  presenter-over-blur only at the hook/close. So photos are effectively a continuous slideshow.
+  avatar-over-blur only at the hook/close. So photos are effectively a continuous slideshow.
 - `compose.compose_reel` overlays each photo independently onto the base with `zoompan` (Ken-Burns) +
   alpha `fade` in/out, gated to its time window. No `xfade`; only a dissolve.
 
@@ -22,7 +22,7 @@ exposes ffmpeg's full named-transition catalog.
   photo's chosen transition** (so "per-photo" = how each photo enters). Photo #0 has no predecessor → it
   just fades in from the base.
 - Overlay the finished slideshow onto the base during `[mid_start, mid_end]` with a short alpha fade at the
-  slideshow's outer edges (enter from / exit to the A-roll); presenter overlaid on top as today.
+  slideshow's outer edges (enter from / exit to the A-roll); avatar overlaid on top as today.
 - Timing: `d = min(0.35, span*0.5)`; clip length `L = span + d`; xfade `offset_k = k*span`. Net slideshow
   length ≈ `n*span (+d)`, trimmed to the window — total video length unchanged.
 - **Hard "cut"** = `xfade=transition=fade:duration≈0.02` (near-instant).

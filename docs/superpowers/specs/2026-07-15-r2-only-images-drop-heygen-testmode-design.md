@@ -13,11 +13,11 @@ Delivery is via **signed GET URLs** (R2 is not a public bucket — same pattern 
 
 ### Upload contract (client → R2 presigned PUT)
 - API `/backgrounds/upload`: presigned R2 PUT, key `images/{uuid}`, returns `{ id: key, uploadURL, imageUrl: signedDownloadUrl(key) }`.
-- API presenter upload (`POST /presenters` new-photo path): same R2 presigned PUT (key `presenters/{uuid}`).
+- API avatar upload (`POST /avatars` new-photo path): same R2 presigned PUT (key `avatars/{uuid}`).
 - Web `useUploadBackground`: switch from CF's `POST FormData` to **`PUT` raw file** with `Content-Type` (mirror `useUploadBackgroundVideo`).
 
 ### Delivery (API returns signed URLs)
-- `routes/presenters.ts` `/avatars` + `/presenters`: `imageUrl(id)` → `await signedDownloadUrl(key)` (async map via `Promise.all`).
+- `routes/avatars.ts` `/avatars` + `/avatars`: `imageUrl(id)` → `await signedDownloadUrl(key)` (async map via `Promise.all`).
 - `routes/videos.ts`: B-roll image delivery `imageUrl(ref)` → `signedDownloadUrl(ref)`.
 - Delete `lib/cloudflareImages.ts`; remove `CF_IMAGES_API_TOKEN` / `CF_IMAGES_ACCOUNT_HASH` from `env.ts`. Keep `R2_ACCOUNT_ID` (R2 needs it).
 
@@ -35,7 +35,7 @@ Delivery is via **signed GET URLs** (R2 is not a public bucket — same pattern 
 
 ## Files
 Worker: `providers/heygen.py`, `config.py`, `main.py`, `storage.py`, `pipeline.py`, `scripts/generate_avatars.py`, `scripts/build_avatar_catalog.py`.
-API: `env.ts`, `lib/cloudflareImages.ts` (delete), `routes/backgrounds.ts`, `routes/presenters.ts`, `routes/videos.ts`.
+API: `env.ts`, `lib/cloudflareImages.ts` (delete), `routes/backgrounds.ts`, `routes/avatars.ts`, `routes/videos.ts`.
 Web: `lib/images.ts` (delete), `lib/queries.ts`.
 Data: `apps/api/src/data/avatars.json`.
 

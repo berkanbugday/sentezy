@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Generate the 100-persona avatar catalog → apps/api/src/data/avatars.json.
+"""Generate the avatar catalog → apps/api/src/data/avatars.json.
 
 Deterministic (no randomness) so re-running is stable. Expands curated pools —
 24 SMB sectors × gender × age × ethnicity, weighted ~50% Turkish/Mediterranean
-for the market — into 100 distinct professional talking-head personas, each with
-a generation prompt for `generate_avatars.py` and filter metadata (sector, gender,
-age) for the picker. Portraits are generated + uploaded to R2 by `generate_avatars.py`.
+for the market — into 100 distinct professional talking-head personas, then adds
+one hijab-wearing Muslim woman per sector (24 more → 124 total) so the Turkish
+market and Muslim audiences have a headscarf option in every sector, age bracket
+and Turkish/Middle-Eastern ethnicity. Each persona carries a generation prompt for
+`generate_avatars.py` and filter metadata (sector, gender, age, hijab) for the
+picker. Portraits are generated + uploaded to R2 by `generate_avatars.py`.
 
 Run:  python apps/worker/scripts/build_avatar_catalog.py
 """
@@ -17,7 +20,7 @@ import os
 
 # ── sectors (SMB-weighted) ───────────────────────────────────────────────────
 # slug, Turkish label, English profession, attire (English).
-# NO scene background — for A-roll/B-roll the presenter must sit on a clean, plain
+# NO scene background — for A-roll/B-roll the avatar must sit on a clean, plain
 # studio backdrop (below) so B-roll cutaways and captions never fight a scene, and a
 # sector-specific room never appears behind the wrong reel. Attire carries the sector.
 SECTORS: list[tuple[str, str, str, str]] = [
@@ -119,6 +122,19 @@ AGE_DESC: dict[str, str] = {
 AGES = ["genç", "yetişkin", "olgun"]
 GENDER_WORD = {"kadın": "woman", "erkek": "man"}
 
+# ── hijab personas — Muslim women's names (Türkiye + Middle-East) ─────────────
+# Kept separate from NAMES so hijab slugs never collide with the base catalog.
+# Only turkish + mideast: hijab targets the Turkish market and Muslim countries.
+HIJAB_NAMES: dict[str, list[str]] = {
+    "turkish": ["Kübra", "Betül", "Rabia", "Sümeyye", "Rümeysa", "Büşra",
+                "Şeyma", "Ravza", "Feyza", "Hümeyra", "Zeliha", "Hafsa",
+                "Elifnur", "Zeynepnur"],
+    "mideast": ["Fatima", "Khadija", "Mariam", "Zainab", "Noor", "Huda",
+                "Sumaya", "Rahma", "Bushra", "Iman", "Aaliyah", "Safiya",
+                "Amina", "Yusra"],
+}
+HIJAB_ETHNICITIES = ["turkish", "mideast"]
+
 # Curated named avatars — imageId is filled by generate_avatars.py (uploads to R2).
 KNOWN: list[dict] = [
     {"slug": "defne", "name": "Defne", "sector": "beauty", "gender": "kadın", "age": "genç", "ethnicity": "turkish", "imageId": ""},
@@ -132,23 +148,38 @@ def _sector(slug: str) -> tuple[str, str, str, str]:
     return next(s for s in SECTORS if s[0] == slug)
 
 
-def build_prompt(sector_slug: str, gender: str, age: str, ethnicity: str) -> str:
+def build_prompt(sector_slug: str, gender: str, age: str, ethnicity: str, hijab: bool = False) -> str:
     _, _, profession, attire = _sector(sector_slug)
+    if hijab:
+        # Muslim woman in a headscarf — hair is covered, so the hair-specific cues
+        # (rim light on hair, crisp hair edges) are swapped for the headscarf.
+        wearing = (
+            f"an elegant modern hijab (headscarf) that neatly covers the hair and frames the "
+            f"face, tastefully colour-coordinated with {attire}"
+        )
+        rim = "gentle rim light to separate the head and shoulders from the background"
+        edges = "crisp fabric edges on the headscarf"
+    else:
+        wearing = attire
+        rim = "gentle rim light to separate the hair from the background"
+        edges = "crisp hair edges"
     return (
         f"Photorealistic professional portrait of a {AGE_DESC[age]} {ETHNICITY_DESC[ethnicity]} "
-        f"{GENDER_WORD[gender]}, a {profession}, upper body (head and shoulders), "
-        f"facing the camera directly, warm natural approachable expression with a relaxed, "
-        f"slightly-open neutral mouth for lip-sync, clear unobstructed face. Wearing {attire} "
-        f"(not wearing any green). A small lavalier microphone clipped near the collar. Soft "
-        f"studio key light on the subject, gentle rim light to separate the hair from the "
-        f"background, {GREEN_BACKGROUND}. Eye-level, 85mm lens look, sharp focus on the eyes, "
-        f"realistic skin texture, crisp hair edges. Vertical 9:16, single person, centered, no "
-        f"hands covering the face, no text, no logos, no watermark. Editorial, ultra-realistic, "
-        f"high detail."
+        f"{GENDER_WORD[gender]}, a {profession}, upper body from mid-chest up, loosely framed "
+        f"with clear space around the subject, facing the camera directly, warm natural "
+        f"approachable expression with a relaxed, slightly-open neutral mouth for lip-sync, "
+        f"clear unobstructed face. Wearing {wearing} (not wearing any green). A small lavalier "
+        f"microphone clipped near the collar. Soft studio key light on the subject, {rim}, "
+        f"{GREEN_BACKGROUND}. Eye-level, 85mm lens look, sharp focus on the eyes, realistic "
+        f"skin texture, {edges}. Vertical 9:16, single person, centered with generous empty "
+        f"margin on BOTH the left and right — the subject occupies only ~55–60% of the frame "
+        f"width, full shoulders visible with clear space to each side edge and never touching "
+        f"or cropped by the frame edges, no hands covering the face, no text, no logos, no "
+        f"watermark. Editorial, ultra-realistic, high detail."
     )
 
 
-def entry(name: str, sector_slug: str, gender: str, age: str, ethnicity: str, image_id: str, slug: str) -> dict:
+def entry(name: str, sector_slug: str, gender: str, age: str, ethnicity: str, image_id: str, slug: str, hijab: bool = False) -> dict:
     _, label, _, _ = _sector(sector_slug)
     return {
         "slug": slug,
@@ -158,9 +189,10 @@ def entry(name: str, sector_slug: str, gender: str, age: str, ethnicity: str, im
         "gender": gender,
         "age": age,
         "ethnicity": ethnicity,
+        "hijab": hijab,            # True → Muslim woman in a headscarf (Türkiye + Middle-East)
         "imageId": image_id,       # green-screen source (fed to HeyGen)
         "displayImageId": "",      # matted thumbnail for the picker (filled by generate_avatars.py)
-        "prompt": build_prompt(sector_slug, gender, age, ethnicity),
+        "prompt": build_prompt(sector_slug, gender, age, ethnicity, hijab),
     }
 
 
@@ -204,6 +236,30 @@ def main() -> None:
         name = take_name(ethnicity, gender)
         avatars.append(entry(name, sector_slug, gender, age, ethnicity, "", uniq_slug(name)))
         i += 1
+
+    # ── hijab personas — one Muslim woman per sector so every sector, age and the
+    # Turkish/Middle-Eastern audiences all have a headscarf option. Age cycles so
+    # all three brackets appear; ethnicity alternates turkish ↔ mideast.
+    hijab_cursor: dict[str, int] = {}
+
+    def take_hijab_name(ethnicity: str) -> str:
+        pool = HIJAB_NAMES[ethnicity]
+        j = hijab_cursor.get(ethnicity, 0)
+        while j < len(pool) and pool[j] in used_names:
+            j += 1
+        if j >= len(pool):
+            raise RuntimeError(f"hijab name pool exhausted for {ethnicity}")
+        hijab_cursor[ethnicity] = j + 1
+        used_names.add(pool[j])
+        return pool[j]
+
+    for k, (sector_slug, *_rest) in enumerate(SECTORS):
+        ethnicity = HIJAB_ETHNICITIES[k % len(HIJAB_ETHNICITIES)]
+        age = AGES[k % 3]
+        name = take_hijab_name(ethnicity)
+        avatars.append(
+            entry(name, sector_slug, "kadın", age, ethnicity, "", uniq_slug(name), hijab=True)
+        )
 
     out_path = os.path.normpath(
         os.path.join(os.path.dirname(__file__), "..", "..", "api", "src", "data", "avatars.json")

@@ -29,7 +29,7 @@ class Config:
     openrouter_model: str
     anthropic_api_key: str | None
     # Dev vs prod (from NODE_ENV). In dev the pipeline skips HeyGen entirely and holds
-    # the presenter photo as a still, so local runs need no HeyGen key or credits.
+    # the avatar photo as a still, so local runs need no HeyGen key or credits.
     is_dev: bool
 
 

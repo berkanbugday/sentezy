@@ -22,7 +22,7 @@ export function LibraryView() {
       {videos?.length === 0 && (
         <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
           <p className="disp text-[18px] font-semibold text-ink">Henüz video yok</p>
-          <p className="max-w-sm text-[14px] text-slate">İlk reelini oluştur — bir senaryo yaz, sunucu ve ses seç.</p>
+          <p className="max-w-sm text-[14px] text-slate">İlk reelini oluştur — bir senaryo yaz, avatar ve ses seç.</p>
           <Link href="/dashboard" className="btn btn-primary mt-1">İlk videonu oluştur</Link>
         </div>
       )}
