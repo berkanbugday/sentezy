@@ -6,6 +6,7 @@ import { enqueueVideo } from "../lib/redis";
 import { SEP, resolveVoice } from "../lib/voices";
 import { emotionEnabled, enhanceScriptEmotion } from "../lib/emotion";
 import { publicUrl, signedDownloadUrl } from "../lib/r2";
+import { isDev } from "../env";
 
 const EnhanceEmotionBody = z.object({
   script: z.string().min(1).max(5000),
@@ -93,11 +94,14 @@ export async function videoRoutes(app: FastifyInstance) {
 
     try {
       const video = await prisma.$transaction(async (tx) => {
-        const debit = await tx.profile.updateMany({
-          where: { id: userId, credits: { gte: CREDIT_COST } },
-          data: { credits: { decrement: CREDIT_COST } },
-        });
-        if (debit.count === 0) throw new Error("insufficient_credits");
+        // Dev bypasses the credit gate entirely (no debit, no ledger) so local runs are free.
+        if (!isDev) {
+          const debit = await tx.profile.updateMany({
+            where: { id: userId, credits: { gte: CREDIT_COST } },
+            data: { credits: { decrement: CREDIT_COST } },
+          });
+          if (debit.count === 0) throw new Error("insufficient_credits");
+        }
         const v = await tx.video.create({
           data: {
             userId,
@@ -108,12 +112,14 @@ export async function videoRoutes(app: FastifyInstance) {
             aspectRatio: RATIO[input.aspectRatio],
             options: input.options as unknown as Prisma.InputJsonValue,
             status: "queued",
-            creditsCost: CREDIT_COST,
+            creditsCost: isDev ? 0 : CREDIT_COST,
           },
         });
-        await tx.creditLedger.create({
-          data: { userId, delta: -CREDIT_COST, reason: "video_create", videoId: v.id },
-        });
+        if (!isDev) {
+          await tx.creditLedger.create({
+            data: { userId, delta: -CREDIT_COST, reason: "video_create", videoId: v.id },
+          });
+        }
         await tx.job.create({ data: { videoId: v.id, status: "queued" } });
         return v;
       });
@@ -201,15 +207,20 @@ export async function videoRoutes(app: FastifyInstance) {
 
     try {
       const video = await prisma.$transaction(async (tx) => {
-        const debit = await tx.profile.updateMany({
-          where: { id: userId, credits: { gte: CREDIT_COST } },
-          data: { credits: { decrement: CREDIT_COST } },
-        });
-        if (debit.count === 0) throw new Error("insufficient_credits");
-        const v = await tx.video.update({ where: { id }, data: { status: "queued", creditsCost: CREDIT_COST } });
-        await tx.creditLedger.create({
-          data: { userId, delta: -CREDIT_COST, reason: "video_create", videoId: id },
-        });
+        // Dev bypasses the credit gate entirely (no debit, no ledger) so local runs are free.
+        if (!isDev) {
+          const debit = await tx.profile.updateMany({
+            where: { id: userId, credits: { gte: CREDIT_COST } },
+            data: { credits: { decrement: CREDIT_COST } },
+          });
+          if (debit.count === 0) throw new Error("insufficient_credits");
+        }
+        const v = await tx.video.update({ where: { id }, data: { status: "queued", creditsCost: isDev ? 0 : CREDIT_COST } });
+        if (!isDev) {
+          await tx.creditLedger.create({
+            data: { userId, delta: -CREDIT_COST, reason: "video_create", videoId: id },
+          });
+        }
         await tx.job.create({ data: { videoId: id, status: "queued" } });
         return v;
       });

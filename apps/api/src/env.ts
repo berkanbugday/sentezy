@@ -35,3 +35,8 @@ const schema = z.object({
 
 export const env = schema.parse(process.env);
 export type Env = z.infer<typeof schema>;
+
+// Dev mode (NODE_ENV=development|dev) relaxes limits meant for prod — notably the
+// credit gate on video generation — so local end-to-end runs never hit "insufficient
+// credits". Prod-safe: anything other than development/dev is treated as production.
+export const isDev = ["development", "dev"].includes(env.NODE_ENV.toLowerCase());
