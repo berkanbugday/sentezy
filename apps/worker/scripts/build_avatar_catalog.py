@@ -165,7 +165,8 @@ def build_prompt(sector_slug: str, gender: str, age: str, ethnicity: str, hijab:
         edges = "crisp hair edges"
     return (
         f"Photorealistic professional portrait of a {AGE_DESC[age]} {ETHNICITY_DESC[ethnicity]} "
-        f"{GENDER_WORD[gender]}, a {profession}, upper body from mid-chest up, loosely framed "
+        f"{GENDER_WORD[gender]}, a {profession}, upper body from the waist up with both arms and "
+        f"hands fully visible in a natural, relaxed talking gesture, loosely framed "
         f"with clear space around the subject, facing the camera directly, warm natural "
         f"approachable expression with a relaxed, slightly-open neutral mouth for lip-sync, "
         f"clear unobstructed face. Wearing {wearing} (not wearing any green). A small lavalier "
