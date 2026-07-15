@@ -5,7 +5,7 @@ Deterministic (no randomness) so re-running is stable. Expands curated pools —
 24 SMB sectors × gender × age × ethnicity, weighted ~50% Turkish/Mediterranean
 for the market — into 100 distinct professional talking-head personas, each with
 a generation prompt for `generate_avatars.py` and filter metadata (sector, gender,
-age) for the picker. The 4 avatars already live in Cloudflare Images keep their ids.
+age) for the picker. Portraits are generated + uploaded to R2 by `generate_avatars.py`.
 
 Run:  python apps/worker/scripts/build_avatar_catalog.py
 """
@@ -119,12 +119,12 @@ AGE_DESC: dict[str, str] = {
 AGES = ["genç", "yetişkin", "olgun"]
 GENDER_WORD = {"kadın": "woman", "erkek": "man"}
 
-# The 4 avatars already uploaded to Cloudflare Images — keep their ids.
+# Curated named avatars — imageId is filled by generate_avatars.py (uploads to R2).
 KNOWN: list[dict] = [
-    {"slug": "defne", "name": "Defne", "sector": "beauty", "gender": "kadın", "age": "genç", "ethnicity": "turkish", "imageId": "be5e4625-aaa8-447e-9fb3-c1660d5db500"},
-    {"slug": "kerem", "name": "Kerem", "sector": "tech", "gender": "erkek", "age": "yetişkin", "ethnicity": "turkish", "imageId": "d0c8da36-50df-4e58-c459-81ccd198fe00"},
-    {"slug": "selin", "name": "Selin", "sector": "realestate", "gender": "kadın", "age": "yetişkin", "ethnicity": "turkish", "imageId": "f3fe5310-8212-49cf-69bb-81ee18d47800"},
-    {"slug": "emre", "name": "Emre", "sector": "fitness", "gender": "erkek", "age": "genç", "ethnicity": "turkish", "imageId": "1a88b800-f411-454d-1fc3-ae5ac854b700"},
+    {"slug": "defne", "name": "Defne", "sector": "beauty", "gender": "kadın", "age": "genç", "ethnicity": "turkish", "imageId": ""},
+    {"slug": "kerem", "name": "Kerem", "sector": "tech", "gender": "erkek", "age": "yetişkin", "ethnicity": "turkish", "imageId": ""},
+    {"slug": "selin", "name": "Selin", "sector": "realestate", "gender": "kadın", "age": "yetişkin", "ethnicity": "turkish", "imageId": ""},
+    {"slug": "emre", "name": "Emre", "sector": "fitness", "gender": "erkek", "age": "genç", "ethnicity": "turkish", "imageId": ""},
 ]
 
 

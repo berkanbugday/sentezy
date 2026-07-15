@@ -36,24 +36,36 @@ _font_cache: dict[str, tuple] = {}
 
 
 def _font_metrics(family: str) -> tuple:
-    """(cmap, hmtx, units_per_em) for a caption family; caches parsed fonts."""
+    """(cmap, hmtx, libass_units) for a caption family; caches parsed fonts.
+
+    `libass_units` is the design height an ASS Fontsize maps onto — usWinAscent +
+    usWinDescent, NOT unitsPerEm. libass scales each glyph so Fontsize spans that
+    window height, which for tall fonts (Poppins ≈1762 vs upm 1000) makes the drawn
+    glyphs ~1.8× smaller than the naive em. Dividing advance widths by this window
+    (not upm) makes _text_width match the pixels libass actually renders — so the
+    manual pill layout wraps like the real frame instead of one word per line.
+    """
     fname = _FONT_FILES.get(family) or _FONT_FILES["General Sans"]
     if fname not in _font_cache:
         tt = TTFont(os.path.join(_FONTS_DIR, fname), lazy=True)
-        _font_cache[fname] = (tt.getBestCmap(), tt["hmtx"], tt["head"].unitsPerEm)
+        upm = tt["head"].unitsPerEm
+        os2 = tt["OS/2"] if "OS/2" in tt else None
+        units = (os2.usWinAscent + os2.usWinDescent) if os2 else upm
+        _font_cache[fname] = (tt.getBestCmap(), tt["hmtx"], units)
     return _font_cache[fname]
 
 
 def _text_width(family: str, text: str, size_px: float) -> float:
-    """Advance-width of `text` at `size_px` (ignores kerning — absorbed by pill padding)."""
-    cmap, hmtx, upm = _font_metrics(family)
+    """Rendered advance-width of `text` at ASS `size_px`, matched to libass's font
+    scaling (see _font_metrics). Ignores kerning — absorbed by pill padding."""
+    cmap, hmtx, units = _font_metrics(family)
     total = 0
     for ch in text:
         gname = cmap.get(ord(ch)) or cmap.get(ord("?")) or cmap.get(ord(" "))
         if gname is None:
             continue
         total += hmtx[gname][0]
-    return total * size_px / upm
+    return total * size_px / units
 
 
 def _rounded_rect(w: float, h: float, r: float) -> str:

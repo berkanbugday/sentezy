@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Generate portraits for the avatar catalog and upload them to Cloudflare Images.
+"""Generate portraits for the avatar catalog and upload them to R2.
 
 Reads apps/api/src/data/avatars.json, and for every avatar whose `imageId` is still
-empty: renders the stored `prompt` with an image model, uploads the result to
-Cloudflare Images, and writes the new id back into the JSON (after each one, so an
-interrupted run resumes cleanly).
+empty: renders the stored `prompt` with an image model, uploads the result to R2
+(key avatars/<slug>.png), and writes the new key back into the JSON (after each one,
+so an interrupted run resumes cleanly).
 
 Provider is pluggable via env — set whichever key you have:
     AVATAR_IMAGE_PROVIDER=openai    OPENAI_API_KEY=...        (gpt-image-1)
     AVATAR_IMAGE_PROVIDER=replicate REPLICATE_API_TOKEN=...   (FLUX 1.1 pro)
-Cloudflare (same account as the app):
-    R2_ACCOUNT_ID=...   CF_IMAGES_API_TOKEN=...
+R2 (same account as the app):
+    R2_ACCOUNT_ID=...  R2_ACCESS_KEY_ID=...  R2_SECRET_ACCESS_KEY=...  R2_BUCKET=...
 
 Examples:
     # cheap test: generate the first 3 pending avatars only
@@ -31,6 +31,7 @@ import sys
 import tempfile
 import time
 
+import boto3
 import httpx
 
 # import the shared matting module (apps/worker on the path)
@@ -83,16 +84,21 @@ def gen_replicate(prompt: str) -> bytes:
 PROVIDERS = {"openai": gen_openai, "replicate": gen_replicate}
 
 
-def upload_cf_image(png: bytes, account_id: str, token: str, name: str) -> str:
-    """Upload PNG bytes to Cloudflare Images, return the image id (mirrors Storage.upload_cf_image)."""
-    r = httpx.post(
-        f"https://api.cloudflare.com/client/v4/accounts/{account_id}/images/v1",
-        headers={"Authorization": f"Bearer {token}"},
-        files={"file": (f"{name}.png", png, "image/png")},
-        timeout=60,
+def _r2_client():
+    account_id = os.environ.get("R2_ACCOUNT_ID") or os.environ["CF_ACCOUNT_ID"]
+    return boto3.client(
+        "s3",
+        endpoint_url=f"https://{account_id}.r2.cloudflarestorage.com",
+        aws_access_key_id=os.environ["R2_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["R2_SECRET_ACCESS_KEY"],
+        region_name="auto",
     )
-    r.raise_for_status()
-    return r.json()["result"]["id"]
+
+
+def upload_r2(s3, bucket: str, png: bytes, key: str) -> str:
+    """Upload PNG bytes to R2 under `key`; returns the key (the stored image ref)."""
+    s3.put_object(Bucket=bucket, Key=key, Body=png, ContentType="image/png")
+    return key
 
 
 def main() -> None:
@@ -106,8 +112,8 @@ def main() -> None:
     if provider not in PROVIDERS:
         sys.exit(f"unknown AVATAR_IMAGE_PROVIDER={provider!r} (expected: {', '.join(PROVIDERS)})")
     generate = PROVIDERS[provider]
-    account_id = os.environ.get("R2_ACCOUNT_ID") or os.environ["CF_ACCOUNT_ID"]
-    cf_token = os.environ["CF_IMAGES_API_TOKEN"]
+    s3 = _r2_client()
+    bucket = os.environ.get("R2_BUCKET", "sentezy-media")
 
     with open(CATALOG, encoding="utf-8") as f:
         data = json.load(f)
@@ -133,13 +139,13 @@ def main() -> None:
                 tmp.write(png)
                 green_path = tmp.name
             # source (fed to HeyGen) keeps the green screen
-            a["imageId"] = upload_cf_image(png, account_id, cf_token, a["slug"])
+            a["imageId"] = upload_r2(s3, bucket, png, f"avatars/{a['slug']}.png")
             # matted transparent thumbnail for the picker (never shows green)
             try:
                 cut_path = green_path + ".cut.png"
                 matte.matte_image_to_png(green_path, cut_path)
                 with open(cut_path, "rb") as f:
-                    a["displayImageId"] = upload_cf_image(f.read(), account_id, cf_token, a["slug"] + "-cut")
+                    a["displayImageId"] = upload_r2(s3, bucket, f.read(), f"avatars/{a['slug']}-cut.png")
                 os.unlink(cut_path)
             except Exception as e:  # noqa: BLE001 — non-fatal; picker falls back to the source
                 print(f"(thumb skipped: {e})", end=" ")

@@ -143,7 +143,7 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
         voiceId = adopted.id;
       }
 
-      // Ordered B-roll: each ref is a CF Images id (image) or R2 key (video); first clip's transition is unused.
+      // Ordered B-roll: each ref is an R2 key (image or video); first clip's transition is unused.
       const media = ready.map((i, idx) => ({
         kind: i.kind,
         ref: i.ref as string,

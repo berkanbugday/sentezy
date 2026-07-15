@@ -29,7 +29,7 @@ def _ffprobe_duration(path: str) -> float:
 
 
 def _resolve_broll_media(options: dict, storage: Storage, workdir: str) -> list[dict]:
-    """Download ordered B-roll — images from Cloudflare Images, video clips from R2 —
+    """Download ordered B-roll — images and video clips both from R2 —
     returning [{path, kind, transition}]. Prefers the unified `media` list; falls back to
     the legacy `images`+`transitions` (older drafts, images only)."""
     bg = (options or {}).get("background") or {}
@@ -52,7 +52,7 @@ def _resolve_broll_media(options: dict, storage: Storage, workdir: str) -> list[
             storage.download(storage.signed_get_url(ref, 86400), dest)
         else:
             dest = f"{workdir}/broll{i}.jpg"
-            storage.download(storage.cf_image_url(ref), dest)
+            storage.download(storage.image_url(ref), dest)
         out.append({"path": dest, "kind": kind, "transition": m.get("transition")})
     return out
 
@@ -96,7 +96,7 @@ def _resolve_logo(options: dict, storage: Storage, workdir: str) -> str | None:
     if not logo_id:
         return None
     dest = f"{workdir}/logo.png"
-    storage.download(storage.cf_image_url(logo_id), dest)
+    storage.download(storage.image_url(logo_id), dest)
     return dest
 
 
@@ -107,6 +107,25 @@ def _resolve_music(options: dict, storage: Storage, workdir: str) -> str | None:
     dest = f"{workdir}/music.mp3"
     storage.download(storage.signed_get_url(track_key), dest)  # music stored in R2 (signed → always fetchable)
     return dest
+
+
+def _still_avatar_video(photo_path: str, audio_path: str, out_path: str) -> None:
+    """Dev-mode presenter A-roll: hold the presenter photo as a still for the audio's
+    duration, muxing the voice in. A drop-in for the HeyGen talking video so the matte
+    and composite stages run unchanged — no lip-sync, no HeyGen credits."""
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-loglevel", "error",
+            "-loop", "1", "-i", photo_path,
+            "-i", audio_path,
+            # even dims required by yuv420p; -tune stillimage keeps the single frame crisp
+            "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-tune", "stillimage", "-r", "25",
+            "-c:a", "aac", "-shortest",
+            out_path,
+        ],
+        check=True,
+    )
 
 
 def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: ElevenLabs, hg: HeyGen) -> None:
@@ -152,15 +171,22 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     storage.upload_r2(audio_path, audio_key, "audio/mpeg")
     audio_url = storage.signed_get_url(audio_key, 86400)  # HeyGen must fetch this; R2_PUBLIC_URL is the S3 endpoint, not public
 
-    # 2) HeyGen Avatar IV — audio-driven talking video straight from the presenter
-    #    photo (no talking-photo upload step; Avatar IV takes the image URL directly).
+    # 2) Presenter A-roll. Prod: HeyGen Avatar IV turns the presenter photo + audio into
+    #    a talking video (Avatar IV takes the image URL directly). Dev (NODE_ENV=development):
+    #    skip HeyGen — hold the presenter photo as a still for the audio's length, so the
+    #    rest of the pipeline runs identically without spending HeyGen credits.
     db.set_stage(video_id, "avatar", 35)
-    image_url = storage.cf_image_url(presenter["source_image_id"])
-    aspect_ratio = ASPECT_FROM_DIMS.get((width, height), "9:16")
-    heygen_video_id = hg.generate(image_url, audio_url, aspect_ratio)
-    heygen_url = hg.wait_for_url(heygen_video_id)
+    image_url = storage.image_url(presenter["source_image_id"])
     avatar_path = f"{workdir}/avatar.mp4"
-    storage.download(heygen_url, avatar_path)
+    if cfg.is_dev:
+        photo_path = f"{workdir}/presenter_src.png"
+        storage.download(image_url, photo_path)
+        _still_avatar_video(photo_path, audio_path, avatar_path)
+    else:
+        aspect_ratio = ASPECT_FROM_DIMS.get((width, height), "9:16")
+        heygen_video_id = hg.generate(image_url, audio_url, aspect_ratio)
+        heygen_url = hg.wait_for_url(heygen_video_id)
+        storage.download(heygen_url, avatar_path)
 
     # 2b) Matte the presenter out of the green screen → alpha clip (keeps the voice),
     #     so the reel composites the cut-out presenter over the B-roll.
@@ -209,6 +235,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     make_thumbnail(reel_path, thumb_path)
     out_key = f"videos/{video_id}.mp4"
     storage.upload_r2(reel_path, out_key, "video/mp4")
-    thumb_image_id = storage.upload_cf_image(thumb_path)
+    thumb_key = f"thumbnails/{video_id}.jpg"
+    storage.upload_r2(thumb_path, thumb_key, "image/jpeg")
 
-    db.set_ready(video_id, out_key, thumb_image_id, _ffprobe_duration(reel_path))
+    db.set_ready(video_id, out_key, thumb_key, _ffprobe_duration(reel_path))

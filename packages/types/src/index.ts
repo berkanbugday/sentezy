@@ -49,15 +49,14 @@ export const ReelOptions = z.object({
     .object({
       // MVP: solid color or image(s).
       type: z.enum(["color", "image"]).default("color"),
-      value: z.string().default("#0B0B0D"), // hex color, or the first Cloudflare Images id for `image`
-      // Multiple Cloudflare Images ids → slideshow background (first == value). Legacy;
+      value: z.string().default("#0B0B0D"), // hex color, or the first R2 image key for `image`
+      // Multiple R2 image keys → slideshow background (first == value). Legacy;
       // superseded by `media` when present, but kept for back-compat with older drafts.
       images: z.array(z.string()).optional(),
       // Per-photo transition effect (xfade name or "cut"), aligned to `images` order.
       transitions: z.array(z.string()).optional(),
-      // Unified ordered B-roll: images (Cloudflare Images id) AND video clips (R2 key),
-      // each with its own entrance transition. `ref` is a CF Images id when kind="image",
-      // or an R2 object key when kind="video".
+      // Unified ordered B-roll: images AND video clips, each with its own entrance
+      // transition. `ref` is an R2 object key for both kinds.
       media: z
         .array(
           z.object({
@@ -72,7 +71,7 @@ export const ReelOptions = z.object({
   captions: CaptionsOptions.default(true), // boolean default runs through the preprocess
   branding: z
     .object({
-      logoImageId: z.string().nullable().default(null), // Cloudflare Images id
+      logoImageId: z.string().nullable().default(null), // R2 image key
       intro: z.boolean().default(false),
       outro: z.boolean().default(false),
     })

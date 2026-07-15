@@ -32,7 +32,7 @@ export const createReelSchema = z.object({
   captionColor: z.string().default("#FFD54A"),
   // ElevenLabs v3 emotional tone — an audio tag ("" = natural delivery).
   voiceEmotion: z.string().default(""),
-  // Ordered B-roll refs — a Cloudflare Images id (photo) or an R2 key (video clip),
+  // Ordered B-roll refs — an R2 key for either a photo or a video clip,
   // distinguished by the aligned backgroundKinds array. Empty = plain dark background.
   backgroundImageIds: z.array(z.string()).default([]),
   // "image" | "video" per B-roll item, aligned to backgroundImageIds order.

@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "@sentezy/db";
-import { createDirectUpload, imageUrl } from "../lib/cloudflareImages";
+import { signedDownloadUrl, signedUploadUrl } from "../lib/r2";
 import catalog from "../data/avatars.json";
 
 const CreatePresenter = z.object({ name: z.string().min(1).max(80), sourceImageId: z.string().optional() });
@@ -44,20 +45,22 @@ export async function presenterRoutes(app: FastifyInstance) {
   app.get("/avatars", async (req) => {
     const q = AvatarQuery.safeParse(req.query);
     const f = q.success ? q.data : {};
-    const avatars = CATALOG.filter(
-      (a) => (!f.sector || a.sector === f.sector) && (!f.gender || a.gender === f.gender) && (!f.age || a.age === f.age),
-    ).map((a) => ({
-      id: a.imageId, // green-screen source for HeyGen ("" while pending)
-      slug: a.slug,
-      name: a.name,
-      sector: a.sector,
-      sectorLabel: a.sectorLabel,
-      gender: a.gender,
-      age: a.age,
-      ready: Boolean(a.imageId),
-      // picker shows the matted thumbnail; fall back to the source if it's missing
-      imageUrl: a.displayImageId ? imageUrl(a.displayImageId) : a.imageId ? imageUrl(a.imageId) : "",
-    }));
+    const avatars = await Promise.all(
+      CATALOG.filter(
+        (a) => (!f.sector || a.sector === f.sector) && (!f.gender || a.gender === f.gender) && (!f.age || a.age === f.age),
+      ).map(async (a) => ({
+        id: a.imageId, // green-screen source for HeyGen ("" while pending) — now an R2 key
+        slug: a.slug,
+        name: a.name,
+        sector: a.sector,
+        sectorLabel: a.sectorLabel,
+        gender: a.gender,
+        age: a.age,
+        ready: Boolean(a.imageId),
+        // picker shows the matted thumbnail; fall back to the source if it's missing
+        imageUrl: a.displayImageId ? await signedDownloadUrl(a.displayImageId) : a.imageId ? await signedDownloadUrl(a.imageId) : "",
+      })),
+    );
     return { avatars, sectors: SECTORS };
   });
 
@@ -66,8 +69,10 @@ export async function presenterRoutes(app: FastifyInstance) {
       where: { userId: req.user!.id },
       orderBy: { createdAt: "desc" },
     });
-    // The web preview needs a ready delivery URL (the account hash is server-only).
-    const presenters = rows.map((p) => ({ ...p, imageUrl: imageUrl(p.previewImageId ?? p.sourceImageId) }));
+    // The web preview needs a ready delivery URL — a signed R2 GET (keys are server-only).
+    const presenters = await Promise.all(
+      rows.map(async (p) => ({ ...p, imageUrl: await signedDownloadUrl(p.previewImageId ?? p.sourceImageId) })),
+    );
     return { presenters };
   });
 
@@ -85,14 +90,15 @@ export async function presenterRoutes(app: FastifyInstance) {
       const presenter = await prisma.presenter.create({
         data: { userId: req.user!.id, name: body.data.name, sourceImageId: body.data.sourceImageId, status: "ready" },
       });
-      return { presenter, imageUrl: imageUrl(presenter.sourceImageId) };
+      return { presenter, imageUrl: await signedDownloadUrl(presenter.sourceImageId) };
     }
 
-    // Legacy: create a presenter + a one-time Cloudflare Images upload URL.
-    const upload = await createDirectUpload();
+    // Custom photo: create a presenter + a presigned R2 PUT (client uploads the raw file).
+    const key = `presenters/${randomUUID()}.png`;
+    const uploadURL = await signedUploadUrl(key, "image/png");
     const presenter = await prisma.presenter.create({
-      data: { userId: req.user!.id, name: body.data.name, sourceImageId: upload.id, status: "pending" },
+      data: { userId: req.user!.id, name: body.data.name, sourceImageId: key, status: "pending" },
     });
-    return { presenter, uploadURL: upload.uploadURL, imageUrl: imageUrl(upload.id) };
+    return { presenter, uploadURL, imageUrl: await signedDownloadUrl(key, 86400) };
   });
 }

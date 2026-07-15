@@ -1,7 +1,7 @@
 [project]
 name = "sentezy-worker"
 version = "0.0.0"
-description = "Sentezy video worker — Redis Streams consumer that renders reels (ElevenLabs → HeyGen → ffmpeg → R2/Cloudflare Images)."
+description = "Sentezy video worker — Redis Streams consumer that renders reels (ElevenLabs → HeyGen → ffmpeg → R2)."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "redis>=5.2.1",

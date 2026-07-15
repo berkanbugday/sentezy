@@ -14,10 +14,8 @@ import httpx
 class HeyGen:
     API = "https://api.heygen.com"
 
-    def __init__(self, api_key: str, test_mode: bool = False):
+    def __init__(self, api_key: str):
         self.key = api_key
-        # Avatar IV (v3) has no test mode; kept for constructor compatibility with main.py.
-        self.test_mode = test_mode
 
     def _h(self) -> dict:
         return {"x-api-key": self.key, "Content-Type": "application/json"}

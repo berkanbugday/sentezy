@@ -84,17 +84,16 @@ export function useCreatePresenter() {
   });
 }
 
-/** Upload one B-roll image: get a direct-upload URL, PUT the file, return {id,url}. */
+/** Upload one B-roll image: presigned R2 PUT (key), then return {id: key, url: signed}. */
 export function useUploadBackground() {
   return useMutation({
     mutationFn: async (file: File): Promise<BgImage> => {
+      const contentType = file.type || "image/png";
       const { id, uploadURL, imageUrl } = await apiFetch<{ id: string; uploadURL: string; imageUrl: string }>(
         "/backgrounds/upload",
-        { method: "POST", body: JSON.stringify({}) },
+        { method: "POST", body: JSON.stringify({ contentType }) },
       );
-      const fd = new FormData();
-      fd.append("file", file);
-      await fetch(uploadURL, { method: "POST", body: fd });
+      await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": contentType }, body: file });
       return { id, url: imageUrl };
     },
   });

@@ -4,7 +4,6 @@ import { Prisma, prisma } from "@sentezy/db";
 import { type AspectRatio, CreateVideoDraft, CreateVideoRequest, UpdateVideoDraft } from "@sentezy/types";
 import { enqueueVideo } from "../lib/redis";
 import { SEP, resolveVoice } from "../lib/voices";
-import { imageUrl } from "../lib/cloudflareImages";
 import { emotionEnabled, enhanceScriptEmotion } from "../lib/emotion";
 import { publicUrl, signedDownloadUrl } from "../lib/r2";
 
@@ -39,10 +38,10 @@ export async function videoRoutes(app: FastifyInstance) {
 
     let downloadUrl: string | null = null;
     if (video.outputKey) downloadUrl = publicUrl(video.outputKey) ?? (await signedDownloadUrl(video.outputKey));
-    const thumbnailUrl = video.thumbnailImageId ? imageUrl(video.thumbnailImageId) : null;
+    const thumbnailUrl = video.thumbnailImageId ? await signedDownloadUrl(video.thumbnailImageId, 86400) : null;
 
-    // Delivery URLs for the B-roll so a resumed draft can show thumbnails: images via
-    // Cloudflare Images, video clips via a signed R2 GET (account hash/keys are server-only).
+    // Delivery URLs for the B-roll so a resumed draft can show thumbnails: images and
+    // video clips both via a signed R2 GET (keys are server-only, R2 isn't a public bucket).
     const bg = (video.options as {
       background?: {
         images?: string[];
@@ -63,7 +62,7 @@ export async function videoRoutes(app: FastifyInstance) {
         kind: m.kind,
         ref: m.ref,
         transition: m.transition,
-        url: m.kind === "video" ? await signedDownloadUrl(m.ref, 86400) : imageUrl(m.ref),
+        url: await signedDownloadUrl(m.ref, 86400),
       })),
     );
     const brollImageUrls = brollMedia.filter((m) => m.kind === "image").map((m) => m.url); // back-compat
@@ -234,7 +233,7 @@ export async function videoRoutes(app: FastifyInstance) {
     if (!emotionEnabled()) {
       return reply.send({ script: parsed.data.script, changed: false, enabled: false });
     }
-    const imageUrls = parsed.data.imageIds.map((id) => imageUrl(id));
+    const imageUrls = await Promise.all(parsed.data.imageIds.map((id) => signedDownloadUrl(id, 86400)));
     const result = await enhanceScriptEmotion(parsed.data.script, imageUrls, parsed.data.tone);
     return reply.send({ ...result, enabled: true });
   });

@@ -36,21 +36,10 @@ class Storage:
             "get_object", Params={"Bucket": self.cfg.r2_bucket, "Key": key}, ExpiresIn=expires
         )
 
-    # ── Cloudflare Images ──
-    def cf_image_url(self, image_id: str, variant: str = "public") -> str:
-        return f"https://imagedelivery.net/{self.cfg.cf_images_account_hash}/{image_id}/{variant}"
-
-    def upload_cf_image(self, local_path: str) -> str:
-        url = f"https://api.cloudflare.com/client/v4/accounts/{self.cfg.cf_account_id}/images/v1"
-        with open(local_path, "rb") as f:
-            r = httpx.post(
-                url,
-                headers={"Authorization": f"Bearer {self.cfg.cf_images_api_token}"},
-                files={"file": (local_path.rsplit("/", 1)[-1], f)},
-                timeout=60,
-            )
-        r.raise_for_status()
-        return r.json()["result"]["id"]
+    def image_url(self, key: str, expires: int = 86400) -> str:
+        """Signed GET URL for an image stored in R2 (avatars, presenters, B-roll photos).
+        Long-lived by default so external providers (HeyGen) can fetch it."""
+        return self.signed_get_url(key, expires)
 
     # ── generic download ──
     def download(self, url: str, dest: str) -> None:

@@ -31,7 +31,7 @@ export type Common = {
 export type BgImage = { id: string; url: string; transition?: string; kind?: "image" | "video" };
 
 export type Avatar = {
-  id: string; // Cloudflare Images id — "" while the portrait is still pending
+  id: string; // R2 key for the green-screen source — "" while the portrait is still pending
   slug: string;
   name: string;
   imageUrl: string;

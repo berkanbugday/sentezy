@@ -21,9 +21,6 @@ const schema = z.object({
   // Empty string ⇒ treat as unset (fall back to presigned download URLs).
   R2_PUBLIC_URL: z.string().url().optional().or(z.literal("")),
 
-  CF_IMAGES_API_TOKEN: z.string().min(1),
-  CF_IMAGES_ACCOUNT_HASH: z.string().min(1),
-
   // Only the worker needs these; optional here so the API can boot without them.
   ELEVENLABS_API_KEY: z.string().optional(),
   HEYGEN_API_KEY: z.string().optional(),
