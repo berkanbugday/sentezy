@@ -13,8 +13,8 @@ import subprocess
 _SFX_TRANS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "sfx", "transitions"))
 # Mirror of @sentezy/types BROLL_SFX_MAP — keep in sync.
 _BROLL_SFX_MAP = {
-    "fade": "whoosh", "slide": "shutter-modern", "wipe": "page-turn", "flip": "whip",
-    "clockwipe": "switch", "iris": "whoosh", "zoom": "whoosh", "blur": "whoosh",
+    "fade": "swoosh", "slide": "shutter-modern", "wipe": "page-turn", "flip": "whip",
+    "clockwipe": "switch", "iris": "swoosh", "zoom": "swoosh", "blur": "swoosh",
     "push": "switch", "zoompunch": "whip", "shake": "whip", "glitch": "switch",
     "whip": "whip", "flash": "shutter-modern",
 }
@@ -45,7 +45,7 @@ def _run(cmd: list[str]) -> None:
 def _transition_sfx_path(transition: str | None) -> str | None:
     """The slide-transition sound file matched to a B-roll effect id (BROLL_SFX_MAP),
     or None if that sound isn't bundled. Unknown transitions fall back to whoosh."""
-    stem = _BROLL_SFX_MAP.get(transition or "", "whoosh")
+    stem = _BROLL_SFX_MAP.get(transition or "", "swoosh")
     path = os.path.join(_SFX_TRANS_DIR, f"{stem}.wav")
     return path if os.path.isfile(path) else None
 

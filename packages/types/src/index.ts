@@ -140,14 +140,14 @@ export const BROLL_ENTRANCE_IDS = BROLL_EFFECT_META.filter((e) => e.kind === "en
 //   apps/worker/sfx/transitions/{stem}.wav        (ffmpeg render)
 // Consumed by the worker (compose_reel) and the web preview (sfxPreview.slideSfxCues).
 export const BROLL_SFX_MAP: Record<BrollEffectId, string> = {
-  fade: "whoosh",
+  fade: "swoosh",
   slide: "shutter-modern", // modern camera-shutter click on every slide (Berkan 2026‑07‑18)
   wipe: "page-turn",
   flip: "whip",
   clockwipe: "switch",
-  iris: "whoosh",
-  zoom: "whoosh",
-  blur: "whoosh",
+  iris: "swoosh",
+  zoom: "swoosh",
+  blur: "swoosh",
   push: "switch",
   zoompunch: "whip",
   shake: "whip",
@@ -157,9 +157,9 @@ export const BROLL_SFX_MAP: Record<BrollEffectId, string> = {
 };
 /** Distinct sound stems referenced by BROLL_SFX_MAP (the files that must exist). */
 export const BROLL_SFX_STEMS = Array.from(new Set(Object.values(BROLL_SFX_MAP)));
-/** The slide-transition sound stem for a B-roll effect id (falls back to whoosh). */
+/** The slide-transition sound stem for a B-roll effect id (falls back to the swoosh). */
 export function brollSfxStem(transition: string | null | undefined): string {
-  return (transition && BROLL_SFX_MAP[transition as BrollEffectId]) || "whoosh";
+  return (transition && BROLL_SFX_MAP[transition as BrollEffectId]) || "swoosh";
 }
 
 const CaptionsObject = z.object({
