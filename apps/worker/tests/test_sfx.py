@@ -34,3 +34,10 @@ def test_missing_file_skips_cue(monkeypatch):
     monkeypatch.setattr("sentezy_worker.sfx.sfx_file", lambda sid: None)
     out = resolve_sfx_cues([{"sfxId": "cash", "wordIndex": 0, "gain": 0.7}], _words(2), ["a", "b"])
     assert out == []
+
+
+def test_sfx_file_rejects_path_traversal():
+    from sentezy_worker.sfx import sfx_file
+    assert sfx_file("../../../etc/passwd") is None
+    assert sfx_file("foo/bar") is None
+    assert sfx_file("a.b") is None

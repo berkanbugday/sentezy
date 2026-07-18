@@ -18,6 +18,8 @@ def tokenize_script(script: str) -> list[str]:
 
 def sfx_file(sfx_id: str) -> str | None:
     """Absolute path to the bundled {id}.mp3, or None if not present."""
+    if not re.fullmatch(r"[a-z0-9_]+", sfx_id):
+        return None
     path = os.path.join(_SFX_LIB_DIR, f"{sfx_id}.mp3")
     return path if os.path.isfile(path) else None
 
