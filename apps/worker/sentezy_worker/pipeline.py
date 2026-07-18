@@ -11,6 +11,7 @@ from .matte import matte_video_to_mov
 from .providers.captions_remotion import render_caption_overlay, render_caption_overlay_local
 from .providers.elevenlabs import ElevenLabs
 from .providers.heygen import HeyGen
+from .sfx import resolve_sfx_cues, tokenize_script
 from .storage import Storage
 
 RATIO_DIMS = {"9:16": (1080, 1920), "1:1": (1080, 1080), "16:9": (1920, 1080)}
@@ -251,6 +252,15 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
                 avatar_side=avatar_side, position=cap_position, style=cap_style,
                 font=cap_font, color=cap_color, avatar_layout=avatar_layout,
             )
+    sfx_opt = options.get("sfx") or {}
+    sfx_cues_resolved: list[dict] = []
+    if sfx_opt.get("enabled") and sfx_opt.get("cues"):
+        try:
+            sfx_cues_resolved = resolve_sfx_cues(sfx_opt["cues"], words, tokenize_script(video["script"]))
+        except Exception as e:  # noqa: BLE001 — SFX are optional; never fail the job
+            print(f"pipeline: sfx cue resolution failed ({e}); continuing without AI SFX")
+            sfx_cues_resolved = []
+
     compose_reel(
         avatar_cutout_path=avatar_cutout_path,
         out_path=reel_path,
@@ -265,6 +275,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
         music_volume=music_volume,
         avatar_side=avatar_side,
         avatar_layout=avatar_layout,
+        sfx_cues=sfx_cues_resolved,
     )
 
     # 4) Thumbnail + upload
