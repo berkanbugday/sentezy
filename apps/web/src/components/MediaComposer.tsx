@@ -11,6 +11,7 @@ import { type Media } from "@/lib/composer/media";
 import { TR_GRADIENT, TR_GRADIENT_SOFT, TRANSITION_LABELS } from "@/lib/composer/transitions";
 import { type ImportProductResult, useCreateAvatar, useGenerateVideo, useImportProduct, useMyAvatars, useSuggestSfx, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
 import { videoPoster } from "@/lib/videoPoster";
+import { cleanTitleText } from "@/lib/videoTitle";
 import { DEFAULT_TRANSITION } from "./WizardSteps";
 import { AvatarPicker } from "./composer/AvatarPicker";
 import { CaptionPicker } from "./composer/CaptionPicker";
@@ -19,6 +20,17 @@ import { SfxPreviewModal } from "./composer/SfxPreviewModal";
 import { Spinner } from "./composer/Spinner";
 import { VoicePicker } from "./composer/VoicePicker";
 import { Icon } from "./icons";
+
+/**
+ * The title stored for a new video. Prefers the imported product's NAME; otherwise the
+ * script's first sentence trimmed at a word boundary (via the shared `cleanTitleText`, never
+ * a mid-word cut). Display uses the same helpers so old rows read cleanly too.
+ */
+function deriveVideoTitle(script: string, productTitle?: string): string {
+  const fromProduct = productTitle?.trim();
+  if (fromProduct) return fromProduct;
+  return cleanTitleText(script) || "Yeni video";
+}
 
 /** Upload-first hero composer: accepts multiple images + videos, uploads each to
  *  storage (with per-tile progress), then builds a draft and queues it for render. */
@@ -260,7 +272,7 @@ export function MediaComposer({
       };
 
       const text = scriptText;
-      const title = text.split("\n")[0].slice(0, 80) || "Yeni video";
+      const title = deriveVideoTitle(text, product?.title);
       const { video: draft } = await apiFetch<{ video: { id: string } }>("/videos/draft", {
         method: "POST",
         body: JSON.stringify({ title, script: text }),

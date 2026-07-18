@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { qk, useVideo } from "@/lib/queries";
 import { formatRatio, STAGE_LABEL, STATUS_LABEL, type VideoStage, type VideoStatus } from "@/lib/types";
+import { videoDisplayTitle } from "@/lib/videoTitle";
 
 type Live = { status: VideoStatus; stage: VideoStage; progress: number };
 
@@ -38,6 +39,7 @@ export function VideoDetail({ id }: { id: string }) {
   if (!detail) return <p className="text-[14px] text-muted">Yükleniyor…</p>;
 
   const v = detail.video;
+  const title = videoDisplayTitle(v);
   const live: Live = liveOverride ?? { status: v.status, stage: v.stage, progress: v.progress };
   const [label, cls] = STATUS_LABEL[live.status];
   const processing = live.status === "queued" || live.status === "processing";
@@ -47,7 +49,7 @@ export function VideoDetail({ id }: { id: string }) {
   return (
     <div className="mx-auto max-w-4xl">
       <Link href="/library" className="text-[13.5px] font-medium text-signal">← Videolarım</Link>
-      <h1 className="disp mt-3 line-clamp-2 text-[24px] font-semibold leading-tight text-ink" title={v.title}>{v.title}</h1>
+      <h1 className="disp mt-3 text-[24px] font-semibold leading-tight text-ink">{title}</h1>
       <div className="mt-2">
         <span className={`badge ${cls}`}>
           <span className="dot" />

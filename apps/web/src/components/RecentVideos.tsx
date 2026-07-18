@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useVideos } from "@/lib/queries";
 import { formatRatio, STATUS_LABEL } from "@/lib/types";
+import { videoDisplayTitle } from "@/lib/videoTitle";
 
 /** The dashboard "Son videoların" strip — the 4 most recent videos with real thumbnails. */
 export function RecentVideos() {
@@ -53,7 +54,7 @@ export function RecentVideos() {
               </span>
             </div>
             <div className="p-3">
-              <p className="truncate text-[13.5px] font-semibold text-ink">{v.title}</p>
+              <p className="truncate text-[13.5px] font-semibold text-ink">{videoDisplayTitle(v)}</p>
               <div className="mt-1 flex items-center justify-between text-[12px] text-muted">
                 <span>{new Date(v.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</span>
                 <span className="mono">{formatRatio(v.aspectRatio)}</span>
