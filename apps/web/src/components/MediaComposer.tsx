@@ -2,18 +2,20 @@
 
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState } from "react";
+import type { SfxCue } from "@sentezy/types";
 import { type Avatar, type Voice } from "@/components/wizard/types";
 import { apiFetch } from "@/lib/api";
 import { DEFAULT_PRESET, presetById } from "@/lib/captionStyles";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
 import { type Media } from "@/lib/composer/media";
 import { TR_GRADIENT, TR_GRADIENT_SOFT, TRANSITION_LABELS } from "@/lib/composer/transitions";
-import { useCreateAvatar, useGenerateVideo, useMyAvatars, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
+import { useCreateAvatar, useGenerateVideo, useMyAvatars, useSuggestSfx, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
 import { videoPoster } from "@/lib/videoPoster";
 import { DEFAULT_TRANSITION } from "./WizardSteps";
 import { AvatarPicker } from "./composer/AvatarPicker";
 import { CaptionPicker } from "./composer/CaptionPicker";
 import { EffectPicker } from "./composer/EffectPicker";
+import { SfxPreviewModal } from "./composer/SfxPreviewModal";
 import { Spinner } from "./composer/Spinner";
 import { VoicePicker } from "./composer/VoicePicker";
 import { Icon } from "./icons";
@@ -30,6 +32,7 @@ export function MediaComposer({
   const uploadVid = useUploadBackgroundVideo();
   const createAvatar = useCreateAvatar();
   const generate = useGenerateVideo();
+  const suggestSfx = useSuggestSfx();
   const myAvatars = useMyAvatars().data ?? [];
   const [items, setItems] = useState<Media[]>([]);
   const [drag, setDrag] = useState(false);
@@ -44,6 +47,8 @@ export function MediaComposer({
   const [script, setScript] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [sfxCues, setSfxCues] = useState<SfxCue[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedCaption = presetById(captionId);
   const settings = extraSettings ?? DEFAULT_SETTINGS;
@@ -122,6 +127,20 @@ export function MediaComposer({
   const createHint = !hasScript ? "Önce konuşma metnini yaz" : !selectedAvatar ? "Bir avatar seç" : !selectedVoice ? "Bir ses seç" : undefined;
   const pick = () => inputRef.current?.click();
 
+  // Open the preview modal, lazily fetching AI SFX cues the first time (if SFX is enabled)
+  // so the preview shows the same placements the real render will use.
+  async function openPreview() {
+    setPreviewOpen(true);
+    if (settings.sfxEnabled && script.trim() && sfxCues.length === 0) {
+      try {
+        const { cues } = await suggestSfx.mutateAsync(script.trim());
+        setSfxCues(cues);
+      } catch {
+        // preview still works without SFX
+      }
+    }
+  }
+
   // Build the draft straight from the composer state, debit + queue it, then send
   // the user to the library to watch it render. (Replaces the old /create wizard.)
   async function create() {
@@ -153,6 +172,19 @@ export function MediaComposer({
         ref: i.ref as string,
         transition: idx === 0 ? DEFAULT_TRANSITION : i.transition ?? DEFAULT_TRANSITION,
       }));
+
+      // Ensure SFX cues exist before render if the setting is on but the preview was never
+      // opened (so cues were never fetched) — fall back to an empty list on failure.
+      const scriptText = script.trim();
+      let cuesForRender = sfxCues;
+      if (settings.sfxEnabled && cuesForRender.length === 0 && scriptText.length > 0) {
+        try {
+          cuesForRender = (await suggestSfx.mutateAsync(scriptText)).cues;
+        } catch {
+          cuesForRender = [];
+        }
+      }
+
       const options = {
         captions: { enabled: true, style: preset.base, font: preset.font, color: preset.color },
         background: media.length
@@ -168,9 +200,10 @@ export function MediaComposer({
         layout: { avatarLayout: settings.avatarLayout, avatarSide: settings.avatarSide, captionPosition: settings.captionPosition },
         voice: { emotion: settings.voiceEmotion ?? "" },
         effects: { transitionSfx: settings.transitionSfx ?? true },
+        sfx: { enabled: settings.sfxEnabled, cues: cuesForRender },
       };
 
-      const text = script.trim();
+      const text = scriptText;
       const title = text.split("\n")[0].slice(0, 80) || "Yeni video";
       const { video: draft } = await apiFetch<{ video: { id: string } }>("/videos/draft", {
         method: "POST",
@@ -385,6 +418,17 @@ export function MediaComposer({
             {selectedCaption.family}
             <Icon.chevronDown width={14} height={14} className="text-muted" />
           </button>
+          {/* live preview */}
+          <button
+            type="button"
+            onClick={openPreview}
+            disabled={!hasScript}
+            title={!hasScript ? "Önce konuşma metnini yaz" : "Reklamı önizle"}
+            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-2.5 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <Icon.play width={14} height={14} className="text-slate" />
+            Önizle
+          </button>
           {items.length > 0 && (
             <span className="flex items-center gap-1.5 whitespace-nowrap text-[12px] text-muted">
               {uploading && <Spinner size={13} />}
@@ -415,6 +459,17 @@ export function MediaComposer({
       <AvatarPicker open={avatarOpen} onClose={() => setAvatarOpen(false)} selectedId={selectedAvatar?.id ?? null} onSelect={setSelectedAvatar} />
       <VoicePicker open={voiceOpen} onClose={() => setVoiceOpen(false)} selectedId={selectedVoice?.id ?? null} onSelect={setSelectedVoice} script={script} />
       <CaptionPicker open={captionOpen} onClose={() => setCaptionOpen(false)} selectedId={captionId} onSelect={setCaptionId} />
+      <SfxPreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        script={script}
+        cues={sfxCues}
+        captionStyle={{ styleId: selectedCaption.base, font: selectedCaption.font, color: selectedCaption.color }}
+        layout={{ avatarLayout: settings.avatarLayout, avatarSide: settings.avatarSide, captionPosition: settings.captionPosition }}
+        avatarImageUrl={selectedAvatar?.imageUrl ?? null}
+        backdropUrl={items.find((i) => i.kind === "image")?.serverUrl ?? items[0]?.url ?? null}
+        captions
+      />
     </div>
   );
 }
