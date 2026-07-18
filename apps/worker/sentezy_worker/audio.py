@@ -1,6 +1,6 @@
 """ffmpeg audio bed — attaches the reel's audio (voice + ducked music + transition/AI SFX)
 onto an opaque Remotion render via stream-copy. Engine-agnostic helpers below are copied
-verbatim from `compose.py` (the ffmpeg-composited engine, deleted wholesale in Task 15);
+verbatim from the former ffmpeg compositor;
 the transient duplication is intentional so this module has no dependency on that engine.
 """
 
