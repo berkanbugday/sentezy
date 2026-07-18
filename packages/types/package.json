@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@sentezy/config": "workspace:*",
+    "tsx": "4.19.2",
     "typescript": "5.6.3"
   }
 }

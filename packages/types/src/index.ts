@@ -54,6 +54,54 @@ export const CAPTION_STYLE_IDS = CAPTION_STYLE_META.map((s) => s.id) as unknown 
 export const CaptionStyle = z.enum(CAPTION_STYLE_IDS);
 export type CaptionStyle = z.infer<typeof CaptionStyle>;
 
+// ── Sound effects ───────────────────────────────────────────────────────────
+// CANONICAL SFX registry — the single source of truth for the AI-placed sound
+// effects. The AI (POST /videos/suggest-sfx) chooses from these ids; files are
+// named {id}.mp3 and live in apps/web/public/sfx (preview) + apps/worker/sfx/library (render).
+export const SFX_META = [
+  { id: "whoosh",   label: "Whoosh",   tags: ["transition", "swipe", "scene change"] },
+  { id: "ding",     label: "Ding",     tags: ["highlight", "correct", "notify", "point"] },
+  { id: "pop",      label: "Pop",      tags: ["appear", "bubble", "reveal small"] },
+  { id: "boom",     label: "Boom",     tags: ["impact", "big reveal", "emphasis"] },
+  { id: "applause", label: "Applause", tags: ["success", "celebrate", "win"] },
+  { id: "cash",     label: "Cash",     tags: ["money", "sale", "price", "discount"] },
+  { id: "riser",    label: "Riser",    tags: ["buildup", "tension", "anticipation"] },
+  { id: "click",    label: "Click",    tags: ["tap", "select", "ui"] },
+  { id: "swoosh",   label: "Swoosh",   tags: ["fast", "motion", "swipe"] },
+  { id: "sparkle",  label: "Sparkle",  tags: ["magic", "shine", "premium"] },
+  { id: "airhorn",  label: "Airhorn",  tags: ["hype", "attention", "drop"] },
+  { id: "thud",     label: "Thud",     tags: ["drop", "land", "heavy"] },
+  { id: "bell",     label: "Bell",     tags: ["notify", "alert", "correct"] },
+  { id: "record_scratch", label: "Record scratch", tags: ["stop", "wait", "twist"] },
+  { id: "whistle",  label: "Whistle",  tags: ["rise", "fall", "cartoon"] },
+  { id: "camera",   label: "Camera",   tags: ["photo", "snapshot", "capture"] },
+] as const;
+
+export type SfxId = (typeof SFX_META)[number]["id"];
+export const SFX_IDS = SFX_META.map((s) => s.id) as unknown as [SfxId, ...SfxId[]];
+export const Sfx = z.enum(SFX_IDS);
+
+/** One placed sound effect: which SFX, anchored to which tokenizeScript() word index. */
+export const SfxCue = z.object({
+  sfxId: Sfx,
+  wordIndex: z.number().int().min(0),
+  gain: z.number().min(0).max(1).default(0.7),
+});
+export type SfxCue = z.infer<typeof SfxCue>;
+
+/**
+ * Canonical script tokenization — the contract that makes SfxCue.wordIndex mean the
+ * same thing on the web (estimated timing) and in the worker (real TTS timing).
+ * MUST match apps/worker tokenize_script: strip [emotion] tags, split on whitespace.
+ */
+export function tokenizeScript(script: string): string[] {
+  return script
+    .replace(/\[[a-zA-Z][^\]]*\]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter((t) => t.length > 0);
+}
+
 // ── B-roll transitions & entrance effects ──────────────────────────────────
 // CANONICAL curated set — the single source of truth for the per-clip B-roll effect.
 // Rendered natively by Remotion (packages/remotion/src/broll): `transition` kinds are
@@ -169,6 +217,14 @@ export const ReelOptions = z.object({
       transitionSfx: z.boolean().default(true),
     })
     .default({ transitionSfx: true }),
+  // AI voice-timed sound effects (POST /videos/suggest-sfx). Separate from
+  // effects.transitionSfx (the automatic slide whooshes).
+  sfx: z
+    .object({
+      enabled: z.boolean().default(false),
+      cues: z.array(SfxCue).default([]),
+    })
+    .default({ enabled: false, cues: [] }),
   // Which wizard step the draft was last left on, so it can be resumed.
   wizardStep: z.number().int().min(0).max(4).optional(),
 });
