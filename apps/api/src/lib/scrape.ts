@@ -20,7 +20,8 @@ export interface ScrapedProduct {
   videoUrls: string[];
 }
 
-const MAX_IMAGES = 6;
+const MAX_IMAGES = 10; // grab the whole product gallery (most have 4-9 shots); user trims in the composer
+const MAX_VIDEOS = 3;
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
 /** A result is worth returning only if we found a title AND at least one image. */
@@ -93,8 +94,13 @@ export function parseHtml(html: string, baseUrl: string): ScrapedProduct {
   ]);
   const price = firstText([ld?.price, $('meta[property="product:price:amount"]').attr("content")]);
 
-  // Images: JSON-LD image[] first (curated product shots), then OpenGraph images.
+  // The full ordered gallery from an embedded state blob (Trendyol etc.), when present —
+  // richer than JSON-LD/OG, which often carry only the primary shot(s).
+  const embedded = extractEmbeddedGallery(html);
+
+  // Images: embedded gallery first (full set, ordered), then JSON-LD image[], then OpenGraph.
   const imageCandidates = [
+    ...embedded.images,
     ...toArray(ld?.image),
     ...$('meta[property="og:image"], meta[property="og:image:url"], meta[name="og:image"]')
       .map((_, el) => $(el).attr("content"))
@@ -102,8 +108,9 @@ export function parseHtml(html: string, baseUrl: string): ScrapedProduct {
   ];
   const imageUrls = dedupeAbsolute(imageCandidates, baseUrl).slice(0, MAX_IMAGES);
 
-  // Videos: OpenGraph video + JSON-LD video + inline <video><source>.
+  // Videos: embedded product video first, then OpenGraph + JSON-LD + inline <video><source>.
   const videoCandidates = [
+    ...embedded.videos,
     ...toArray(ld?.video),
     ...$('meta[property="og:video"], meta[property="og:video:url"], meta[property="og:video:secure_url"]')
       .map((_, el) => $(el).attr("content"))
@@ -112,9 +119,60 @@ export function parseHtml(html: string, baseUrl: string): ScrapedProduct {
       .map((_, el) => $(el).attr("src"))
       .get(),
   ];
-  const videoUrls = dedupeAbsolute(videoCandidates, baseUrl).slice(0, 2);
+  const videoUrls = dedupeAbsolute(videoCandidates, baseUrl).slice(0, MAX_VIDEOS);
 
   return { title, description: description || undefined, price: price || undefined, imageUrls, videoUrls };
+}
+
+/**
+ * Some storefronts (notably Trendyol) render the gallery client-side, so JSON-LD/OG carry
+ * only the primary shot(s) while the FULL ordered gallery + any product video live in an
+ * embedded `window["__envoy__SHARED_PROPS"]` state blob. Pull product.images / product.video
+ * out of it. No-op (empty) on sites without that blob.
+ */
+function extractEmbeddedGallery(html: string): { images: string[]; videos: string[] } {
+  const shared = readWindowAssignment(html, "__envoy__SHARED_PROPS");
+  const product =
+    shared && typeof shared === "object" ? (shared as Record<string, unknown>).product : null;
+  if (!product || typeof product !== "object") return { images: [], videos: [] };
+  const p = product as Record<string, unknown>;
+  return { images: toArray(p.images), videos: toArray(p.video) };
+}
+
+/**
+ * Extract the balanced `{…}` object assigned to `window["<name>"]=` inside an inline script.
+ * Brace-matches (string-aware) so trailing JS after the object doesn't break JSON.parse.
+ */
+function readWindowAssignment(html: string, name: string): unknown {
+  const at = html.indexOf(`window["${name}"]=`);
+  if (at < 0) return null;
+  const start = html.indexOf("{", at);
+  if (start < 0) return null;
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let k = start; k < html.length; k++) {
+    const c = html[k];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === "\\") esc = true;
+      else if (c === '"') inStr = false;
+    } else if (c === '"') {
+      inStr = true;
+    } else if (c === "{") {
+      depth++;
+    } else if (c === "}") {
+      depth--;
+      if (depth === 0) {
+        try {
+          return JSON.parse(html.slice(start, k + 1));
+        } catch {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
 }
 
 interface LdProduct {
@@ -194,13 +252,27 @@ function firstOf(v: unknown): Record<string, unknown> | undefined {
   return undefined;
 }
 
-/** schema.org image/video can be a string, an ImageObject, or an array of either. */
+/**
+ * Collect image/video URLs from a schema.org value, which may be a string, an ImageObject,
+ * or an array of either — AND, on some sites (e.g. Trendyol), a single ImageObject whose
+ * `contentUrl`/`url` is itself an ARRAY of URLs. Recurse so all of those are flattened out.
+ */
 function toArray(v: unknown): string[] {
-  if (!v) return [];
-  const list = Array.isArray(v) ? v : [v];
-  return list
-    .map((x) => (typeof x === "string" ? x : x && typeof x === "object" ? str((x as Record<string, unknown>).url) ?? str((x as Record<string, unknown>).contentUrl) : undefined))
-    .filter((x): x is string => Boolean(x));
+  const out: string[] = [];
+  const visit = (x: unknown) => {
+    if (!x) return;
+    if (typeof x === "string") {
+      out.push(x);
+    } else if (Array.isArray(x)) {
+      x.forEach(visit);
+    } else if (typeof x === "object") {
+      const o = x as Record<string, unknown>;
+      visit(o.url);
+      visit(o.contentUrl);
+    }
+  };
+  visit(v);
+  return out;
 }
 
 const firstText = (candidates: Array<string | undefined | null>): string =>
