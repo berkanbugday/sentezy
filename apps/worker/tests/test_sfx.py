@@ -1,4 +1,4 @@
-from sentezy_worker.compose import Word
+from sentezy_worker.models import Word
 from sentezy_worker.sfx import tokenize_script, resolve_sfx_cues
 
 

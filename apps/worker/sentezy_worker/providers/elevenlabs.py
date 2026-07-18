@@ -4,7 +4,7 @@ import base64
 
 import httpx
 
-from ..compose import Word
+from ..models import Word
 
 # Eleven v3 — the most expressive model (audio tags + emotional delivery), supports
 # Turkish, and (verified) works with the with-timestamps endpoint. Lower stability =

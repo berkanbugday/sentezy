@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import re
 
-from .compose import Word
+from .models import Word
 
 _SFX_LIB_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "sfx", "library"))
 _TAG_RE = re.compile(r"\[[a-zA-Z][^\]]*\]")
