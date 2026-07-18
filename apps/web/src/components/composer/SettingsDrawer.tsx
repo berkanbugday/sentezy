@@ -152,6 +152,20 @@ export function SettingsDrawer({ settings, onChange }: { settings: ComposerSetti
                   {settings.transitionSfx ? "Açık" : "Kapalı"}
                 </button>
               </Field>
+              <Field label="Yapay zekâ ses efektleri">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={settings.sfxEnabled}
+                  onClick={() => set("sfxEnabled", !settings.sfxEnabled)}
+                  className="flex items-center gap-2.5 text-[12.5px] font-medium text-ink"
+                >
+                  <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${settings.sfxEnabled ? "bg-ink" : "bg-hairline"}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${settings.sfxEnabled ? "left-[18px]" : "left-0.5"}`} />
+                  </span>
+                  {settings.sfxEnabled ? "Açık" : "Kapalı"}
+                </button>
+              </Field>
           </div>
         </aside>
       )}

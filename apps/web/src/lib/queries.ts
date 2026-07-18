@@ -1,6 +1,7 @@
 "use client";
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { SfxCue } from "@sentezy/types";
 import type { Avatar, BgImage, UserAvatar, Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
 import type { ApiVideo } from "@/lib/types";
@@ -128,6 +129,17 @@ export function useEnhanceEmotion() {
       apiFetch<{ script: string; changed: boolean; enabled: boolean }>("/videos/enhance-emotion", {
         method: "POST",
         body: JSON.stringify(input),
+      }),
+  });
+}
+
+/** Ask the API to place AI sound effects for a script. */
+export function useSuggestSfx() {
+  return useMutation({
+    mutationFn: (script: string) =>
+      apiFetch<{ cues: SfxCue[]; enabled: boolean }>("/videos/suggest-sfx", {
+        method: "POST",
+        body: JSON.stringify({ script }),
       }),
   });
 }

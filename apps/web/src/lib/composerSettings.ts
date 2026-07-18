@@ -11,6 +11,7 @@ export type ComposerSettings = {
   musicTrackKey?: string;
   musicVolume: number; // 0..0.4 (UI cap, so the bed never buries the voice)
   transitionSfx: boolean;
+  sfxEnabled: boolean;
 };
 
 export const DEFAULT_SETTINGS: ComposerSettings = {
@@ -21,4 +22,5 @@ export const DEFAULT_SETTINGS: ComposerSettings = {
   voiceEmotion: "",
   musicVolume: 0.15,
   transitionSfx: true,
+  sfxEnabled: false,
 };
