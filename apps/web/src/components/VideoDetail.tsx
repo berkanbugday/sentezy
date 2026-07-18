@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { qk, useVideo } from "@/lib/queries";
-import { STAGE_LABEL, STATUS_LABEL, type VideoStage, type VideoStatus } from "@/lib/types";
+import { formatRatio, STAGE_LABEL, STATUS_LABEL, type VideoStage, type VideoStatus } from "@/lib/types";
 
 type Live = { status: VideoStatus; stage: VideoStage; progress: number };
 
@@ -47,8 +47,8 @@ export function VideoDetail({ id }: { id: string }) {
   return (
     <div className="mx-auto max-w-4xl">
       <Link href="/library" className="text-[13.5px] font-medium text-signal">← Videolarım</Link>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <h1 className="disp text-[24px] font-semibold text-ink">{v.title}</h1>
+      <h1 className="disp mt-3 line-clamp-2 text-[24px] font-semibold leading-tight text-ink" title={v.title}>{v.title}</h1>
+      <div className="mt-2">
         <span className={`badge ${cls}`}>
           <span className="dot" />
           {label}
@@ -86,10 +86,9 @@ export function VideoDetail({ id }: { id: string }) {
           <div className="card p-5 text-[14px]">
             {(
               [
-                ["Durum", label],
-                ["Oran", v.aspectRatio],
-                ["Süre", v.durationS ? `${v.durationS}s` : "—"],
-                ["Oluşturuldu", new Date(v.createdAt).toLocaleString("tr-TR")],
+                ["En-boy oranı", formatRatio(v.aspectRatio)],
+                ["Süre", v.durationS ? `${Math.round(v.durationS)} sn` : "—"],
+                ["Oluşturuldu", new Date(v.createdAt).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" })],
               ] as [string, string][]
             ).map(([k, val]) => (
               <div key={k} className="flex justify-between border-b border-hairline py-2 last:border-0">
@@ -100,7 +99,18 @@ export function VideoDetail({ id }: { id: string }) {
           </div>
 
           {detail.downloadUrl && (
-            <a href={detail.downloadUrl} download className="btn btn-primary w-fit">İndir</a>
+            <div className="flex flex-wrap gap-2">
+              {/* fileDownloadUrl carries Content-Disposition: attachment → the browser saves it. */}
+              <a href={detail.fileDownloadUrl ?? detail.downloadUrl} className="btn btn-primary w-fit">İndir</a>
+              <a
+                href={detail.downloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-fit items-center rounded-full border border-hairline bg-paper px-4 py-2 text-[14px] font-medium text-ink transition hover:bg-mist"
+              >
+                Yeni sekmede aç
+              </a>
+            </div>
           )}
         </div>
       </div>

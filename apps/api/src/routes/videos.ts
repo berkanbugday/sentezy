@@ -51,7 +51,14 @@ export async function videoRoutes(app: FastifyInstance) {
     if (!video) return reply.code(404).send({ error: "not_found" });
 
     let downloadUrl: string | null = null;
-    if (video.outputKey) downloadUrl = publicUrl(video.outputKey) ?? (await signedDownloadUrl(video.outputKey));
+    let fileDownloadUrl: string | null = null;
+    if (video.outputKey) {
+      downloadUrl = publicUrl(video.outputKey) ?? (await signedDownloadUrl(video.outputKey));
+      // Force-download variant (Content-Disposition: attachment); the inline downloadUrl above is
+      // what the <video> plays, this one makes the browser save the file.
+      const safeTitle = (video.title || "sentezy").replace(/[^\w.-]+/g, "_").slice(0, 60) || "sentezy";
+      fileDownloadUrl = await signedDownloadUrl(video.outputKey, 3600, { downloadAs: `${safeTitle}.mp4` });
+    }
     const thumbnailUrl = video.thumbnailImageId ? await signedDownloadUrl(video.thumbnailImageId, 86400) : null;
 
     // Delivery URLs for the B-roll so a resumed draft can show thumbnails: images and
@@ -81,7 +88,7 @@ export async function videoRoutes(app: FastifyInstance) {
     );
     const brollImageUrls = brollMedia.filter((m) => m.kind === "image").map((m) => m.url); // back-compat
 
-    return { video, downloadUrl, thumbnailUrl, brollImageUrls, brollMedia };
+    return { video, downloadUrl, fileDownloadUrl, thumbnailUrl, brollImageUrls, brollMedia };
   });
 
   app.post("/videos", { preHandler: app.authenticate }, async (req, reply) => {

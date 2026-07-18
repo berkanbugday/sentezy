@@ -10,6 +10,7 @@ export type BrollMediaItem = { kind: "image" | "video"; ref: string; transition?
 export type VideoDetailData = {
   video: ApiVideo;
   downloadUrl: string | null;
+  fileDownloadUrl: string | null;
   thumbnailUrl: string | null;
   brollImageUrls?: string[];
   brollMedia?: BrollMediaItem[];

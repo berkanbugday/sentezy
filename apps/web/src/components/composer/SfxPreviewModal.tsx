@@ -4,6 +4,7 @@ import { Player } from "@remotion/player";
 import { type ReelBrollItem, Reel } from "@sentezy/remotion";
 import type { CaptionStyleId, SfxCue } from "@sentezy/types";
 import { useMemo } from "react";
+import { Icon } from "@/components/icons";
 import { previewWords } from "@/lib/captionPreview";
 import { resolvePreviewSfx, slideSfxCues } from "@/lib/sfxPreview";
 
@@ -64,10 +65,15 @@ export function SfxPreviewModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
-      <div className="relative z-10 flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px]">
-        <div className="flex items-center justify-between px-5 pt-5">
-          <h3 className="disp text-[18px] font-semibold text-ink">Önizleme</h3>
-          <button type="button" onClick={onClose} className="text-[13px] text-muted">Kapat</button>
+      <div className="sheet-in relative z-10 flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px] sm:border sm:border-hairline">
+        <div className="flex-none px-5 pt-5">
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Önizleme</h3>
+            <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
+              <Icon.close width={18} height={18} className="block" />
+            </button>
+          </div>
         </div>
         <div className="flex flex-1 items-center justify-center overflow-hidden px-5 py-4">
           <div className="overflow-hidden rounded-[26px] bg-black shadow-xl" style={{ aspectRatio: "9 / 16", height: "min(64vh, 560px)" }}>

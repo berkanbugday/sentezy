@@ -106,12 +106,18 @@ button:disabled { cursor: not-allowed; }
 .badge {
   display: inline-flex; align-items: center; gap: 6px; border-radius: 999px;
   padding: 4px 10px; font-size: 12px; font-weight: 600;
+  /* Solid, high-contrast pill so status stays readable over any thumbnail (light or dark). */
+  background: rgba(12, 12, 14, 0.74); color: #fafafa;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
 }
 .badge .dot { width: 7px; height: 7px; border-radius: 999px; background: currentColor; }
-.badge-ready { background: var(--wash); color: var(--color-signal); }
-.badge-proc { background: var(--wash); color: var(--color-slate); }
-.badge-draft { background: var(--color-mist); color: var(--color-muted); }
-.badge-fail { background: rgba(239, 68, 68, 0.13); color: #dc2626; }
+.badge-ready .dot { background: #4ade80; }
+.badge-proc .dot { background: #fbbf24; }
+.badge-draft { background: rgba(12, 12, 14, 0.6); color: #e5e5e5; }
+.badge-draft .dot { background: #a3a3a3; }
+.badge-fail { background: rgba(220, 38, 38, 0.92); color: #fff; box-shadow: 0 1px 4px rgba(220, 38, 38, 0.35); }
+.badge-fail .dot { background: #fff; }
 
 .grad {
   background: var(--beam);

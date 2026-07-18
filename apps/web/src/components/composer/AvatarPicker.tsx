@@ -64,7 +64,7 @@ export function AvatarPicker({ open, onClose, selectedId, onSelect }: { open: bo
                   <span className="disp text-[15px] font-semibold text-ink">Avatarsız</span>
                   <span className="text-[10px] leading-tight text-muted">yüzsüz video</span>
                 </div>
-                <div className="mt-1.5 truncate px-0.5 text-[12px] font-medium text-slate">B-roll + altyazı</div>
+                <div className="mt-1.5 truncate px-0.5 text-[12px] font-medium text-slate">İsimsiz</div>
               </button>
               {filteredAvatars.map((a) => {
                 const sel = selectedId === a.id;

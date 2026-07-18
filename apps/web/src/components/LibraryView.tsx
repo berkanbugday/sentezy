@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useVideos } from "@/lib/queries";
-import { STATUS_LABEL } from "@/lib/types";
+import { formatRatio, STATUS_LABEL } from "@/lib/types";
 
 export function LibraryView() {
   const { data: videos, isLoading } = useVideos();
@@ -28,7 +28,7 @@ export function LibraryView() {
       )}
 
       {videos && videos.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {videos.map((v) => {
             const [label, cls] = STATUS_LABEL[v.status];
             const href = `/videos/${v.id}`;
@@ -52,7 +52,7 @@ export function LibraryView() {
                   <p className="truncate text-[13.5px] font-semibold text-ink">{v.title}</p>
                   <div className="mt-1 flex items-center justify-between text-[12px] text-muted">
                     <span>{new Date(v.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</span>
-                    <span className="mono">{v.aspectRatio}</span>
+                    <span className="mono">{formatRatio(v.aspectRatio)}</span>
                   </div>
                 </div>
               </Link>

@@ -12,8 +12,22 @@ export const r2 = new S3Client({
   },
 });
 
-export async function signedDownloadUrl(key: string, expiresIn = 3600): Promise<string> {
-  return getSignedUrl(r2, new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: key }), { expiresIn });
+export async function signedDownloadUrl(
+  key: string,
+  expiresIn = 3600,
+  opts?: { downloadAs?: string },
+): Promise<string> {
+  // `downloadAs` sets Content-Disposition: attachment so the browser SAVES the file (needed for a
+  // real cross-origin download — the <a download> attribute is ignored on cross-origin URLs).
+  return getSignedUrl(
+    r2,
+    new GetObjectCommand({
+      Bucket: env.R2_BUCKET,
+      Key: key,
+      ...(opts?.downloadAs ? { ResponseContentDisposition: `attachment; filename="${opts.downloadAs}"` } : {}),
+    }),
+    { expiresIn },
+  );
 }
 
 /** Presigned PUT URL so the browser uploads a file (e.g. a B-roll video clip) straight to R2. */

@@ -23,6 +23,12 @@ export const STATUS_LABEL: Record<VideoStatus, [string, string]> = {
   failed: ["Başarısız", "badge-fail"],
 };
 
+/** The DB/API stores the aspect ratio as a Prisma enum member ("r9_16"); show it as "9:16". */
+export function formatRatio(r: string): string {
+  const map: Record<string, string> = { r9_16: "9:16", r1_1: "1:1", r16_9: "16:9" };
+  return map[r] ?? r;
+}
+
 export const STAGE_LABEL: Record<string, string> = {
   tts: "Ses üretiliyor",
   avatar: "Avatar oluşturuluyor",
