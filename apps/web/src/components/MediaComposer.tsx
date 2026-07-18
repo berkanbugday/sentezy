@@ -74,6 +74,11 @@ export function MediaComposer({
     [],
   );
 
+  // AI SFX cues are placed by script word-index; a script edit invalidates them.
+  useEffect(() => {
+    setSfxCues([]);
+  }, [script]);
+
   const patch = (url: string, next: Partial<Media>) => setItems((prev) => prev.map((x) => (x.url === url ? { ...x, ...next } : x)));
 
   async function uploadOne(m: Media) {
