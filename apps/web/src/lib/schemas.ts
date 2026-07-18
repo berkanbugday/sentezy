@@ -1,3 +1,4 @@
+import { CAPTION_STYLE_IDS } from "@sentezy/types";
 import { z } from "zod";
 
 /**
@@ -24,9 +25,8 @@ export const createReelSchema = z.object({
   voiceId: z.string().uuid("Bir ses seç"),
   aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
   captions: z.boolean().default(true),
-  // Caption look — karaoke (word sweep), tiktok (word accent), beast (huge uppercase pop),
-  // hormozi (big uppercase + accent word), boxed (CapCut bubble box), clean (plain phrase).
-  captionStyle: z.enum(["karaoke", "tiktok", "beast", "hormozi", "boxed", "clean", "keyword", "bubble", "highlight", "typewriter"]).default("karaoke"),
+  // Caption look — one of the 20 canonical effect ids (see @sentezy/types CAPTION_STYLE_META).
+  captionStyle: z.enum(CAPTION_STYLE_IDS).default("karaoke"),
   // Caption font family (must be one installed in the worker image) and highlight/accent colour.
   captionFont: z.string().default("General Sans"),
   captionColor: z.string().default("#FFD54A"),

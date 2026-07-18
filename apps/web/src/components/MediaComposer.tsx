@@ -20,7 +20,11 @@ import { Icon } from "./icons";
 
 /** Upload-first hero composer: accepts multiple images + videos, uploads each to
  *  storage (with per-tile progress), then builds a draft and queues it for render. */
-export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSettings }) {
+export function MediaComposer({
+  extraSettings,
+}: {
+  extraSettings?: ComposerSettings;
+}) {
   const router = useRouter();
   const uploadImg = useUploadBackground();
   const uploadVid = useUploadBackgroundVideo();
@@ -42,6 +46,7 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
   const [submitError, setSubmitError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedCaption = presetById(captionId);
+  const settings = extraSettings ?? DEFAULT_SETTINGS;
 
   // The transition effect only applies between 2+ media — close/hide otherwise.
   const multiple = items.length > 1;
@@ -126,7 +131,6 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
     try {
       const ready = items.filter((i) => i.status === "done" && i.ref);
       const preset = presetById(captionId);
-      const settings = extraSettings ?? DEFAULT_SETTINGS;
 
       // A chosen catalog avatar becomes a user avatar record — reuse one for the same portrait, else create it.
       let avatarId: string | null = null;
@@ -410,7 +414,7 @@ export function MediaComposer({ extraSettings }: { extraSettings?: ComposerSetti
       />
       <AvatarPicker open={avatarOpen} onClose={() => setAvatarOpen(false)} selectedId={selectedAvatar?.id ?? null} onSelect={setSelectedAvatar} />
       <VoicePicker open={voiceOpen} onClose={() => setVoiceOpen(false)} selectedId={selectedVoice?.id ?? null} onSelect={setSelectedVoice} script={script} />
-      <CaptionPicker open={captionOpen} onClose={() => setCaptionOpen(false)} selectedId={captionId} onSelect={setCaptionId} script={script} />
+      <CaptionPicker open={captionOpen} onClose={() => setCaptionOpen(false)} selectedId={captionId} onSelect={setCaptionId} />
     </div>
   );
 }

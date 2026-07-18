@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sentezy-caption-renderer",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-13",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // The renderer container (Node + Chromium + FFmpeg + the Remotion bundle).
+  // IMPORTANT: the Dockerfile COPYs packages/remotion, so the image build context must be the
+  // REPO ROOT. Point `image` at the Dockerfile and set the context to the monorepo root.
+  "containers": [
+    {
+      "class_name": "CaptionRenderer",
+      "image": "./container/Dockerfile",
+      "image_build_context": "../../..",
+      "instance_type": "standard-2",
+      "max_instances": 5
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [{ "name": "CAPTION_RENDERER", "class_name": "CaptionRenderer" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CaptionRenderer"] }],
+
+  // Non-secret var. R2 credentials are secrets — see README (`wrangler secret put …`).
+  "vars": { "R2_BUCKET": "sentezy-media" }
+}

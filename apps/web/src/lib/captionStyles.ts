@@ -1,15 +1,15 @@
-import type { CaptionEngine } from "../components/CaptionSample";
+import { CAPTION_STYLE_META, type CaptionStyleId } from "@sentezy/types";
 
-// A large catalog of caption "presets" generated over the worker's caption engine:
-// every preset is a (family × font × accent-colour) combination that maps straight to
+// A large catalog of caption "presets" generated over the 20 canonical caption effects:
+// every preset is a (effect × font × accent-colour) combination that maps straight to
 // the already-plumbed {captionStyle, captionFont, captionColor}. Fonts are limited to
 // the set the worker bundles + the web loads (apps/worker/fonts, layout.tsx) so a tile
-// previews in the exact font the worker burns in.
+// previews in the exact font the renderer uses.
 
 export type CaptionPreset = {
   id: string;
   name: string;
-  base: CaptionEngine;
+  base: CaptionStyleId;
   font: string;
   color: string;
   family: string; // grouping label (Turkish), used by the Filtrele sheet
@@ -28,19 +28,10 @@ export const CAPTION_COLORS: { name: string; hex: string }[] = [
   { name: "Turkuaz", hex: "#22D3EE" }, { name: "Altın", hex: "#FBBF24" }, { name: "Menekşe", hex: "#C084FC" },
 ];
 
-// accent=false families ignore colour (clean/typewriter) → generated white-only.
-export const CAPTION_FAMILIES: { key: CaptionEngine; label: string; accent: boolean }[] = [
-  { key: "karaoke", label: "Karaoke", accent: true },
-  { key: "tiktok", label: "TikTok", accent: true },
-  { key: "beast", label: "Beast", accent: true },
-  { key: "hormozi", label: "Hormozi", accent: true },
-  { key: "boxed", label: "Kutu", accent: false },
-  { key: "keyword", label: "Anahtar", accent: true },
-  { key: "bubble", label: "Baloncuk", accent: true },
-  { key: "highlight", label: "Vurgu", accent: true },
-  { key: "clean", label: "Sade", accent: false },
-  { key: "typewriter", label: "Daktilo", accent: false },
-];
+// The 20 caption effects, derived from the canonical registry in @sentezy/types.
+// accent=false families ignore colour (clean/boxed/typewriter/rainbow) → generated white-only.
+export const CAPTION_FAMILIES: { key: CaptionStyleId; label: string; accent: boolean }[] =
+  CAPTION_STYLE_META.map((s) => ({ key: s.id, label: s.label, accent: s.accent }));
 
 const slug = (s: string) => s.toLocaleLowerCase("tr").replace(/[^a-z0-9]+/g, "");
 

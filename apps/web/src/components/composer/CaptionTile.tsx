@@ -1,13 +1,33 @@
 "use client";
 
+import { Thumbnail } from "@remotion/player";
+import { CaptionOverlay } from "@sentezy/remotion";
 import { useState } from "react";
-import { CaptionAnimated } from "@/components/CaptionSample";
+import { previewWords } from "@/lib/captionPreview";
 import { type CaptionPreset } from "@/lib/captionStyles";
+import { LoopingPreview } from "./LoopingPreview";
 
-// A caption-preset tile: static styled sample that sweeps word-by-word on hover/focus
-// (or while selected), mirroring how the caption plays in the reel.
-export function CaptionTile({ preset, words, selected, onSelect }: { preset: CaptionPreset; words: string[]; selected: boolean; onSelect: () => void }) {
+// Short punchy sample shared by every tile (module-level so it's built once).
+const WORDS = previewWords("büyük indirim başlıyor bugün");
+const FPS = 30;
+const W = 1080; // 1:1 square tile
+const H = 1080;
+const DUR = Math.max(1, Math.ceil((WORDS[WORDS.length - 1]!.end + 0.4) * FPS));
+
+// A caption-preset tile: static single frame by default (cheap), self-driven looping preview on
+// hover/focus or while selected — the real component, so WYSIWYG.
+export function CaptionTile({ preset, selected, onSelect }: { preset: CaptionPreset; selected: boolean; onSelect: () => void }) {
   const [hover, setHover] = useState(false);
+  const active = hover || selected;
+  const inputProps = {
+    words: WORDS,
+    styleId: preset.base,
+    font: preset.font,
+    color: preset.color,
+    layout: "bottom" as const,
+    position: "bottom" as const,
+    avatarSide: "right" as const,
+  };
   return (
     <button
       type="button"
@@ -18,8 +38,29 @@ export function CaptionTile({ preset, words, selected, onSelect }: { preset: Cap
       onBlur={() => setHover(false)}
       className="text-left"
     >
-      <div className={`relative grid aspect-video place-items-center overflow-hidden rounded-lg border bg-black px-2 transition ${selected ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"}`}>
-        <CaptionAnimated base={preset.base} font={preset.font} color={preset.color} words={words} play={hover || selected} />
+      <div className={`relative aspect-square overflow-hidden rounded-lg border bg-black transition ${selected ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"}`}>
+        {active ? (
+          <LoopingPreview
+            component={CaptionOverlay}
+            inputProps={inputProps}
+            durationInFrames={DUR}
+            fps={FPS}
+            compositionWidth={W}
+            compositionHeight={H}
+            style={{ width: "100%", height: "100%" }}
+          />
+        ) : (
+          <Thumbnail
+            component={CaptionOverlay}
+            inputProps={inputProps}
+            durationInFrames={DUR}
+            fps={FPS}
+            frameToDisplay={Math.round(DUR * 0.5)}
+            compositionWidth={W}
+            compositionHeight={H}
+            style={{ width: "100%", height: "100%" }}
+          />
+        )}
         {selected && (
           <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-ink text-paper">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7" /></svg>

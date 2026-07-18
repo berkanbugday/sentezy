@@ -25,10 +25,20 @@ const RATIO: Record<AspectRatio, "r9_16" | "r1_1" | "r16_9"> = {
 
 export async function videoRoutes(app: FastifyInstance) {
   app.get("/videos", { preHandler: app.authenticate }, async (req) => {
-    const videos = await prisma.video.findMany({
+    const rows = await prisma.video.findMany({
       where: { userId: req.user!.id },
       orderBy: { createdAt: "desc" },
     });
+    // R2 isn't a public bucket, so hand the browser a delivery URL per thumbnail
+    // (public CDN url if configured, else a signed GET) — mirrors GET /videos/:id.
+    const videos = await Promise.all(
+      rows.map(async (video) => ({
+        ...video,
+        thumbnailUrl: video.thumbnailImageId
+          ? (publicUrl(video.thumbnailImageId) ?? (await signedDownloadUrl(video.thumbnailImageId, 86400)))
+          : null,
+      })),
+    );
     return { videos };
   });
 

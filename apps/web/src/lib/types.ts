@@ -10,6 +10,7 @@ export type ApiVideo = {
   aspectRatio: "9:16" | "1:1" | "16:9";
   outputKey: string | null;
   thumbnailImageId: string | null;
+  thumbnailUrl: string | null;
   durationS: number | null;
   createdAt: string;
 };

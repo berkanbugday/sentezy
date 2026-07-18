@@ -8,6 +8,7 @@ from .compose import build_captions_ass, compose_reel, make_thumbnail
 from .config import Config
 from .db import Db
 from .matte import matte_video_to_mov
+from .providers.captions_remotion import render_caption_overlay, render_caption_overlay_local
 from .providers.elevenlabs import ElevenLabs
 from .providers.heygen import HeyGen
 from .storage import Storage
@@ -53,7 +54,8 @@ def _resolve_broll_media(options: dict, storage: Storage, workdir: str) -> list[
         else:
             dest = f"{workdir}/broll{i}.jpg"
             storage.download(storage.image_url(ref), dest)
-        out.append({"path": dest, "kind": kind, "transition": m.get("transition")})
+        # `ref` (R2 key) is kept so the Remotion engine can pass a signed URL to the renderer.
+        out.append({"path": dest, "kind": kind, "ref": ref, "transition": m.get("transition")})
     return out
 
 
@@ -83,6 +85,7 @@ def _broll_segments(words: list, media: list[dict]) -> list[dict]:
         {
             "path": m["path"],
             "kind": m.get("kind", "image"),
+            "ref": m.get("ref"),
             "start": mid_start + i * span,
             "end": (mid_start + (i + 1) * span) if i < n - 1 else mid_end,
             "transition": m.get("transition") or "fade",
@@ -202,29 +205,64 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     caps = options.get("captions", True)
     if isinstance(caps, bool):  # legacy drafts store captions as a plain boolean
         caps = {"enabled": caps}
-    caps_path = f"{workdir}/caps.ass"
-    build_captions_ass(
-        words, caps_path, width=width, height=height,
-        avatar_side=avatar_side, position=layout.get("captionPosition", "bottom"),
-        style=caps.get("style", "karaoke"),
-        font=caps.get("font") or "General Sans",
-        color=caps.get("color"),
-        avatar_layout=avatar_layout,
-    )
-    reel_path = f"{workdir}/reel.mp4"
+    captions_on = caps.get("enabled", True)
+    cap_style = caps.get("style", "karaoke")
+    cap_font = caps.get("font") or "General Sans"
+    cap_color = caps.get("color")
+    cap_position = layout.get("captionPosition", "bottom")
+
     broll_media = _resolve_broll_media(options, storage, workdir)
+    segments = _broll_segments(words, broll_media)
     effects = options.get("effects") or {}
+    transition_sfx = effects.get("transitionSfx", True)
+    music_path = _resolve_music(options, storage, workdir)
+    music_volume = float((options.get("music") or {}).get("volume", 0.15))
+    reel_path = f"{workdir}/reel.mp4"
+
+    # ffmpeg builds the whole reel. Captions: Remotion transparent overlay when enabled
+    # + configured, else libass ASS. A remotion caption failure falls back to libass.
+    captions_ass: str | None = None
+    caption_overlay: str | None = None
+    if captions_on:
+        if cfg.caption_engine == "remotion":
+            try:
+                if cfg.caption_renderer_url:
+                    caption_overlay = render_caption_overlay(
+                        cfg.caption_renderer_url, storage, words,
+                        job_id=video_id, style=cap_style, font=cap_font, color=cap_color,
+                        width=width, height=height, fps=30,
+                        layout=avatar_layout, position=cap_position, avatar_side=avatar_side,
+                        dest=f"{workdir}/caps.mov",
+                    )
+                else:
+                    caption_overlay = render_caption_overlay_local(
+                        words, style=cap_style, font=cap_font, color=cap_color,
+                        width=width, height=height, fps=30,
+                        layout=avatar_layout, position=cap_position, avatar_side=avatar_side,
+                        dest=f"{workdir}/caps.mov", workdir=workdir,
+                    )
+            except Exception as e:  # noqa: BLE001 — any renderer error degrades to libass
+                print(f"pipeline: remotion caption render failed ({e}); falling back to libass")
+                caption_overlay = None
+        if caption_overlay is None:
+            captions_ass = f"{workdir}/caps.ass"
+            build_captions_ass(
+                words, captions_ass, width=width, height=height,
+                avatar_side=avatar_side, position=cap_position, style=cap_style,
+                font=cap_font, color=cap_color, avatar_layout=avatar_layout,
+            )
     compose_reel(
         avatar_cutout_path=avatar_cutout_path,
         out_path=reel_path,
         width=width,
         height=height,
-        broll=_broll_segments(words, broll_media),
-        transition_sfx=effects.get("transitionSfx", True),
-        captions_ass=caps_path if caps.get("enabled", True) else None,
+        broll=segments,
+        transition_sfx=transition_sfx,
+        captions_ass=captions_ass,
+        caption_overlay=caption_overlay,
         logo_path=_resolve_logo(options, storage, workdir),
-        music_path=_resolve_music(options, storage, workdir),
-        music_volume=float((options.get("music") or {}).get("volume", 0.15)),
+        music_path=music_path,
+        music_volume=music_volume,
         avatar_side=avatar_side,
         avatar_layout=avatar_layout,
     )

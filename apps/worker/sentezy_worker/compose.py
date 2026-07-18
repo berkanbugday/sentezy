@@ -427,11 +427,29 @@ _XFADE_TRANSITIONS = frozenset({
 })
 
 
+# Map the curated Remotion B-roll transition ids (@sentezy/types BROLL_EFFECT_META, `transition`
+# kind) → the closest ffmpeg xfade name, so the FALLBACK engine still produces a sensible
+# transition. The Remotion engine renders these natively; entrance ids (zoompunch/shake/glitch/
+# whip/flash) never reach here — they go through _EFFECTS/_effect_blend.
+_BROLL_TO_XFADE = {
+    "slide": "slideleft",
+    "wipe": "wipeleft",
+    "flip": "fade",       # no ffmpeg flip → clean fade
+    "clockwipe": "radial",
+    "iris": "circleopen",
+    "zoom": "zoomin",
+    "blur": "fadeblack",
+    "push": "slideleft",
+}
+
+
 def _xfade(name: str | None, span_min: float) -> tuple[str, float]:
     """Validate a creator-chosen transition against the allow-list — never interpolate a
-    raw value into the filtergraph — and pick a duration. 'cut' → a near-instant fade."""
+    raw value into the filtergraph — and pick a duration. 'cut' → a near-instant fade.
+    Curated Remotion ids are mapped to their xfade equivalent first (fallback engine)."""
     if name == "cut":
         return "fade", 0.02
+    name = _BROLL_TO_XFADE.get(name or "", name or "")
     t = name if name in _XFADE_TRANSITIONS else "fade"
     return t, min(0.35, max(0.08, span_min * 0.5))
 
@@ -478,6 +496,61 @@ def _effect_blend(name: str, span_min: float) -> tuple[str, float]:
     return "fade", 0.03  # zoompunch / shake / glitch → near-cut so the entrance pops
 
 
+def _sfx_slide_times(broll: list[dict]) -> list[float]:
+    """Time (seconds) each transition whoosh should land — the moment each B-roll cutaway
+    slides in. Photo 0 eases in at its start; later photos land as their xfade begins."""
+    times: list[float] = []
+    for k, b in enumerate(broll):
+        if k == 0:
+            times.append(max(0.0, float(b["start"]) - 0.05))
+        else:
+            span_prev = max(0.3, float(broll[k - 1]["end"]) - float(broll[k - 1]["start"]))
+            span_cur = max(0.3, float(b["end"]) - float(b["start"]))
+            _, tdur = _xfade(b.get("transition"), min(span_prev, span_cur))
+            times.append(max(0.0, float(b["start"]) - tdur))
+    return times
+
+
+def _append_audio_bed(
+    fc: list[str],
+    *,
+    voice_idx: int,
+    music_idx: int | None,
+    music_volume: float,
+    sfx_input_idxs: list[int],
+    sfx_times: list[float],
+) -> list[str]:
+    """Append the reel audio bed to `fc` and return the ffmpeg audio `-map` args:
+    the avatar voice, optionally sidechain-ducked under a music bed, plus a transition
+    whoosh mixed in at each cutaway. Shared by both render engines so they sound identical.
+    `voice_idx`/`music_idx`/`sfx_input_idxs` are input indices already added to the command."""
+    need_bed = music_idx is not None or bool(sfx_input_idxs)
+    if not need_bed:
+        return ["-map", f"{voice_idx}:a?"]
+    if music_idx is not None:
+        # Voice is consumed twice (mix + sidechain key) → split it. aformat on both
+        # branches: sidechaincompress errors on mismatched rates/layouts.
+        fc.append(f"[{voice_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,asplit=2[vox][sck]")
+        fc.append(f"[{music_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume={music_volume}[mus]")
+        # The voice keys a compressor on the music, so the bed dips while speaking.
+        fc.append("[mus][sck]sidechaincompress=threshold=0.04:ratio=10:attack=8:release=350:makeup=1[duck]")
+        # normalize=0: keep the voice at full level (default amix would halve it).
+        fc.append("[vox][duck]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[abed]")
+    else:
+        fc.append(f"[{voice_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo[abed]")
+    if sfx_input_idxs:
+        # Each SFX file → level + delay to its slide start, then mix all into the bed.
+        delayed = []
+        for k, in_idx in enumerate(sfx_input_idxs):
+            ms = max(0, int(round(sfx_times[k] * 1000)))
+            # strip any leading silence so the audible whoosh lands exactly on the slide.
+            fc.append(f"[{in_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,silenceremove=start_periods=1:start_threshold=-50dB,volume={SFX_VOLUME},adelay={ms}|{ms}[wd{k}]")
+            delayed.append(f"[wd{k}]")
+        fc.append(f"[abed]{''.join(delayed)}amix=inputs={1 + len(delayed)}:duration=first:dropout_transition=0:normalize=0[a]")
+        return ["-map", "[a]"]
+    return ["-map", "[abed]"]
+
+
 def compose_reel(
     *,
     avatar_cutout_path: str,  # matted alpha .mov (avatar cut-out + voice) from matte.matte_video_to_mov
@@ -485,13 +558,14 @@ def compose_reel(
     width: int = 1080,
     height: int = 1920,
     broll: list[dict] | None = None,  # [{"path": str, "start": float, "end": float}] — auto-timed backgrounds
-    captions_ass: str | None = None,
+    captions_ass: str | None = None,  # libass ASS path (CAPTION_ENGINE=libass)
+    caption_overlay: str | None = None,  # transparent full-frame caption .mov (CAPTION_ENGINE=remotion)
     logo_path: str | None = None,
     music_path: str | None = None,
     music_volume: float = 0.15,
     avatar_side: str = "right",  # which side the avatar is framed to (side layout)
     avatar_layout: str = "side",  # "side" = framed left/right; "bottom" = centred, B-roll in a top band
-    avatar_scale: float = 0.66,  # avatar height as a fraction of the frame
+    avatar_scale: float = 0.48,  # avatar height as a fraction of the frame
     bg_color: str = "0x101319",  # branded background shown wherever B-roll isn't
     transition_sfx: bool = True,  # whoosh SFX at each photo transition
 ) -> None:
@@ -506,16 +580,7 @@ def compose_reel(
     # start (the xfade for photo k runs over [start_k - tdur, start_k]). The files are
     # cycled for variety; photo 0 just eases in at mid_start.
     sfx_files = _transition_sfx_files() if transition_sfx else []
-    sfx_times: list[float] = []
-    if broll and sfx_files:
-        for k, b in enumerate(broll):
-            if k == 0:
-                sfx_times.append(max(0.0, float(b["start"]) - 0.05))
-            else:
-                span_prev = max(0.3, float(broll[k - 1]["end"]) - float(broll[k - 1]["start"]))
-                span_cur = max(0.3, float(b["end"]) - float(b["start"]))
-                _, tdur = _xfade(b.get("transition"), min(span_prev, span_cur))
-                sfx_times.append(max(0.0, float(b["start"]) - tdur))
+    sfx_times: list[float] = _sfx_slide_times(broll) if (broll and sfx_files) else []
 
     # [0] backdrop base — shown during the A-roll hook/close (and wherever B-roll isn't).
     # With B-roll: a blurred, darkened take on the first image (warm UGC look);
@@ -564,6 +629,14 @@ def compose_reel(
     for k in range(len(sfx_times)):
         inputs += ["-i", sfx_files[k % len(sfx_files)]]
         sfx_input_idxs.append(idx)
+        idx += 1
+
+    # [last] Remotion caption overlay — a full-frame transparent (ProRes 4444 alpha) .mov,
+    # composited over everything like the avatar cut-out. Added last so no index shifts.
+    caption_idx = None
+    if caption_overlay:
+        inputs += ["-i", caption_overlay]
+        caption_idx = idx
         idx += 1
 
     # ── video filtergraph ──
@@ -644,7 +717,12 @@ def compose_reel(
     fc.append(f"[{avatar_idx}:v]scale=-2:{ph}:flags=lanczos,setsar=1[pv]")
     fc.append(f"{last}[pv]overlay=x={px}:y=H-h[pp]")
     last = "[pp]"
-    if captions_ass and has_filter("subtitles"):
+    if caption_idx is not None:
+        # Remotion path: alpha-composite the transparent caption overlay full-frame. Its own
+        # alpha carries the text shape; eof_action=pass lets the reel continue if it ends first.
+        fc.append(f"{last}[{caption_idx}:v]overlay=0:0:format=auto:eof_action=pass[cap]")
+        last = "[cap]"
+    elif captions_ass and has_filter("subtitles"):
         def _esc(p: str) -> str:
             return p.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
         if os.path.isdir(_FONTS_DIR):
@@ -661,35 +739,14 @@ def compose_reel(
         last = "[logov]"
 
     # ── audio: avatar voice (+ optional sidechain-ducked music) (+ transition SFX) ──
-    audio_map: list[str]
-    need_bed = music_idx is not None or bool(sfx_input_idxs)
-    if not need_bed:
-        audio_map = ["-map", f"{avatar_idx}:a?"]
-    else:
-        # Build the voice(+music) bed, then mix in a bundled whoosh at each transition.
-        if music_idx is not None:
-            # Voice is consumed twice (mix + sidechain key) → split it. aformat on both
-            # branches: sidechaincompress errors on mismatched rates/layouts.
-            fc.append(f"[{avatar_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,asplit=2[vox][sck]")
-            fc.append(f"[{music_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume={music_volume}[mus]")
-            # The voice keys a compressor on the music, so the bed dips while speaking.
-            fc.append("[mus][sck]sidechaincompress=threshold=0.04:ratio=10:attack=8:release=350:makeup=1[duck]")
-            # normalize=0: keep the voice at full level (default amix would halve it).
-            fc.append("[vox][duck]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[abed]")
-        else:
-            fc.append(f"[{avatar_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo[abed]")
-        if sfx_input_idxs:
-            # Each SFX file → level + delay to its slide start, then mix all into the bed.
-            delayed = []
-            for k, in_idx in enumerate(sfx_input_idxs):
-                ms = max(0, int(round(sfx_times[k] * 1000)))
-                # strip any leading silence so the audible whoosh lands exactly on the slide.
-                fc.append(f"[{in_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,silenceremove=start_periods=1:start_threshold=-50dB,volume={SFX_VOLUME},adelay={ms}|{ms}[wd{k}]")
-                delayed.append(f"[wd{k}]")
-            fc.append(f"[abed]{''.join(delayed)}amix=inputs={1 + len(delayed)}:duration=first:dropout_transition=0:normalize=0[a]")
-            audio_map = ["-map", "[a]"]
-        else:
-            audio_map = ["-map", "[abed]"]
+    audio_map = _append_audio_bed(
+        fc,
+        voice_idx=avatar_idx,
+        music_idx=music_idx,
+        music_volume=music_volume,
+        sfx_input_idxs=sfx_input_idxs,
+        sfx_times=sfx_times,
+    )
 
     cmd = [
         "ffmpeg", "-y", *inputs,

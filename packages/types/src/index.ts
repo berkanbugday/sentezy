@@ -17,11 +17,73 @@ export const AspectRatio = z.enum(["9:16", "1:1", "16:9"]);
 export type AspectRatio = z.infer<typeof AspectRatio>;
 
 // ── Captions ────────────────────────────────────────────────────────────────
-// Keep in sync with the web caption catalog (CAPTION_FAMILIES / createReelSchema.captionStyle)
-// and the worker's _CAPTION_STYLES — bubble/highlight/typewriter were added with the caption
-// picker; the default preset is "highlight", so omitting them here rejects every create.
-export const CaptionStyle = z.enum(["karaoke", "tiktok", "beast", "hormozi", "boxed", "clean", "keyword", "bubble", "highlight", "typewriter"]);
+// CANONICAL caption-style registry — the single source of truth for the 20 effects.
+// Consumed by: the web catalog (apps/web/src/lib/captionStyles.ts → CAPTION_FAMILIES),
+// the Remotion renderer/preview (packages/remotion → effect components keyed by id),
+// and the worker (validates the id; libass fallback still handles the first 10 ids).
+// `accent` = the effect uses the accent colour (false ⇒ colour picker hidden, white-only).
+// The first 10 ids are back-compat with old drafts + the worker's _CAPTION_STYLES keys.
+export const CAPTION_STYLE_META = [
+  { id: "clean", label: "Sade", accent: false },
+  { id: "karaoke", label: "Karaoke", accent: true },
+  { id: "tiktok", label: "TikTok", accent: true },
+  { id: "hormozi", label: "Hormozi", accent: true },
+  { id: "beast", label: "Beast", accent: true },
+  { id: "boxed", label: "Kutu", accent: false },
+  { id: "keyword", label: "Anahtar", accent: true },
+  { id: "bubble", label: "Baloncuk", accent: true },
+  { id: "highlight", label: "Vurgu", accent: true },
+  { id: "typewriter", label: "Daktilo", accent: false },
+  { id: "spring", label: "Zıplama", accent: true },
+  { id: "gradient", label: "Degrade", accent: true },
+  { id: "blurin", label: "Netleşen", accent: true },
+  { id: "highlighter", label: "Fosforlu", accent: true },
+  { id: "boxreveal", label: "Kutu Geçiş", accent: true },
+  { id: "rainbow", label: "Gökkuşağı", accent: false },
+  { id: "emoji", label: "Emoji", accent: true },
+  { id: "bounce", label: "Sekme", accent: true },
+  { id: "wave", label: "Dalga", accent: true },
+  { id: "glow", label: "Neon", accent: true },
+] as const;
+
+export type CaptionStyleId = (typeof CAPTION_STYLE_META)[number]["id"];
+export const CAPTION_STYLE_IDS = CAPTION_STYLE_META.map((s) => s.id) as unknown as [
+  CaptionStyleId,
+  ...CaptionStyleId[],
+];
+export const CaptionStyle = z.enum(CAPTION_STYLE_IDS);
 export type CaptionStyle = z.infer<typeof CaptionStyle>;
+
+// ── B-roll transitions & entrance effects ──────────────────────────────────
+// CANONICAL curated set — the single source of truth for the per-clip B-roll effect.
+// Rendered natively by Remotion (packages/remotion/src/broll): `transition` kinds are
+// between-clip transitions (@remotion/transitions), `entrance` kinds are per-clip entrance
+// animations. The web picker shows real Remotion previews keyed by id; the ffmpeg fallback
+// engine maps these ids to xfade names. Stored per-clip in ReelOptions.background.media[].transition.
+export const BROLL_EFFECT_META = [
+  { id: "fade", label: "Solma", kind: "transition" },
+  { id: "slide", label: "Kaydırma", kind: "transition" },
+  { id: "wipe", label: "Silme", kind: "transition" },
+  { id: "flip", label: "Çevirme", kind: "transition" },
+  { id: "clockwipe", label: "Saat", kind: "transition" },
+  { id: "iris", label: "İris", kind: "transition" },
+  { id: "zoom", label: "Zum", kind: "transition" },
+  { id: "blur", label: "Bulanık", kind: "transition" },
+  { id: "push", label: "İtme", kind: "transition" },
+  { id: "zoompunch", label: "Zum vuruş", kind: "entrance" },
+  { id: "shake", label: "Sarsıntı", kind: "entrance" },
+  { id: "glitch", label: "Glitch", kind: "entrance" },
+  { id: "whip", label: "Savurma", kind: "entrance" },
+  { id: "flash", label: "Parlama", kind: "entrance" },
+] as const;
+
+export type BrollEffectId = (typeof BROLL_EFFECT_META)[number]["id"];
+export const BROLL_EFFECT_IDS = BROLL_EFFECT_META.map((e) => e.id) as unknown as [
+  BrollEffectId,
+  ...BrollEffectId[],
+];
+/** ids whose effect is a per-clip entrance animation (vs a between-clip transition). */
+export const BROLL_ENTRANCE_IDS = BROLL_EFFECT_META.filter((e) => e.kind === "entrance").map((e) => e.id);
 
 const CaptionsObject = z.object({
   enabled: z.boolean().default(true),

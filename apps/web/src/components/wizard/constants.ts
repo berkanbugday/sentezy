@@ -1,75 +1,17 @@
+import { BROLL_EFFECT_META } from "@sentezy/types";
 import type { CreateReelValues } from "@/lib/schemas";
 
 export const fieldClass =
   "w-full rounded-xl border border-hairline bg-mist px-3.5 py-2.5 text-[14px] text-ink outline-none transition focus:border-signal";
 
-// Per-photo transition catalog. `value` MUST match the worker's xfade allow-list
-// (compose._XFADE_TRANSITIONS) plus the synthetic "cut". Grouped for a scannable menu.
+// Per-clip B-roll effect catalog — the curated Remotion-native set (BROLL_EFFECT_META),
+// grouped into between-clip transitions (Geçişler) and per-clip entrance effects (Efektler).
+// Each tile renders a REAL Remotion preview (EffectTile → BrollEffectDemo). The worker maps
+// these ids to xfade for the ffmpeg fallback engine.
 export const DEFAULT_TRANSITION = "fade";
 export const TRANSITIONS: { group: string; items: { value: string; label: string }[] }[] = [
-  { group: "Efektler", items: [
-    { value: "zoompunch", label: "Zoom vuruş" },
-    { value: "flash", label: "Flaş" },
-    { value: "shake", label: "Sarsıntı" },
-    { value: "whip", label: "Savurma" },
-    { value: "glitch", label: "Glitch" },
-    { value: "dissolve", label: "Dağılma" },
-    { value: "pixelize", label: "Pikselleştir" },
-    { value: "radial", label: "Radyal" },
-    { value: "zoomin", label: "Yakınlaştır" },
-    { value: "distance", label: "Mesafe" },
-    { value: "squeezev", label: "Sıkıştır · dikey" },
-    { value: "squeezeh", label: "Sıkıştır · yatay" },
-  ] },
-  { group: "Temel", items: [
-    { value: "fade", label: "Yumuşak geçiş" },
-    { value: "cut", label: "Sert kesme" },
-    { value: "fadeblack", label: "Siyaha geçiş" },
-    { value: "fadewhite", label: "Beyaza geçiş" },
-    { value: "fadegrays", label: "Griye geçiş" },
-  ] },
-  { group: "Kaydırma", items: [
-    { value: "slideleft", label: "Sola kaydır" },
-    { value: "slideright", label: "Sağa kaydır" },
-    { value: "slideup", label: "Yukarı kaydır" },
-    { value: "slidedown", label: "Aşağı kaydır" },
-  ] },
-  { group: "Silme", items: [
-    { value: "wipeleft", label: "Sola sil" },
-    { value: "wiperight", label: "Sağa sil" },
-    { value: "wipeup", label: "Yukarı sil" },
-    { value: "wipedown", label: "Aşağı sil" },
-    { value: "wipetl", label: "Köşe · sol üst" },
-    { value: "wipetr", label: "Köşe · sağ üst" },
-    { value: "wipebl", label: "Köşe · sol alt" },
-    { value: "wipebr", label: "Köşe · sağ alt" },
-  ] },
-  { group: "Yumuşak kaydırma", items: [
-    { value: "smoothleft", label: "Yumuşak sol" },
-    { value: "smoothright", label: "Yumuşak sağ" },
-    { value: "smoothup", label: "Yumuşak yukarı" },
-    { value: "smoothdown", label: "Yumuşak aşağı" },
-  ] },
-  { group: "Şekil", items: [
-    { value: "circleopen", label: "Daire · aç" },
-    { value: "circleclose", label: "Daire · kapat" },
-    { value: "circlecrop", label: "Daire · kırp" },
-    { value: "rectcrop", label: "Dikdörtgen · kırp" },
-    { value: "horzopen", label: "Yatay · aç" },
-    { value: "horzclose", label: "Yatay · kapat" },
-    { value: "vertopen", label: "Dikey · aç" },
-    { value: "vertclose", label: "Dikey · kapat" },
-    { value: "diagtl", label: "Çapraz · sol üst" },
-    { value: "diagtr", label: "Çapraz · sağ üst" },
-    { value: "diagbl", label: "Çapraz · sol alt" },
-    { value: "diagbr", label: "Çapraz · sağ alt" },
-  ] },
-  { group: "Dilim", items: [
-    { value: "hlslice", label: "Yatay dilim · sol" },
-    { value: "hrslice", label: "Yatay dilim · sağ" },
-    { value: "vuslice", label: "Dikey dilim · yukarı" },
-    { value: "vdslice", label: "Dikey dilim · aşağı" },
-  ] },
+  { group: "Geçişler", items: BROLL_EFFECT_META.filter((e) => e.kind === "transition").map((e) => ({ value: e.id, label: e.label })) },
+  { group: "Efektler", items: BROLL_EFFECT_META.filter((e) => e.kind === "entrance").map((e) => ({ value: e.id, label: e.label })) },
 ];
 
 export function chipClass(active: boolean) {

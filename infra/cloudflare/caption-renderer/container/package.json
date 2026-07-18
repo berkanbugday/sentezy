@@ -1,0 +1,12 @@
+{
+  "name": "sentezy-caption-renderer-container",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.716.0",
+    "@remotion/bundler": "4.0.489",
+    "@remotion/renderer": "4.0.489",
+    "express": "4.21.2"
+  }
+}

@@ -5,24 +5,17 @@ import { Icon } from "@/components/icons";
 import { CAPTION_COLORS, CAPTION_FAMILIES, CAPTION_FONTS, CAPTION_PRESETS } from "@/lib/captionStyles";
 import { CaptionTile } from "./CaptionTile";
 
-const CAPTION_SAMPLE = ["Bunu", "MUTLAKA", "görmelisin"];
-
-/** Caption-style picker — owns the local catalog filters, incremental reveal, and the
- *  "preview with my script" toggle. `onSelect(id)` sets the chosen preset. */
-export function CaptionPicker({ open, onClose, selectedId, onSelect, script }: { open: boolean; onClose: () => void; selectedId: string; onSelect: (id: string) => void; script: string }) {
+/** Caption-style picker — owns the local catalog filters + incremental reveal. Each tile is a
+ *  live self-animating preview of the real caption component. `onSelect(id)` sets the preset. */
+export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: boolean; onClose: () => void; selectedId: string; onSelect: (id: string) => void }) {
   const [captionQ, setCaptionQ] = useState("");
   const [captionFamily, setCaptionFamily] = useState(""); // "" = all
   const [captionFontF, setCaptionFontF] = useState("");
   const [captionColorF, setCaptionColorF] = useState("");
   const [captionFiltersOpen, setCaptionFiltersOpen] = useState(false);
   const [captionShown, setCaptionShown] = useState(60); // incremental reveal count
-  const [captionRealText, setCaptionRealText] = useState(false); // preview tiles with the user's own script
   const captionSentinelRef = useRef<HTMLDivElement>(null);
 
-  const hasScript = script.trim().length > 0;
-  // Tiles preview either a fixed sample or the first few words of the real script.
-  const captionWords =
-    captionRealText && script.trim() ? script.trim().split(/\s+/).slice(0, 4) : CAPTION_SAMPLE;
   const filteredCaptions = CAPTION_PRESETS.filter(
     (p) =>
       (!captionFamily || p.family === captionFamily) &&
@@ -76,7 +69,7 @@ export function CaptionPicker({ open, onClose, selectedId, onSelect, script }: {
             <>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {filteredCaptions.slice(0, captionShown).map((p) => (
-                  <CaptionTile key={p.id} preset={p} words={captionWords} selected={selectedId === p.id} onSelect={() => onSelect(p.id)} />
+                  <CaptionTile key={p.id} preset={p} selected={selectedId === p.id} onSelect={() => onSelect(p.id)} />
                 ))}
               </div>
               {captionShown < filteredCaptions.length && <div ref={captionSentinelRef} className="h-8" />}
@@ -85,22 +78,7 @@ export function CaptionPicker({ open, onClose, selectedId, onSelect, script }: {
         </div>
 
         <div className="flex flex-none items-center justify-between gap-3 px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
-          {hasScript ? (
-            <button
-              type="button"
-              role="switch"
-              aria-checked={captionRealText}
-              onClick={() => setCaptionRealText((r) => !r)}
-              className="flex items-center gap-2.5 text-[12.5px] font-medium text-ink"
-            >
-              <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${captionRealText ? "bg-ink" : "bg-hairline"}`}>
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${captionRealText ? "left-[18px]" : "left-0.5"}`} />
-              </span>
-              Yazdığım metni göster
-            </button>
-          ) : (
-            <span className="text-[12px] text-muted">{filteredCaptions.length} stil</span>
-          )}
+          <span className="text-[12px] text-muted">{filteredCaptions.length} stil</span>
           <button type="button" onClick={onClose} className="btn btn-primary min-w-28">Tamam</button>
         </div>
       </div>

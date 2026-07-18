@@ -28,6 +28,12 @@ class Config:
     openrouter_api_key: str | None
     openrouter_model: str
     anthropic_api_key: str | None
+    # Base URL of the Cloudflare renderer Worker (POST /render). When unset, the worker
+    # renders the caption overlay locally via the Remotion CLI (dev, no cloud deploy).
+    caption_renderer_url: str | None
+    # Caption engine: "libass" (default, in-pipeline ASS burn) or "remotion" (transparent
+    # overlay .mov composited by ffmpeg; falls back to libass on any renderer failure).
+    caption_engine: str
     # Dev vs prod (from NODE_ENV). In dev the pipeline skips HeyGen entirely and holds
     # the avatar photo as a still, so local runs need no HeyGen key or credits.
     is_dev: bool
@@ -49,5 +55,7 @@ def load_config() -> Config:
         openrouter_api_key=_get("OPENROUTER_API_KEY"),
         openrouter_model=_get("OPENROUTER_MODEL", "google/gemma-4-31b-it:free"),  # type: ignore[arg-type]
         anthropic_api_key=_get("ANTHROPIC_API_KEY"),
+        caption_engine=(_get("CAPTION_ENGINE", "libass") or "libass").strip().lower(),  # type: ignore[arg-type]
+        caption_renderer_url=_get("CAPTION_RENDERER_URL"),
         is_dev=is_dev,
     )

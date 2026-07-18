@@ -1,0 +1,35 @@
+{
+  "name": "@sentezy/remotion",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "studio": "remotion studio src/remotion-entry.ts",
+    "render": "remotion render src/remotion-entry.ts CaptionOverlay",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/captions": "4.0.489",
+    "@remotion/fonts": "4.0.489",
+    "@remotion/transitions": "4.0.489",
+    "remotion": "4.0.489"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "devDependencies": {
+    "@remotion/cli": "4.0.489",
+    "@sentezy/config": "workspace:*",
+    "@sentezy/types": "workspace:*",
+    "@types/node": "22.10.5",
+    "@types/react": "19.0.7",
+    "@types/react-dom": "19.0.3",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "typescript": "5.6.3"
+  }
+}

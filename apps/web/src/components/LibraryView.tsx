@@ -35,6 +35,14 @@ export function LibraryView() {
             return (
               <Link key={v.id} href={href} className="card overflow-hidden transition hover:-translate-y-0.5">
                 <div className="ph-stripe relative aspect-[9/16]">
+                  {v.thumbnailUrl && (
+                    <img
+                      src={v.thumbnailUrl}
+                      alt=""
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  )}
                   <span className={`badge ${cls} absolute left-2.5 top-2.5`}>
                     <span className="dot" />
                     {label}
