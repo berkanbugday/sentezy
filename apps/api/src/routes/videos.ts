@@ -208,11 +208,17 @@ export async function videoRoutes(app: FastifyInstance) {
     const draft = await prisma.video.findFirst({ where: { id, userId } });
     if (!draft) return reply.code(404).send({ error: "not_found" });
     if (draft.status !== "draft") return reply.code(409).send({ error: "already_generated" });
-    if (!draft.avatarId || !draft.voiceId || !draft.script.trim()) {
+    // Avatar is OPTIONAL — a faceless reel needs voice + script + some B-roll media instead of a
+    // presenter. Require an avatar OR at least one uploaded media clip so there's a visual.
+    const media = (draft.options as { background?: { media?: unknown[] } } | null)?.background?.media;
+    const hasMedia = Array.isArray(media) && media.length > 0;
+    if (!draft.voiceId || !draft.script.trim() || (!draft.avatarId && !hasMedia)) {
       return reply.code(400).send({ error: "incomplete_draft" });
     }
-    const avatar = await prisma.avatar.findFirst({ where: { id: draft.avatarId, userId } });
-    if (!avatar) return reply.code(400).send({ error: "invalid_avatar" });
+    if (draft.avatarId) {
+      const avatar = await prisma.avatar.findFirst({ where: { id: draft.avatarId, userId } });
+      if (!avatar) return reply.code(400).send({ error: "invalid_avatar" });
+    }
     const voice = await prisma.voice.findFirst({
       where: { id: draft.voiceId, OR: [{ isPublic: true }, { userId }] },
     });

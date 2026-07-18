@@ -126,10 +126,17 @@ export function MediaComposer({
 
   const uploading = items.some((i) => i.status === "uploading");
   const hasScript = script.trim().length > 0; // controls stay visible but disabled until written
-  // Generation requires an avatar + voice + script — the API rejects a draft that
-  // is missing any of these, so gate the button and point the user at what's still needed.
-  const canCreate = hasScript && !!selectedAvatar && !!selectedVoice;
-  const createHint = !hasScript ? "Önce konuşma metnini yaz" : !selectedAvatar ? "Bir avatar seç" : !selectedVoice ? "Bir ses seç" : undefined;
+  const hasMedia = items.some((i) => i.status === "done" && i.ref);
+  // Generation needs voice + script and SOMETHING to show: either an avatar (talking head) OR
+  // B-roll media (a faceless video). Avatar is optional — gate the button and point at what's missing.
+  const canCreate = hasScript && !!selectedVoice && (!!selectedAvatar || hasMedia);
+  const createHint = !hasScript
+    ? "Önce konuşma metnini yaz"
+    : !selectedVoice
+      ? "Bir ses seç"
+      : !selectedAvatar && !hasMedia
+        ? "Avatar seç ya da görsel yükle (yüzsüz video)"
+        : undefined;
   const pick = () => inputRef.current?.click();
 
   // Open the preview modal, lazily fetching AI SFX cues the first time (if SFX is enabled)
@@ -392,7 +399,7 @@ export function MediaComposer({
                 <Icon.users width={15} height={15} />
               )}
             </span>
-            {selectedAvatar ? selectedAvatar.name : "Avatar seç"}
+            {selectedAvatar ? selectedAvatar.name : "Avatar (isteğe bağlı)"}
             <Icon.chevronDown width={14} height={14} className="text-muted" />
           </button>
           {/* voice mini chip */}

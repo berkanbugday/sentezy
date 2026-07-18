@@ -58,6 +58,14 @@ export function AvatarPicker({ open, onClose, selectedId, onSelect }: { open: bo
             <div className="py-10 text-center text-[14px] text-muted">Avatar bulunamadı</div>
           ) : (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {/* Faceless option — no avatar; the reel is B-roll + captions + voice only. */}
+              <button type="button" onClick={() => { onSelect(null); onClose(); }} className="text-left">
+                <div className={`relative flex aspect-[3/4] flex-col items-center justify-center gap-1 overflow-hidden rounded-xl border bg-mist px-2 text-center transition ${selectedId === null ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"}`}>
+                  <span className="disp text-[15px] font-semibold text-ink">Avatarsız</span>
+                  <span className="text-[10px] leading-tight text-muted">yüzsüz video</span>
+                </div>
+                <div className="mt-1.5 truncate px-0.5 text-[12px] font-medium text-slate">B-roll + altyazı</div>
+              </button>
               {filteredAvatars.map((a) => {
                 const sel = selectedId === a.id;
                 return (

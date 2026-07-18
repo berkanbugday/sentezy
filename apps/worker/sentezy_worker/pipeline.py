@@ -131,10 +131,11 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     if video["status"] == "ready":
         return
 
-    avatar = db.get_avatar(video["avatar_id"])
+    # Avatar is OPTIONAL — a faceless reel (no avatar) is B-roll + captions + voice only.
+    avatar = db.get_avatar(video["avatar_id"]) if video.get("avatar_id") else None
     voice = db.get_voice(video["voice_id"])
-    if not avatar or not voice:
-        raise RuntimeError("missing_avatar_or_voice")
+    if not voice:
+        raise RuntimeError("missing_voice")
 
     width, height = RATIO_DIMS.get(video["aspect_ratio"], (1080, 1920))
     options = video.get("options") or {}
@@ -167,28 +168,28 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     storage.upload_r2(audio_path, audio_key, "audio/mpeg")
     audio_url = storage.signed_get_url(audio_key, 86400)  # HeyGen must fetch this; R2_PUBLIC_URL is the S3 endpoint, not public
 
-    # 2) Avatar A-roll. Prod: HeyGen Avatar IV turns the avatar photo + audio into
-    #    a talking video (Avatar IV takes the image URL directly). Dev (NODE_ENV=development):
-    #    skip HeyGen — hold the avatar photo as a still for the audio's length, so the
-    #    rest of the pipeline runs identically without spending HeyGen credits.
-    db.set_stage(video_id, "avatar", 35)
-    image_url = storage.image_url(avatar["source_image_id"])
-    avatar_path = f"{workdir}/avatar.mp4"
-    if cfg.is_dev:
-        photo_path = f"{workdir}/avatar_src.png"
-        storage.download(image_url, photo_path)
-        _still_avatar_video(photo_path, audio_path, avatar_path)
-    else:
-        aspect_ratio = ASPECT_FROM_DIMS.get((width, height), "9:16")
-        heygen_video_id = hg.generate(image_url, audio_url, aspect_ratio)
-        heygen_url = hg.wait_for_url(heygen_video_id)
-        storage.download(heygen_url, avatar_path)
+    # 2) Avatar A-roll (skipped for faceless reels). Prod: HeyGen Avatar IV turns the avatar
+    #    photo + audio into a talking video (Avatar IV takes the image URL directly). Dev
+    #    (NODE_ENV=development): skip HeyGen — hold the avatar photo as a still for the audio's
+    #    length. Then 2b) matte it to a video-only WebM cutout the renderer composites over B-roll.
+    avatar_cutout_path: str | None = None
+    if avatar:
+        db.set_stage(video_id, "avatar", 35)
+        image_url = storage.image_url(avatar["source_image_id"])
+        avatar_path = f"{workdir}/avatar.mp4"
+        if cfg.is_dev:
+            photo_path = f"{workdir}/avatar_src.png"
+            storage.download(image_url, photo_path)
+            _still_avatar_video(photo_path, audio_path, avatar_path)
+        else:
+            aspect_ratio = ASPECT_FROM_DIMS.get((width, height), "9:16")
+            heygen_video_id = hg.generate(image_url, audio_url, aspect_ratio)
+            heygen_url = hg.wait_for_url(heygen_video_id)
+            storage.download(heygen_url, avatar_path)
 
-    # 2b) Matte the avatar out of the green screen → alpha clip (keeps the voice),
-    #     so the reel composites the cut-out avatar over the B-roll.
-    db.set_stage(video_id, "avatar", 55)
-    avatar_cutout_path = f"{workdir}/avatar_cutout.webm"
-    matte_video(avatar_path, avatar_cutout_path)
+        db.set_stage(video_id, "avatar", 55)
+        avatar_cutout_path = f"{workdir}/avatar_cutout.webm"
+        matte_video(avatar_path, avatar_cutout_path)
 
     # 3) Render the reel — ONE Remotion composition (avatar + B-roll + transitions + captions)
     #    → opaque H.264. Identical to the in-app <Player> preview by construction.
@@ -208,10 +209,13 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     broll_media = _resolve_broll_media(options, storage, workdir)
     segments = _broll_segments(words, broll_media)  # used for SFX slide timing (audio parity)
 
-    # Upload the matted avatar so the renderer can fetch it (signed R2 GET), then sign B-roll.
-    cutout_key = f"cutouts/{video_id}.webm"
-    storage.upload_r2(avatar_cutout_path, cutout_key, "video/webm")
-    avatar_signed = storage.signed_get_url(cutout_key, 86400)
+    # Upload the matted avatar (if any) so the renderer can fetch it (signed R2 GET), then sign
+    # B-roll. Faceless reels have no cutout → avatar_url stays None (the Reel fills with B-roll).
+    avatar_signed = None
+    if avatar_cutout_path:
+        cutout_key = f"cutouts/{video_id}.webm"
+        storage.upload_r2(avatar_cutout_path, cutout_key, "video/webm")
+        avatar_signed = storage.signed_get_url(cutout_key, 86400)
     broll_props = [
         {"url": storage.signed_get_url(b["ref"], 86400) if b.get("kind") == "video" else storage.image_url(b["ref"]),
          "kind": b.get("kind", "image"), "transition": b.get("transition")}
