@@ -26,6 +26,16 @@ const RATIO: Record<AspectRatio, "r9_16" | "r1_1" | "r16_9"> = {
   "16:9": "r16_9",
 };
 
+/**
+ * Provision a free-tier profile on first use. Nothing creates profiles (no signup handler / no
+ * Supabase `handle_new_user` trigger), so without this the credit debit's `updateMany` matches 0
+ * rows for a brand-new user → 402 "insufficient_credits". Idempotent upsert; `credits` defaults to
+ * 30 (Prisma schema). Runs inside the credit transaction so provisioning + debit are atomic.
+ */
+async function ensureProfile(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+  await tx.profile.upsert({ where: { id: userId }, create: { id: userId }, update: {} });
+}
+
 export async function videoRoutes(app: FastifyInstance) {
   app.get("/videos", { preHandler: app.authenticate }, async (req) => {
     const rows = await prisma.video.findMany({
@@ -114,6 +124,8 @@ export async function videoRoutes(app: FastifyInstance) {
 
     try {
       const video = await prisma.$transaction(async (tx) => {
+        // No signup/trigger creates profiles — provision one on first use so the debit has a row.
+        await ensureProfile(tx, userId);
         // Dev bypasses the credit gate entirely (no debit, no ledger) so local runs are free.
         if (!isDev) {
           const debit = await tx.profile.updateMany({
@@ -233,6 +245,8 @@ export async function videoRoutes(app: FastifyInstance) {
 
     try {
       const video = await prisma.$transaction(async (tx) => {
+        // No signup/trigger creates profiles — provision one on first use so the debit has a row.
+        await ensureProfile(tx, userId);
         // Dev bypasses the credit gate entirely (no debit, no ledger) so local runs are free.
         if (!isDev) {
           const debit = await tx.profile.updateMany({
