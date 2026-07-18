@@ -519,6 +519,7 @@ def _append_audio_bed(
     music_volume: float,
     sfx_input_idxs: list[int],
     sfx_times: list[float],
+    sfx_gains: list[float] | None = None,
 ) -> list[str]:
     """Append the reel audio bed to `fc` and return the ffmpeg audio `-map` args:
     the avatar voice, optionally sidechain-ducked under a music bed, plus a transition
@@ -543,8 +544,9 @@ def _append_audio_bed(
         delayed = []
         for k, in_idx in enumerate(sfx_input_idxs):
             ms = max(0, int(round(sfx_times[k] * 1000)))
+            vol = (sfx_gains[k] if sfx_gains is not None and k < len(sfx_gains) else SFX_VOLUME)
             # strip any leading silence so the audible whoosh lands exactly on the slide.
-            fc.append(f"[{in_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,silenceremove=start_periods=1:start_threshold=-50dB,volume={SFX_VOLUME},adelay={ms}|{ms}[wd{k}]")
+            fc.append(f"[{in_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,silenceremove=start_periods=1:start_threshold=-50dB,volume={vol},adelay={ms}|{ms}[wd{k}]")
             delayed.append(f"[wd{k}]")
         fc.append(f"[abed]{''.join(delayed)}amix=inputs={1 + len(delayed)}:duration=first:dropout_transition=0:normalize=0[a]")
         return ["-map", "[a]"]
@@ -568,6 +570,7 @@ def compose_reel(
     avatar_scale: float = 0.48,  # avatar height as a fraction of the frame
     bg_color: str = "0x101319",  # branded background shown wherever B-roll isn't
     transition_sfx: bool = True,  # whoosh SFX at each photo transition
+    sfx_cues: list[dict] | None = None,  # AI voice-timed SFX: [{path, time, gain}]
 ) -> None:
     """Cut-out reel composite: B-roll fills the frame (over a branded background),
     the matted avatar is framed to one side (bottom-anchored, always visible),
@@ -629,6 +632,15 @@ def compose_reel(
     for k in range(len(sfx_times)):
         inputs += ["-i", sfx_files[k % len(sfx_files)]]
         sfx_input_idxs.append(idx)
+        idx += 1
+
+    # AI voice-timed SFX: one input per cue, mixed like the whooshes but at per-cue gain.
+    sfx_gains: list[float] = [SFX_VOLUME] * len(sfx_input_idxs)
+    for cue in (sfx_cues or []):
+        inputs += ["-i", cue["path"]]
+        sfx_input_idxs.append(idx)
+        sfx_times.append(float(cue["time"]))
+        sfx_gains.append(float(cue["gain"]))
         idx += 1
 
     # [last] Remotion caption overlay — a full-frame transparent (ProRes 4444 alpha) .mov,
@@ -746,6 +758,7 @@ def compose_reel(
         music_volume=music_volume,
         sfx_input_idxs=sfx_input_idxs,
         sfx_times=sfx_times,
+        sfx_gains=sfx_gains,
     )
 
     cmd = [
