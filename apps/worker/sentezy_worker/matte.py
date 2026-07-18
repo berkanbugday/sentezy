@@ -97,10 +97,14 @@ def matte_image_to_png(in_path: str, out_path: str) -> None:
 
 
 def matte_video_to_mov(in_path: str, out_path: str) -> None:
-    """Cut the avatar out of the A-roll → ProRes 4444 .mov (alpha) carrying the voice.
+    """Cut the avatar out of the A-roll → a VIDEO-ONLY ProRes 4444 .mov (alpha).
 
     Streams frames through ffmpeg pipes, matting each with recurrent state for temporal
-    stability; audio is copied from the source so the reel keeps the avatar's voice.
+    stability. No audio is embedded: the reel's voice is muxed separately downstream
+    (`audio.mux_audio` takes the voice from the TTS mp3), and the Remotion renderer decodes
+    the cutout with a muted `OffthreadVideo`. Muxing the source audio here with `-shortest`
+    also broke matting whenever the source's audio was shorter than its video (the encoder
+    would stop early → BrokenPipe on the next frame write), so it is intentionally omitted.
     """
     w, h, fps = _probe(in_path)
     dsr = _downsample_ratio(h)
@@ -112,10 +116,8 @@ def matte_video_to_mov(in_path: str, out_path: str) -> None:
     enc = subprocess.Popen(
         ["ffmpeg", "-y", "-v", "error",
          "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{w}x{h}", "-r", f"{fps:.6f}", "-i", "pipe:0",
-         "-i", in_path,
-         "-map", "0:v", "-map", "1:a?", "-shortest",
-         "-c:v", "prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le",
-         "-c:a", "aac", "-b:a", "128k", out_path],
+         "-map", "0:v",
+         "-c:v", "prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le", out_path],
         stdin=subprocess.PIPE)
 
     rec = _zero_rec()

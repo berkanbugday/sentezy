@@ -95,7 +95,8 @@ class Db:
         with self._conn() as c, c.cursor() as cur:
             cur.execute("select credits_cost from public.videos where id=%s", (video_id,))
             row = cur.fetchone()
-            amount = int(row[0]) if row and row[0] else 0
+            # dict_row cursor → index by column name, not position.
+            amount = int(row["credits_cost"]) if row and row.get("credits_cost") else 0
             if amount <= 0:
                 return
             cur.execute("update public.profiles set credits = credits + %s where id=%s", (amount, user_id))
