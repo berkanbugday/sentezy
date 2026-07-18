@@ -1,7 +1,7 @@
 "use client";
 
 import { Player } from "@remotion/player";
-import { type PreviewBrollItem, ReelPreview } from "@sentezy/remotion";
+import { type ReelBrollItem, Reel } from "@sentezy/remotion";
 import type { CaptionStyleId, SfxCue } from "@sentezy/types";
 import { useMemo } from "react";
 import { previewWords } from "@/lib/captionPreview";
@@ -30,7 +30,7 @@ export function SfxPreviewModal({
   captionStyle: { styleId: CaptionStyleId; font: string; color: string };
   layout: { avatarLayout: "side" | "bottom"; avatarSide: "left" | "right"; captionPosition: "top" | "bottom" };
   avatarImageUrl?: string | null;
-  broll: PreviewBrollItem[];
+  broll: ReelBrollItem[];
   transitionSfx: boolean;
   captions: boolean;
 }) {
@@ -48,14 +48,18 @@ export function SfxPreviewModal({
   if (!open) return null;
   const inputProps = {
     words,
-    avatarImageUrl: avatarImageUrl ?? null,
+    avatarUrl: avatarImageUrl ?? null,
     broll,
     captionStyle: { styleId: captionStyle.styleId, font: captionStyle.font, color: captionStyle.color },
     layout: layout.avatarLayout,
     position: layout.captionPosition,
     avatarSide: layout.avatarSide,
     captions,
+    previewAudio: true,
     sfxCues,
+    width: W,
+    height: H,
+    fps: FPS,
   };
 
   return (
@@ -69,7 +73,7 @@ export function SfxPreviewModal({
         <div className="flex flex-1 items-center justify-center overflow-hidden px-5 py-4">
           <div className="overflow-hidden rounded-[26px] bg-black shadow-xl" style={{ aspectRatio: "9 / 16", height: "min(64vh, 560px)" }}>
             <Player
-              component={ReelPreview}
+              component={Reel}
               inputProps={inputProps}
               durationInFrames={durationInFrames}
               fps={FPS}

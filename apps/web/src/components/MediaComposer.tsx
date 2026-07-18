@@ -473,8 +473,8 @@ export function MediaComposer({
         layout={{ avatarLayout: settings.avatarLayout, avatarSide: settings.avatarSide, captionPosition: settings.captionPosition }}
         avatarImageUrl={selectedAvatar?.imageUrl ?? null}
         broll={items.map((i, idx) => ({
-          // image → its url; video → poster frame (so the slideshow shows transitions without <Video>)
-          url: i.kind === "video" ? (i.poster ?? i.serverUrl ?? i.url) : (i.serverUrl ?? i.url),
+          url: i.serverUrl ?? i.url,
+          kind: i.kind,
           transition: idx === 0 ? DEFAULT_TRANSITION : i.transition ?? DEFAULT_TRANSITION,
         }))}
         transitionSfx={settings.transitionSfx}

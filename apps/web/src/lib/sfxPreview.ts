@@ -1,5 +1,5 @@
 import { staticFile } from "remotion";
-import type { PreviewBrollItem, ResolvedSfxCue } from "@sentezy/remotion";
+import type { ReelBrollItem, ResolvedSfxCue } from "@sentezy/remotion";
 import { brollSfxStem, type SfxCue, tokenizeScript } from "@sentezy/types";
 
 const PER_WORD = 0.42; // MUST match captionPreview.ts estimated timing
@@ -29,10 +29,10 @@ export function resolvePreviewSfx(script: string, cues: SfxCue[]): ResolvedSfxCu
 /**
  * Slide-transition SFX cues, one per slide, each matched to that clip's transition
  * (BROLL_SFX_MAP) — mirrors the worker's per-slide transition sounds. Aligned to the
- * ReelPreview slideshow, where clip k's boundary is at ~k*(total/n). Gated by the
+ * Reel slideshow, where clip k's boundary is at ~k*(total/n). Gated by the
  * transition-SFX toggle; needs 2+ clips to have any transition between them.
  */
-export function slideSfxCues(broll: PreviewBrollItem[], totalSeconds: number, enabled: boolean): ResolvedSfxCue[] {
+export function slideSfxCues(broll: ReelBrollItem[], totalSeconds: number, enabled: boolean): ResolvedSfxCue[] {
   const n = broll.length;
   if (!enabled || n < 2 || totalSeconds <= 0) return [];
   const out: ResolvedSfxCue[] = [];
