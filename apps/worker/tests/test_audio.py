@@ -25,33 +25,36 @@ def test_music_adds_sidechain_and_faststart():
     assert "+faststart" in " ".join(cmd)
 
 
-def test_whoosh_timing_skips_clip0_and_leads_by_0_2(monkeypatch):
+def test_whoosh_timing_skips_clip0_and_leads_by_transition_duration(monkeypatch):
     # isolate timing/index logic from real .wav file existence
     monkeypatch.setattr("sentezy_worker.audio._transition_sfx_path", lambda t: "/lib/w.wav")
     broll = [
         {"start": 0.5, "end": 1.5, "transition": "fade"},
-        {"start": 2.0, "end": 3.0, "transition": "slide"},
-        {"start": 4.0, "end": 5.0, "transition": "wipe"},
+        {"start": 2.0, "end": 3.0, "transition": "slide"},  # transition → 0.4s lead
+        {"start": 4.0, "end": 5.0, "transition": "whip"},   # entrance → 0.12s lead
     ]
     cmd = _ffmpeg_audio_cmd(
         video_path="/v.mp4", voice_path="/a.mp3", out_path="/o.mp4",
         music_path=None, music_volume=0.15, broll=broll, transition_sfx=True, sfx_cues=[],
     )
     fc = cmd[cmd.index("-filter_complex") + 1]
-    # clip 0 has no transition → no whoosh; clips 1,2 lead their start by 0.2s (1.8s, 3.8s)
-    assert "adelay=1800|1800" in fc
-    assert "adelay=3800|3800" in fc
+    # clip 0 has no transition → no whoosh.
+    # clip 1 (slide, 0.4s lead): 2.0-0.4=1.6s ; clip 2 (whip=entrance, 0.12s lead): 4.0-0.12=3.88s
+    assert "adelay=1600|1600" in fc
+    assert "adelay=3880|3880" in fc
     # inputs: video + voice + 2 whooshes (clip 0 skipped)
     assert cmd.count("-i") == 4
+    # whoosh mixed at SFX_VOLUME
+    assert "volume=0.3" in fc
 
 
 def test_ai_sfx_cue_passes_time_and_gain(monkeypatch):
     cmd = _ffmpeg_audio_cmd(
         video_path="/v.mp4", voice_path="/a.mp3", out_path="/o.mp4",
         music_path=None, music_volume=0.15, broll=[], transition_sfx=False,
-        sfx_cues=[{"path": "/lib/cash.mp3", "time": 1.5, "gain": 0.3}],
+        sfx_cues=[{"path": "/lib/cash.mp3", "time": 1.5, "gain": 0.7}],
     )
     fc = cmd[cmd.index("-filter_complex") + 1]
     assert "/lib/cash.mp3" in cmd
     assert "adelay=1500|1500" in fc  # cue at its own time
-    assert "volume=0.3" in fc        # cue at its own gain (not the 0.2 whoosh default)
+    assert "volume=0.7" in fc        # cue at its own gain

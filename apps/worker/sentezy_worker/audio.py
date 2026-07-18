@@ -20,12 +20,19 @@ _BROLL_SFX_MAP = {
 }
 
 # Transition SFX (whoosh) mix level, 0..1 of full scale.
-SFX_VOLUME = 0.20
+SFX_VOLUME = 0.30
 
-# Lead time (seconds) each transition whoosh lands before its cutaway's absolute start —
-# the same placement the web preview uses (slideSfxCues), for audio parity. Does NOT use
-# the deleted ffmpeg `_xfade` (Remotion owns transitions now); the lead is a fixed constant.
-SFX_TRANSITION_LEAD = 0.2
+# B-roll entrance-effect ids (per-clip animations, near-cut) vs. between-clip transitions —
+# mirror of @sentezy/types BROLL_EFFECT_META (kind:"entrance") / effects.tsx.
+_BROLL_ENTRANCE = frozenset({"zoompunch", "shake", "glitch", "whip", "flash"})
+
+
+def _transition_lead(transition: str | None) -> float:
+    """Seconds the whoosh begins BEFORE a cutaway's boundary — the transition's own duration, so
+    the whoosh rises through the slide (which spans [boundary − T, boundary]) and peaks as the
+    clip lands. Mirrors the composition's brollTransition timing (0.4s transitions / 0.12s
+    entrances) and the web slideSfxCues lead, for audio↔visual parity."""
+    return 0.12 if (transition or "") in _BROLL_ENTRANCE else 0.4
 
 
 def _run(cmd: list[str]) -> None:
@@ -111,9 +118,9 @@ def _ffmpeg_audio_cmd(
 
     # transition whooshes: one per B-roll cutaway that slides in (clips 1..N-1). Clip 0
     # appears without a transition (the backdrop is already shown), so it gets none. Each
-    # whoosh lands SFX_TRANSITION_LEAD seconds before its cutaway's absolute start — the same
-    # placement the web preview uses (slideSfxCues), for audio parity. NOTE: does NOT use the
-    # deleted ffmpeg `_xfade` (Remotion owns transitions now); the lead is a fixed constant.
+    # whoosh BEGINS one transition-duration before its cutaway's boundary (see _transition_lead),
+    # so it rises through the visible slide — matching the web preview (slideSfxCues) and the
+    # composition's brollTransition placement.
     sfx_times: list[float] = []
     sfx_files: list[str] = []
     if transition_sfx:
@@ -121,7 +128,7 @@ def _ffmpeg_audio_cmd(
             _p = _transition_sfx_path(broll[k].get("transition"))
             if _p:
                 sfx_files.append(_p)
-                sfx_times.append(max(0.0, float(broll[k]["start"]) - SFX_TRANSITION_LEAD))
+                sfx_times.append(max(0.0, float(broll[k]["start"]) - _transition_lead(broll[k].get("transition"))))
 
     sfx_input_idxs: list[int] = []
     for f in sfx_files:
