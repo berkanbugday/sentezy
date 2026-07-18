@@ -1,4 +1,3 @@
-import { BROLL_ENTRANCE_IDS } from "@sentezy/types";
 import {
   linearTiming,
   TransitionSeries,
@@ -16,7 +15,10 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remo
 
 export { TransitionSeries };
 
-const ENTRANCE = new Set<string>(BROLL_ENTRANCE_IDS);
+// The per-clip entrance-animation ids — mirrors @sentezy/types BROLL_EFFECT_META (kind: "entrance").
+// Inlined (not imported) so the Remotion bundle carries NO runtime @sentezy/types dependency: the
+// Cloudflare container renders packages/remotion standalone, without the workspace package.
+const ENTRANCE = new Set<string>(["zoompunch", "shake", "glitch", "whip", "flash"]);
 /** True if the effect is a per-clip entrance animation (vs a between-clip transition). */
 export const isEntrance = (id: string): boolean => ENTRANCE.has(id);
 
