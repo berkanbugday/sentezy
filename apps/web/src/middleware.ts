@@ -44,6 +44,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except static assets.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|ico|webp)$).*)"],
+  // Run on everything except static assets (images, fonts, and audio — e.g. the SFX served
+  // from /public/sfx — must bypass auth so <Audio>/<Img> can load them without a redirect).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|ico|webp|mp3|wav|m4a|ogg|aac|ttf|otf)$).*)"],
 };
