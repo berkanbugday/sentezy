@@ -85,6 +85,11 @@ app.post("/render-reel", async (req, res) => {
       imageFormat: "jpeg", // OPAQUE reel — not the old ProRes/alpha caption overlay
       outputLocation: outPath,
       inputProps,
+      // Reels with several B-roll OffthreadVideo clips saturate the compositor; the default 28s
+      // delayRender window then trips the font loader. Give it room, and cap concurrency so
+      // parallel video decodes don't starve the main-thread font onload.
+      timeoutInMilliseconds: 180000,
+      concurrency: 4,
     });
     await deliver(res, outPath, { key: `reels/${jobId}.mp4`, contentType: "video/mp4", keyField: "reelKey" });
   } catch (err) {
