@@ -279,8 +279,9 @@ export const BrollLayer: React.FC<{ broll: ReelBrollItem[]; words: { start: numb
     }
     // each clip's window + the overlap it shares with its neighbours' transitions
     const base = seg.clips[i]?.durationInFrames ?? Math.round(durationInFrames / broll.length);
-    const extra = (i > 0 ? ov : 0) + (i < broll.length - 1 ? ov : 0);
-    const dur = Math.max(ov + 2, base + extra);
+    // A sequence must be at least as long as the transitions touching it (up to 2×ov for an
+    // interior clip) or Remotion throws; otherwise use the clip's own window length.
+    const dur = Math.max(ov * 2 + 2, base);
     const media = <Media item={b} />;
     children.push(
       <TransitionSeries.Sequence key={`s${i}`} durationInFrames={dur}>
@@ -289,18 +290,21 @@ export const BrollLayer: React.FC<{ broll: ReelBrollItem[]; words: { start: numb
     );
   });
 
+  // Start the cutaways at the first clip's frame and let the TransitionSeries render its natural
+  // length (sum of sequences minus transition overlaps, which is ≤ the mid window). No outer
+  // durationInFrames cap — capping truncates the tail mid-transition for 3+ clips; the
+  // full-duration backdrop fills any small gap before the avatar-only close, reading smoothly.
   const midFrom = seg.clips.length > 0 ? seg.clips[0]!.fromFrame : 0;
-  const midDur = seg.clips.length > 0 ? seg.midDurationFrames + ov : durationInFrames;
 
   return (
     <AbsoluteFill>
       {/* full-duration blurred backdrop */}
       <AbsoluteFill>
-        <Media item={{ ...broll[0]!, transition: "fade" }} />
+        <Media item={broll[0]!} />
         <AbsoluteFill style={{ backdropFilter: "blur(24px)", background: "rgba(0,0,0,0.35)" }} />
       </AbsoluteFill>
-      {/* sharp cutaways in the mid window */}
-      <Sequence from={midFrom} durationInFrames={Math.max(1, midDur)}>
+      {/* sharp cutaways starting at the mid window */}
+      <Sequence from={midFrom}>
         <TransitionSeries>{children}</TransitionSeries>
       </Sequence>
     </AbsoluteFill>
