@@ -1,11 +1,11 @@
 "use client";
 
-import { ReelPreview } from "@sentezy/remotion";
+import { Player } from "@remotion/player";
+import { type PreviewBrollItem, ReelPreview } from "@sentezy/remotion";
 import type { CaptionStyleId, SfxCue } from "@sentezy/types";
 import { useMemo } from "react";
 import { previewWords } from "@/lib/captionPreview";
-import { resolvePreviewSfx } from "@/lib/sfxPreview";
-import { LoopingPreview } from "./LoopingPreview";
+import { resolvePreviewSfx, slideWhooshCues } from "@/lib/sfxPreview";
 
 const FPS = 30;
 const W = 1080;
@@ -19,7 +19,8 @@ export function SfxPreviewModal({
   captionStyle,
   layout,
   avatarImageUrl,
-  backdropUrl,
+  broll,
+  transitionSfx,
   captions,
 }: {
   open: boolean;
@@ -29,21 +30,26 @@ export function SfxPreviewModal({
   captionStyle: { styleId: CaptionStyleId; font: string; color: string };
   layout: { avatarLayout: "side" | "bottom"; avatarSide: "left" | "right"; captionPosition: "top" | "bottom" };
   avatarImageUrl?: string | null;
-  backdropUrl?: string | null;
+  broll: PreviewBrollItem[];
+  transitionSfx: boolean;
   captions: boolean;
 }) {
   const words = useMemo(() => previewWords(script), [script]);
-  const sfxCues = useMemo(() => resolvePreviewSfx(script, cues), [script, cues]);
   const durationInFrames = useMemo(() => {
     const last = words.length > 0 ? words[words.length - 1]!.end : 5;
     return Math.max(1, Math.ceil((last + 0.6) * FPS));
   }, [words]);
+  // AI voice-timed SFX + slide-synced whooshes, both audible during real playback.
+  const sfxCues = useMemo(() => {
+    const total = durationInFrames / FPS;
+    return [...resolvePreviewSfx(script, cues), ...slideWhooshCues(broll.length, total, transitionSfx)];
+  }, [script, cues, broll.length, transitionSfx, durationInFrames]);
 
   if (!open) return null;
   const inputProps = {
     words,
     avatarImageUrl: avatarImageUrl ?? null,
-    backdropUrl: backdropUrl ?? null,
+    broll,
     captionStyle: { styleId: captionStyle.styleId, font: captionStyle.font, color: captionStyle.color },
     layout: layout.avatarLayout,
     position: layout.captionPosition,
@@ -62,18 +68,23 @@ export function SfxPreviewModal({
         </div>
         <div className="flex flex-1 items-center justify-center overflow-hidden px-5 py-4">
           <div className="overflow-hidden rounded-[26px] bg-black shadow-xl" style={{ aspectRatio: "9 / 16", height: "min(64vh, 560px)" }}>
-            <LoopingPreview
+            <Player
               component={ReelPreview}
               inputProps={inputProps}
               durationInFrames={durationInFrames}
               fps={FPS}
               compositionWidth={W}
               compositionHeight={H}
+              controls
+              autoPlay
+              loop
+              clickToPlay
+              spaceKeyToPlayOrPause
               style={{ width: "100%", height: "100%" }}
             />
           </div>
         </div>
-        <div className="px-5 py-3 text-[12px] text-muted">Örnek zamanlama — ses efektleri gerçek seslendirmeye göre hizalanır</div>
+        <div className="px-5 py-3 text-[12px] text-muted">Sesi duymak için oynat&apos;a bas — ses efektleri gerçek seslendirmeye göre hizalanır</div>
       </div>
     </div>
   );

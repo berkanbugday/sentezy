@@ -20,3 +20,17 @@ export function resolvePreviewSfx(script: string, cues: SfxCue[]): ResolvedSfxCu
     .filter((c) => c.wordIndex >= 0 && c.wordIndex < nTokens)
     .map((c) => ({ src: sfxSrc(c.sfxId), time: c.wordIndex * PER_WORD, gain: c.gain }));
 }
+
+/**
+ * Whoosh cues at each slide transition, so the preview plays the slide-synced SFX (matching the
+ * worker's transition whooshes). Aligned to the ReelPreview slideshow, where clip k boundary is
+ * at ~k*(total/n). Gated by the transition-SFX toggle; needs 2+ clips to have any transition.
+ */
+export function slideWhooshCues(brollCount: number, totalSeconds: number, enabled: boolean): ResolvedSfxCue[] {
+  if (!enabled || brollCount < 2 || totalSeconds <= 0) return [];
+  const out: ResolvedSfxCue[] = [];
+  for (let k = 1; k < brollCount; k++) {
+    out.push({ src: sfxSrc("whoosh"), time: Math.max(0, (k * totalSeconds) / brollCount - 0.2), gain: 0.4 });
+  }
+  return out;
+}

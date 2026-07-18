@@ -21,5 +21,5 @@ export { brollTransition, BrollEntrance, isEntrance } from "./broll/effects";
 
 // Preview-only surface — renders in the web <Player> only, never registered in Root.tsx.
 export { ReelPreview } from "./preview/ReelPreview";
-export type { ReelPreviewProps } from "./preview/ReelPreview";
+export type { PreviewBrollItem, ReelPreviewProps } from "./preview/ReelPreview";
 export { SfxTrack, type ResolvedSfxCue } from "./preview/SfxTrack";
