@@ -133,6 +133,35 @@ export const BROLL_EFFECT_IDS = BROLL_EFFECT_META.map((e) => e.id) as unknown as
 /** ids whose effect is a per-clip entrance animation (vs a between-clip transition). */
 export const BROLL_ENTRANCE_IDS = BROLL_EFFECT_META.filter((e) => e.kind === "entrance").map((e) => e.id);
 
+// CANONICAL slide-transition SFX — the sound played at each B-roll slide, matched to the
+// transition's character (separate from the AI voice-timed SFX_META palette). Values are file
+// stems vendored (real MIT-licensed @remotion/sfx sounds) at:
+//   apps/web/public/sfx/transitions/{stem}.wav   (preview <Player>)
+//   apps/worker/sfx/transitions/{stem}.wav        (ffmpeg render)
+// Consumed by the worker (compose_reel) and the web preview (sfxPreview.slideSfxCues).
+export const BROLL_SFX_MAP: Record<BrollEffectId, string> = {
+  fade: "whoosh",
+  slide: "whoosh",
+  wipe: "page-turn",
+  flip: "whip",
+  clockwipe: "switch",
+  iris: "whoosh",
+  zoom: "whoosh",
+  blur: "whoosh",
+  push: "switch",
+  zoompunch: "whip",
+  shake: "whip",
+  glitch: "switch",
+  whip: "whip",
+  flash: "shutter-modern",
+};
+/** Distinct sound stems referenced by BROLL_SFX_MAP (the files that must exist). */
+export const BROLL_SFX_STEMS = Array.from(new Set(Object.values(BROLL_SFX_MAP)));
+/** The slide-transition sound stem for a B-roll effect id (falls back to whoosh). */
+export function brollSfxStem(transition: string | null | undefined): string {
+  return (transition && BROLL_SFX_MAP[transition as BrollEffectId]) || "whoosh";
+}
+
 const CaptionsObject = z.object({
   enabled: z.boolean().default(true),
   style: CaptionStyle.default("karaoke"),

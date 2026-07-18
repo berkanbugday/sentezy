@@ -20,7 +20,15 @@ from fontTools.ttLib import TTFont
 # Bundled brand fonts (apps/worker/fonts) — handed to libass via `fontsdir` so
 # caption burn-in uses General Sans even without a system-wide font install.
 _FONTS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "fonts"))
-_SFX_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "sfx"))
+# Slide-transition SFX (real MIT @remotion/sfx sounds), matched per transition type.
+_SFX_TRANS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "sfx", "transitions"))
+# Mirror of @sentezy/types BROLL_SFX_MAP — keep in sync.
+_BROLL_SFX_MAP = {
+    "fade": "whoosh", "slide": "whoosh", "wipe": "page-turn", "flip": "whip",
+    "clockwipe": "switch", "iris": "whoosh", "zoom": "whoosh", "blur": "whoosh",
+    "push": "switch", "zoompunch": "whip", "shake": "whip", "glitch": "switch",
+    "whip": "whip", "flash": "shutter-modern",
+}
 
 # Caption family → bundled font file, for glyph-width measurement (the pill/marker
 # kinds draw ASS vector backgrounds that must hug the text). General Sans maps to its
@@ -86,16 +94,12 @@ def _rounded_rect(w: float, h: float, r: float) -> str:
     )
 
 
-def _transition_sfx_files() -> list[str]:
-    """Bundled transition sound effects (sfx/*.mp3…), sorted — cycled across the
-    photo transitions for variety. Empty list when the directory is missing."""
-    if not os.path.isdir(_SFX_DIR):
-        return []
-    return sorted(
-        os.path.join(_SFX_DIR, f)
-        for f in os.listdir(_SFX_DIR)
-        if f.lower().endswith((".mp3", ".wav", ".m4a", ".ogg", ".aac"))
-    )
+def _transition_sfx_path(transition: str | None) -> str | None:
+    """The slide-transition sound file matched to a B-roll effect id (BROLL_SFX_MAP),
+    or None if that sound isn't bundled. Unknown transitions fall back to whoosh."""
+    stem = _BROLL_SFX_MAP.get(transition or "", "whoosh")
+    path = os.path.join(_SFX_TRANS_DIR, f"{stem}.wav")
+    return path if os.path.isfile(path) else None
 
 
 @dataclass
@@ -582,8 +586,16 @@ def compose_reel(
     # Transition SFX: one bundled whoosh per photo transition, synced to the slide
     # start (the xfade for photo k runs over [start_k - tdur, start_k]). The files are
     # cycled for variety; photo 0 just eases in at mid_start.
-    sfx_files = _transition_sfx_files() if transition_sfx else []
-    sfx_times: list[float] = _sfx_slide_times(broll) if (broll and sfx_files) else []
+    # Per-slide transition SFX: each B-roll clip's transition maps to a matching sound
+    # (BROLL_SFX_MAP), placed at the slide start — no longer cycled. Missing files are skipped.
+    sfx_times: list[float] = []
+    sfx_files: list[str] = []
+    if transition_sfx and broll:
+        for _t, _b in zip(_sfx_slide_times(broll), broll):
+            _p = _transition_sfx_path(_b.get("transition"))
+            if _p:
+                sfx_times.append(_t)
+                sfx_files.append(_p)
 
     # [0] backdrop base — shown during the A-roll hook/close (and wherever B-roll isn't).
     # With B-roll: a blurred, darkened take on the first image (warm UGC look);
@@ -630,7 +642,7 @@ def compose_reel(
     # for variety, delayed to its slide in the audio section.
     sfx_input_idxs: list[int] = []
     for k in range(len(sfx_times)):
-        inputs += ["-i", sfx_files[k % len(sfx_files)]]
+        inputs += ["-i", sfx_files[k]]
         sfx_input_idxs.append(idx)
         idx += 1
 

@@ -5,7 +5,7 @@ import { type PreviewBrollItem, ReelPreview } from "@sentezy/remotion";
 import type { CaptionStyleId, SfxCue } from "@sentezy/types";
 import { useMemo } from "react";
 import { previewWords } from "@/lib/captionPreview";
-import { resolvePreviewSfx, slideWhooshCues } from "@/lib/sfxPreview";
+import { resolvePreviewSfx, slideSfxCues } from "@/lib/sfxPreview";
 
 const FPS = 30;
 const W = 1080;
@@ -42,8 +42,8 @@ export function SfxPreviewModal({
   // AI voice-timed SFX + slide-synced whooshes, both audible during real playback.
   const sfxCues = useMemo(() => {
     const total = durationInFrames / FPS;
-    return [...resolvePreviewSfx(script, cues), ...slideWhooshCues(broll.length, total, transitionSfx)];
-  }, [script, cues, broll.length, transitionSfx, durationInFrames]);
+    return [...resolvePreviewSfx(script, cues), ...slideSfxCues(broll, total, transitionSfx)];
+  }, [script, cues, broll, transitionSfx, durationInFrames]);
 
   if (!open) return null;
   const inputProps = {
