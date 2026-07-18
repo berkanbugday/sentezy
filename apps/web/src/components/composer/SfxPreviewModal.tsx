@@ -41,9 +41,8 @@ export function SfxPreviewModal({
   }, [words]);
   // AI voice-timed SFX + slide-synced whooshes, both audible during real playback.
   const sfxCues = useMemo(() => {
-    const total = durationInFrames / FPS;
-    return [...resolvePreviewSfx(script, cues), ...slideSfxCues(broll, total, transitionSfx)];
-  }, [script, cues, broll, transitionSfx, durationInFrames]);
+    return [...resolvePreviewSfx(script, cues), ...slideSfxCues(broll, script, transitionSfx)];
+  }, [script, cues, broll, transitionSfx]);
 
   if (!open) return null;
   const inputProps = {

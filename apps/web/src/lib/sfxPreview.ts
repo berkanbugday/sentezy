@@ -1,8 +1,10 @@
 import { staticFile } from "remotion";
-import type { ReelBrollItem, ResolvedSfxCue } from "@sentezy/remotion";
+import { brollSegments, type ReelBrollItem, type ResolvedSfxCue } from "@sentezy/remotion";
 import { brollSfxStem, type SfxCue, tokenizeScript } from "@sentezy/types";
+import { previewWords } from "@/lib/captionPreview";
 
 const PER_WORD = 0.42; // MUST match captionPreview.ts estimated timing
+const FPS = 30;
 
 /** Public URL for a bundled AI SFX id (served from apps/web/public/sfx). */
 export function sfxSrc(id: string): string {
@@ -27,19 +29,22 @@ export function resolvePreviewSfx(script: string, cues: SfxCue[]): ResolvedSfxCu
 }
 
 /**
- * Slide-transition SFX cues, one per slide, each matched to that clip's transition
- * (BROLL_SFX_MAP) — mirrors the worker's per-slide transition sounds. Aligned to the
- * Reel slideshow, where clip k's boundary is at ~k*(total/n). Gated by the
- * transition-SFX toggle; needs 2+ clips to have any transition between them.
+ * Slide-transition SFX cues, one per cutaway, each matched to that clip's transition
+ * (BROLL_SFX_MAP) — mirrors the worker's per-slide transition sounds. Timed to the SAME
+ * clip frames the Reel places (via shared brollSegments) so the preview's whooshes land
+ * on the visible transitions, exactly like the worker's ffmpeg mux (clip 0 gets none,
+ * each subsequent clip's whoosh leads its cut by 0.2s). Gated by the transition-SFX
+ * toggle; needs 2+ clips to have any transition between them.
  */
-export function slideSfxCues(broll: ReelBrollItem[], totalSeconds: number, enabled: boolean): ResolvedSfxCue[] {
-  const n = broll.length;
-  if (!enabled || n < 2 || totalSeconds <= 0) return [];
+export function slideSfxCues(broll: ReelBrollItem[], script: string, enabled: boolean): ResolvedSfxCue[] {
+  if (!enabled || broll.length < 2) return [];
+  const seg = brollSegments(previewWords(script), broll.length, FPS);
   const out: ResolvedSfxCue[] = [];
-  for (let k = 1; k < n; k++) {
+  for (let k = 1; k < broll.length; k++) {
+    const startFrame = seg.clips[k]?.fromFrame ?? 0;
     out.push({
       src: transitionSfxSrc(brollSfxStem(broll[k]!.transition)),
-      time: Math.max(0, (k * totalSeconds) / n - 0.2),
+      time: Math.max(0, startFrame / FPS - 0.2),
       gain: 0.5,
     });
   }
