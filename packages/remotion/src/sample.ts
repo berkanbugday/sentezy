@@ -1,4 +1,5 @@
 import type { CaptionCompositionProps, CaptionWord } from "./types";
+import type { ReelProps } from "./reel/types";
 
 /** A sample Turkish line with word timings — used for Studio previews and default props. */
 export const SAMPLE_WORDS: CaptionWord[] = [
@@ -22,6 +23,22 @@ export const SAMPLE_PROPS: CaptionCompositionProps = {
   layout: "bottom",
   position: "bottom",
   avatarSide: "right",
+  width: 1080,
+  height: 1920,
+  fps: 30,
+};
+
+export const SAMPLE_REEL_PROPS: ReelProps = {
+  words: SAMPLE_WORDS,
+  avatarUrl: null,
+  broll: [],
+  captionStyle: { styleId: "highlight", font: "Poppins", color: "#FFD54A" },
+  layout: "bottom",
+  position: "bottom",
+  avatarSide: "right",
+  captions: true,
+  previewAudio: false,
+  sfxCues: [],
   width: 1080,
   height: 1920,
   fps: 30,
