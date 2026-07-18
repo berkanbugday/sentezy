@@ -8,7 +8,7 @@ import express from "express";
 
 // HTTP server that runs inside the Cloudflare Container. It renders @sentezy/remotion
 // compositions with Node + Chromium + FFmpeg:
-//   POST /render       → CaptionOverlay → TRANSPARENT ProRes 4444 .mov (caption engine)
+//   POST /render-reel  → Reel composition → opaque H.264 .mp4
 // and uploads to R2 (prod) or streams the file back inline (local docker-compose).
 // The Worker (../src/index.ts) forwards the route here.
 
@@ -58,36 +58,37 @@ async function deliver(res, outPath, { key, contentType, keyField }) {
   }
 }
 
-app.post("/render", async (req, res) => {
-  const { jobId, words, styleId, font, color, width, height, fps, layout, position, avatarSide } = req.body ?? {};
-  if (!jobId || !Array.isArray(words) || !styleId) {
-    return res.status(400).json({ error: "jobId, words[] and styleId are required" });
+app.post("/render-reel", async (req, res) => {
+  const { jobId, words, avatarUrl, broll, captionStyle, layout, position, avatarSide, captions, width, height, fps } =
+    req.body ?? {};
+  if (!jobId || !Array.isArray(words)) {
+    return res.status(400).json({ error: "jobId and words[] are required" });
   }
-  const outPath = path.join(os.tmpdir(), `${jobId}.mov`);
+  const outPath = path.join(os.tmpdir(), `${jobId}.mp4`);
   try {
     const serveUrl = await getServeUrl();
-    // width/height/fps drive calculateMetadata (composition size + duration); the overlay
-    // props drive the visuals. Pass identical inputProps to select + render.
-    const inputProps = { words, styleId, font, color, layout, position, avatarSide, width, height, fps };
-    const composition = await selectComposition({ serveUrl, id: "CaptionOverlay", inputProps });
+    // previewAudio:false + sfxCues:[] → the render is opaque and silent; the worker muxes audio.
+    const inputProps = {
+      words, avatarUrl: avatarUrl ?? null, broll: broll ?? [],
+      captionStyle, layout, position, avatarSide,
+      captions: captions !== false, previewAudio: false, sfxCues: [],
+      width, height, fps,
+    };
+    const composition = await selectComposition({ serveUrl, id: "Reel", inputProps });
     await renderMedia({
       serveUrl,
       composition,
-      codec: "prores",
-      proResProfile: "4444",
-      // ALPHA: all three are required for a transparent overlay — PNG frames carry the alpha,
-      // which the yuva444p10le pixel format preserves through the ProRes 4444 encode.
-      imageFormat: "png",
-      pixelFormat: "yuva444p10le",
+      codec: "h264",
+      imageFormat: "jpeg", // OPAQUE reel — not the old ProRes/alpha caption overlay
       outputLocation: outPath,
       inputProps,
     });
-    await deliver(res, outPath, { key: `overlays/${jobId}.mov`, contentType: "video/quicktime", keyField: "overlayKey" });
+    await deliver(res, outPath, { key: `reels/${jobId}.mp4`, contentType: "video/mp4", keyField: "reelKey" });
   } catch (err) {
-    console.error("render failed", err);
+    console.error("render-reel failed", err);
     fs.rm(outPath, { force: true }, () => {});
     res.status(500).json({ error: String(err?.message ?? err) });
   }
 });
 
-app.listen(PORT, () => console.log(`caption renderer listening on :${PORT}`));
+app.listen(PORT, () => console.log(`reel renderer listening on :${PORT}`));
