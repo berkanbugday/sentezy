@@ -37,7 +37,7 @@ export function SfxPreviewModal({
   const words = useMemo(() => previewWords(script), [script]);
   const durationInFrames = useMemo(() => {
     const last = words.length > 0 ? words[words.length - 1]!.end : 5;
-    return Math.max(1, Math.ceil((last + 0.6) * FPS));
+    return Math.max(1, Math.ceil((last + 0.3) * FPS));
   }, [words]);
   // AI voice-timed SFX + slide-synced whooshes, both audible during real playback.
   const sfxCues = useMemo(() => {

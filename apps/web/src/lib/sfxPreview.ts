@@ -45,7 +45,7 @@ export function slideSfxCues(broll: ReelBrollItem[], script: string, enabled: bo
     out.push({
       src: transitionSfxSrc(brollSfxStem(broll[k]!.transition)),
       time: Math.max(0, startFrame / FPS - 0.2),
-      gain: 0.5,
+      gain: 0.2,
     });
   }
   return out;
