@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import glob
 import json
 import logging
 import os
+import shutil
+import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -22,6 +25,15 @@ logging.basicConfig(
 log = logging.getLogger("sentezy.worker")
 
 
+def _cleanup_temp(video_id: str | None) -> None:
+    """Remove the job's local temp workdir(s) (`/tmp/sentezy-<id>-*`) so the disk doesn't fill
+    up over many renders. Runs on both success and failure."""
+    if not video_id:
+        return
+    for d in glob.glob(os.path.join(tempfile.gettempdir(), f"sentezy-{video_id}-*")):
+        shutil.rmtree(d, ignore_errors=True)
+
+
 def main() -> None:
     # Dev convenience: load the monorepo root .env (Railway/Docker inject env
     # directly, and inside the container the tree is too shallow for parents[3]).
@@ -36,6 +48,10 @@ def main() -> None:
     hg = HeyGen(cfg.heygen_api_key)
     queue = Queue(cfg.redis_url, consumer=os.environ.get("WORKER_NAME", "worker-1"))
     queue.ensure_group()
+
+    # Clear temp workdirs left behind by previously-crashed jobs (safe at startup — none in flight).
+    for d in glob.glob(os.path.join(tempfile.gettempdir(), "sentezy-*")):
+        shutil.rmtree(d, ignore_errors=True)
 
     log.info("Sentezy worker started — consuming %s", queue.consumer)
     while True:
@@ -59,6 +75,7 @@ def main() -> None:
                     except Exception:  # noqa: BLE001
                         log.exception("failed to record failure for %s", video_id)
             finally:
+                _cleanup_temp(video_id)
                 queue.ack(msg_id)
 
 

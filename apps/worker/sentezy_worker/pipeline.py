@@ -265,3 +265,11 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     storage.upload_r2(thumb_path, thumb_key, "image/jpeg")
 
     db.set_ready(video_id, out_key, thumb_key, _ffprobe_duration(reel_path))
+
+    # Free intermediate R2 artifacts — only the final video + thumbnail are kept. The TTS audio,
+    # the matted avatar cutout, and the renderer's opaque reel were needed only during rendering.
+    for key in (audio_key, f"cutouts/{video_id}.webm", f"reels/{video_id}.mp4"):
+        try:
+            storage.delete_r2(key)
+        except Exception as e:  # noqa: BLE001 — cleanup is best-effort, never fail a finished job
+            print(f"pipeline: R2 cleanup failed for {key} ({e})")

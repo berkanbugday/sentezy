@@ -22,6 +22,11 @@ class Storage:
         self.s3.upload_file(local_path, self.cfg.r2_bucket, key, ExtraArgs={"ContentType": content_type})
         return key
 
+    def delete_r2(self, key: str) -> None:
+        """Delete an R2 object — idempotent (S3/R2 delete never errors on a missing key).
+        Used to free intermediate render artifacts once the final video is stored."""
+        self.s3.delete_object(Bucket=self.cfg.r2_bucket, Key=key)
+
     def r2_url(self, key: str, expires: int = 86400) -> str:
         """Public CDN URL if configured, else a signed GET URL. NOTE: while R2_PUBLIC_URL
         points at the S3 endpoint (not a public domain), this is NOT fetchable by external
