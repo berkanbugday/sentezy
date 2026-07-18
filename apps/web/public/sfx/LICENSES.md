@@ -1,13 +1,33 @@
-# SFX asset licenses
+# SFX library
 
-Placeholder assets only — the full 16-effect royalty-free library (with per-file source +
-license attribution) is sourced in a later task (see `SFX_META` in `@sentezy/types` for the
-target id list).
+These 16 files (`{id}.mp3`, one per `SFX_META` id in `@sentezy/types`) are the sound
+effects the AI "suggest sound effects" feature can place into a reel.
 
-Current files are synthetic sine-tone placeholders generated locally with ffmpeg purely to
-exercise the `sfxSrc()` / `resolvePreviewSfx()` import and runtime path during development.
-They are not sourced from any third party and carry no license restrictions, but they are NOT
-final production audio and must be replaced.
+**⚠️ Placeholder audio.** The current files are synthesized single-tone placeholders
+(generated with ffmpeg `sine` at distinct frequencies/durations per effect) so the feature
+is end-to-end functional and testable. They are not sourced from any third party and carry no
+license restrictions, but they are NOT final production audio. **Replace them with real,
+curated royalty-free SFX** before shipping — keep the exact filenames (`{id}.mp3`) and record
+each file's source URL + license here when you do.
 
-- `whoosh.mp3` — `ffmpeg -f lavfi -i "sine=frequency=800:duration=0.25" -q:a 9 whoosh.mp3`
-- `cash.mp3` — `ffmpeg -f lavfi -i "sine=frequency=400:duration=0.3" -q:a 9 cash.mp3`
+The same files live in `apps/worker/sfx/library/` (used by the ffmpeg final render). Keep the
+two directories in sync.
+
+| id | intended sound |
+|----|----------------|
+| whoosh | transition / swipe |
+| ding | highlight / correct |
+| pop | small reveal |
+| boom | impact / big reveal |
+| applause | success / celebrate |
+| cash | money / sale |
+| riser | buildup / tension |
+| click | tap / ui |
+| swoosh | fast motion |
+| sparkle | magic / shine |
+| airhorn | hype / attention |
+| thud | drop / land |
+| bell | notify / alert |
+| record_scratch | stop / twist |
+| whistle | rise / fall |
+| camera | photo / snapshot |
