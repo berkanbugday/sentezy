@@ -751,7 +751,7 @@ Expected: PASS (still imports `Word`, now from `models`; `compose.py` still exis
 **Interfaces:**
 - Consumes: `Word` (T9).
 - Produces:
-  - `SFX_VOLUME`, `_BROLL_SFX_MAP`, `_transition_sfx_path(transition)`, `_sfx_slide_times(broll)`, `_append_audio_bed(...)` (moved verbatim from `compose.py`).
+  - `SFX_VOLUME`, `_BROLL_SFX_MAP`, `_SFX_TRANS_DIR`, `_transition_sfx_path(transition)`, `_append_audio_bed(...)`, `_run` (COPIED from `compose.py`; compose.py left untouched — deleted wholesale in Task 15) + new `SFX_TRANSITION_LEAD = 0.2`. NOT `_sfx_slide_times` (depended on the deleted `_xfade`; whoosh timing is inlined in `_ffmpeg_audio_cmd`).
   - `mux_audio(video_path, voice_path, out_path, *, music_path=None, music_volume=0.15, broll=None, transition_sfx=True, sfx_cues=None)` — stream-copies `video_path`'s video, builds the audio bed, writes `out_path`.
   - `_ffmpeg_audio_cmd(...)` — pure arg builder (for testing), returns the full ffmpeg argv.
 
@@ -793,7 +793,7 @@ Expected: FAIL — `No module named 'sentezy_worker.audio'`.
 
 - [ ] **Step 3: Create `audio.py`**
 
-Move these symbols **verbatim** from `compose.py` into `audio.py` (same code): `SFX_VOLUME` (line 211), `_BROLL_SFX_MAP` (26–31), `_SFX_TRANS_DIR` (24), `_transition_sfx_path` (97–102), `_sfx_slide_times` (503–515), `_append_audio_bed` (518–557), and the `_run` helper (112–116). Add the new `mux_audio` + `_ffmpeg_audio_cmd`:
+COPY these symbols **verbatim** from `compose.py` into `audio.py` (same code; leave compose.py untouched — it is deleted in Task 15): `SFX_VOLUME` (line 211), `_BROLL_SFX_MAP` (26–31), `_SFX_TRANS_DIR` (24), `_transition_sfx_path` (97–102), `_append_audio_bed` (518–557), and the `_run` helper (112–116). Do NOT copy `_sfx_slide_times` (it used the deleted `_xfade`). Add `SFX_TRANSITION_LEAD = 0.2` and the new `mux_audio` + `_ffmpeg_audio_cmd`:
 
 ```python
 # apps/worker/sentezy_worker/audio.py  (header + new functions; moved helpers omitted here for brevity)
@@ -831,15 +831,19 @@ def _ffmpeg_audio_cmd(
         music_idx = idx
         idx += 1
 
-    # transition whooshes: one per B-roll slide, matched to that clip's transition.
+    # transition whooshes: one per B-roll cutaway that slides in (clips 1..N-1). Clip 0
+    # appears without a transition (the backdrop is already shown), so it gets none. Each
+    # whoosh lands SFX_TRANSITION_LEAD seconds before its cutaway's absolute start — the same
+    # placement the web preview uses (slideSfxCues), for audio parity. NOTE: does NOT use the
+    # deleted ffmpeg `_xfade` (Remotion owns transitions now); the lead is a fixed constant.
     sfx_times: list[float] = []
     sfx_files: list[str] = []
-    if transition_sfx and broll:
-        for _t, _b in zip(_sfx_slide_times(broll), broll):
-            _p = _transition_sfx_path(_b.get("transition"))
+    if transition_sfx:
+        for k in range(1, len(broll)):
+            _p = _transition_sfx_path(broll[k].get("transition"))
             if _p:
-                sfx_times.append(_t)
                 sfx_files.append(_p)
+                sfx_times.append(max(0.0, float(broll[k]["start"]) - SFX_TRANSITION_LEAD))
 
     sfx_input_idxs: list[int] = []
     for f in sfx_files:
