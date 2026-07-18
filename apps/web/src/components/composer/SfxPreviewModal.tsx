@@ -76,7 +76,6 @@ export function SfxPreviewModal({
               compositionWidth={W}
               compositionHeight={H}
               controls
-              autoPlay
               loop
               clickToPlay
               spaceKeyToPlayOrPause
