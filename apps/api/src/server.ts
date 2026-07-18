@@ -3,6 +3,7 @@ import Fastify from "fastify";
 import authPlugin from "./plugins/auth";
 import { backgroundRoutes } from "./routes/backgrounds";
 import { healthRoutes } from "./routes/health";
+import { importRoutes } from "./routes/import";
 import { musicRoutes } from "./routes/music";
 import { avatarRoutes } from "./routes/avatars";
 import { videoRoutes } from "./routes/videos";
@@ -20,6 +21,7 @@ export function buildServer() {
   app.register(musicRoutes);
   app.register(avatarRoutes);
   app.register(videoRoutes);
+  app.register(importRoutes);
 
   return app;
 }

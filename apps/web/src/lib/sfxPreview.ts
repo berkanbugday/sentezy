@@ -18,8 +18,7 @@ export function transitionSfxSrc(stem: string): string {
 
 /**
  * Resolve word-anchored cues to preview times using the SAME estimated timing the caption
- * preview uses (PER_WORD per token). Independent of captionPreview's 14-word display cap so
- * later cues still play.
+ * preview uses (PER_WORD per token) over the full script.
  */
 export function resolvePreviewSfx(script: string, cues: SfxCue[]): ResolvedSfxCue[] {
   const nTokens = tokenizeScript(script).length;

@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "../env";
+import { safeFetch } from "./ssrf";
 
 // Cloudflare R2 is S3-compatible.
 export const r2 = new S3Client({
@@ -37,4 +39,55 @@ export async function signedUploadUrl(key: string, contentType: string, expiresI
 
 export function publicUrl(key: string): string | null {
   return env.R2_PUBLIC_URL ? `${env.R2_PUBLIC_URL.replace(/\/$/, "")}/${key}` : null;
+}
+
+/** Server-side upload of raw bytes to R2 (e.g. an image scraped from a product page). */
+export async function uploadBuffer(key: string, body: Buffer | Uint8Array, contentType: string): Promise<void> {
+  await r2.send(new PutObjectCommand({ Bucket: env.R2_BUCKET, Key: key, Body: body, ContentType: contentType }));
+}
+
+// Guardrails for pulling remote assets into R2 (product-import). Big enough for
+// high-res product photos / short clips, small enough to reject a runaway download.
+const MAX_IMAGE_BYTES = 15 * 1024 * 1024; // 15 MB
+const MAX_VIDEO_BYTES = 60 * 1024 * 1024; // 60 MB
+const EXT_FROM_CT: Record<string, string> = {
+  "image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
+  "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov",
+};
+
+/**
+ * Download a remote image/video and store it in R2 under the same key namespaces the
+ * browser-upload path uses (`images/…`, `broll/…`) so the worker resolves it identically.
+ * Returns the R2 key + a signed preview URL, or null if the asset is missing/too big/wrong
+ * type — callers ingest a gallery best-effort, skipping the ones that fail.
+ */
+export async function ingestRemoteAsset(
+  url: string,
+  kind: "image" | "video",
+): Promise<{ ref: string; url: string; kind: "image" | "video" } | null> {
+  try {
+    // safeFetch blocks SSRF (remote asset URLs come from an untrusted scraped page).
+    const res = await safeFetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; SentezyBot/1.0)", "Accept-Language": "tr,en;q=0.8" },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) return null;
+    const ct = ((res.headers.get("content-type") ?? "").split(";")[0] ?? "").trim().toLowerCase();
+    // Strict allowlist: the content-type must be one we know is safe to store + serve. This
+    // rejects e.g. image/svg+xml (scriptable → stored XSS when a signed URL is opened inline).
+    if (!(ct in EXT_FROM_CT)) return null;
+    const expected = kind === "image" ? "image/" : "video/";
+    if (!ct.startsWith(expected)) return null;
+
+    const buf = Buffer.from(await res.arrayBuffer());
+    const cap = kind === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+    if (buf.byteLength === 0 || buf.byteLength > cap) return null;
+
+    const ext = EXT_FROM_CT[ct] ?? (kind === "image" ? "jpg" : "mp4");
+    const key = `${kind === "image" ? "images" : "broll"}/${randomUUID()}.${ext}`;
+    await uploadBuffer(key, buf, ct);
+    return { ref: key, url: await signedDownloadUrl(key, 86400), kind };
+  } catch {
+    return null;
+  }
 }

@@ -141,7 +141,7 @@ export const BROLL_ENTRANCE_IDS = BROLL_EFFECT_META.filter((e) => e.kind === "en
 // Consumed by the worker (compose_reel) and the web preview (sfxPreview.slideSfxCues).
 export const BROLL_SFX_MAP: Record<BrollEffectId, string> = {
   fade: "whoosh",
-  slide: "whoosh",
+  slide: "shutter-modern", // modern camera-shutter click on every slide (Berkan 2026‑07‑18)
   wipe: "page-turn",
   flip: "whip",
   clockwipe: "switch",
@@ -256,6 +256,15 @@ export const ReelOptions = z.object({
     .default({ enabled: false, cues: [] }),
   // Which wizard step the draft was last left on, so it can be resumed.
   wizardStep: z.number().int().min(0).max(4).optional(),
+  // Provenance when the reel was seeded from a pasted product link (POST /import-product).
+  // Purely informational — carried through so the video record remembers its source.
+  product: z
+    .object({
+      sourceUrl: z.string(),
+      title: z.string().optional(),
+      price: z.string().optional(),
+    })
+    .optional(),
 });
 export type ReelOptions = z.infer<typeof ReelOptions>;
 

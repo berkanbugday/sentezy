@@ -134,6 +134,21 @@ export function useEnhanceEmotion() {
   });
 }
 
+export type ImportedMedia = { ref: string; url: string; kind: "image" | "video" };
+export type ImportProductResult = {
+  product: { sourceUrl: string; title: string; price?: string; description?: string };
+  media: ImportedMedia[];
+  script: string;
+};
+
+/** Paste-a-product-link: scrape the page → media in R2 + an AI promo script. */
+export function useImportProduct() {
+  return useMutation({
+    mutationFn: (url: string) =>
+      apiFetch<ImportProductResult>("/import-product", { method: "POST", body: JSON.stringify({ url }) }),
+  });
+}
+
 /** Ask the API to place AI sound effects for a script. */
 export function useSuggestSfx() {
   return useMutation({

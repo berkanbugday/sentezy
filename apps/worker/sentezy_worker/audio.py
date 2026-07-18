@@ -13,7 +13,7 @@ import subprocess
 _SFX_TRANS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "sfx", "transitions"))
 # Mirror of @sentezy/types BROLL_SFX_MAP — keep in sync.
 _BROLL_SFX_MAP = {
-    "fade": "whoosh", "slide": "whoosh", "wipe": "page-turn", "flip": "whip",
+    "fade": "whoosh", "slide": "shutter-modern", "wipe": "page-turn", "flip": "whip",
     "clockwipe": "switch", "iris": "whoosh", "zoom": "whoosh", "blur": "whoosh",
     "push": "switch", "zoompunch": "whip", "shake": "whip", "glitch": "switch",
     "whip": "whip", "flash": "shutter-modern",

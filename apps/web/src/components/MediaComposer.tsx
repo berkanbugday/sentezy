@@ -9,7 +9,7 @@ import { DEFAULT_PRESET, presetById } from "@/lib/captionStyles";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
 import { type Media } from "@/lib/composer/media";
 import { TR_GRADIENT, TR_GRADIENT_SOFT, TRANSITION_LABELS } from "@/lib/composer/transitions";
-import { useCreateAvatar, useGenerateVideo, useMyAvatars, useSuggestSfx, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
+import { type ImportProductResult, useCreateAvatar, useGenerateVideo, useImportProduct, useMyAvatars, useSuggestSfx, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
 import { videoPoster } from "@/lib/videoPoster";
 import { DEFAULT_TRANSITION } from "./WizardSteps";
 import { AvatarPicker } from "./composer/AvatarPicker";
@@ -33,7 +33,12 @@ export function MediaComposer({
   const createAvatar = useCreateAvatar();
   const generate = useGenerateVideo();
   const suggestSfx = useSuggestSfx();
+  const importProduct = useImportProduct();
   const myAvatars = useMyAvatars().data ?? [];
+  const [mode, setMode] = useState<"link" | "upload">("link"); // paste a product link, or upload media
+  const [importUrl, setImportUrl] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const [product, setProduct] = useState<ImportProductResult["product"] | null>(null);
   const [items, setItems] = useState<Media[]>([]);
   const [drag, setDrag] = useState(false);
   const [effectOpen, setEffectOpen] = useState(false);
@@ -82,6 +87,7 @@ export function MediaComposer({
   const patch = (url: string, next: Partial<Media>) => setItems((prev) => prev.map((x) => (x.url === url ? { ...x, ...next } : x)));
 
   async function uploadOne(m: Media) {
+    if (!m.file) return; // imported items are already in R2 (no local file to upload)
     try {
       if (m.kind === "image") {
         const { id, url } = await uploadImg.mutateAsync(m.file);
@@ -106,7 +112,7 @@ export function MediaComposer({
       setItems((prev) => [...prev, ...next]);
       next.forEach((m) => {
         void uploadOne(m);
-        if (m.kind === "video") videoPoster(m.file).then((p) => p && patch(m.url, { poster: p }));
+        if (m.kind === "video" && m.file) videoPoster(m.file).then((p) => p && patch(m.url, { poster: p }));
       });
     }
     if (inputRef.current) inputRef.current.value = ""; // allow re-picking the same file
@@ -122,6 +128,43 @@ export function MediaComposer({
   function retry(m: Media) {
     patch(m.url, { status: "uploading" });
     void uploadOne({ ...m, status: "uploading" });
+  }
+
+  // Pre-fill the composer from a scraped product: media (already in R2) as B-roll + the AI
+  // promo script. Avatar and voice are left for the user to choose (not auto-selected).
+  function applyImport(result: ImportProductResult) {
+    setProduct(result.product);
+    setItems(
+      result.media.map((m, idx) => ({
+        url: m.url,
+        serverUrl: m.url,
+        ref: m.ref,
+        kind: m.kind,
+        name: result.product.title || `Ürün görseli ${idx + 1}`,
+        status: "done" as const,
+        transition: "slide", // product slides use the shutter-modern slide (BROLL_SFX_MAP.slide)
+      })),
+    );
+    setScript(result.script);
+  }
+
+  async function handleImport() {
+    const url = importUrl.trim();
+    if (!url || importProduct.isPending) return;
+    setImportError(null);
+    try {
+      const result = await importProduct.mutateAsync(url);
+      applyImport(result);
+    } catch (e) {
+      const code = e instanceof Error ? e.message : "";
+      const messages: Record<string, string> = {
+        invalid_url: "Geçerli bir ürün bağlantısı gir.",
+        scrape_failed: "Sayfa okunamadı, bağlantıyı kontrol et.",
+        no_product_found: "Bu bağlantıda ürün bulunamadı.",
+        no_media_found: "Bu üründe kullanılabilir görsel bulunamadı.",
+      };
+      setImportError(messages[code] ?? "Ürün alınamadı, lütfen tekrar dene.");
+    }
   }
 
   const uploading = items.some((i) => i.status === "uploading");
@@ -213,6 +256,7 @@ export function MediaComposer({
         voice: { emotion: settings.voiceEmotion ?? "" },
         effects: { transitionSfx: settings.transitionSfx ?? true },
         sfx: { enabled: settings.sfxEnabled, cues: cuesForRender },
+        ...(product ? { product } : {}), // provenance when seeded from a product link
       };
 
       const text = scriptText;
@@ -262,7 +306,55 @@ export function MediaComposer({
         addFiles(e.dataTransfer.files);
       }}
     >
+      {/* mode tabs — paste a product link, or upload your own media (hidden once media exists) */}
+      {items.length === 0 && (
+        <div className="mb-3 inline-flex rounded-full border border-hairline bg-mist/50 p-0.5 text-[13px] font-medium">
+          {(["link", "upload"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => { setMode(m); setImportError(null); }}
+              className={`rounded-full px-3.5 py-1.5 transition ${mode === m ? "bg-paper text-ink shadow-sm" : "text-muted hover:text-slate"}`}
+            >
+              {m === "link" ? "Ürün linki" : "Medya yükle"}
+            </button>
+          ))}
+        </div>
+      )}
+
       {items.length === 0 ? (
+        mode === "link" ? (
+          <div className="flex flex-col gap-3.5 rounded-[16px] border border-dashed border-hairline px-6 py-12">
+            <div className="text-center">
+              <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-mist text-slate">
+                <Icon.paperclip width={22} height={22} />
+              </span>
+              <p className="text-[14.5px] font-medium text-ink">Ürün bağlantısını yapıştır</p>
+              <p className="mx-auto mt-0.5 max-w-xs text-[12.5px] text-muted">Fotoğrafları, videoları ve tanıtım metnini senin için hazırlayalım.</p>
+            </div>
+            <div className="mx-auto flex w-full max-w-lg flex-col gap-2 sm:flex-row">
+              <input
+                type="url"
+                inputMode="url"
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void handleImport(); }}
+                placeholder="https://…"
+                className="min-w-0 flex-1 rounded-xl border border-hairline bg-paper px-3.5 py-2.5 text-[14px] text-ink outline-none transition placeholder:text-muted focus:border-ink"
+              />
+              <button
+                type="button"
+                onClick={() => void handleImport()}
+                disabled={!importUrl.trim() || importProduct.isPending}
+                className="btn btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {importProduct.isPending ? <Spinner size={16} /> : <Icon.arrowRight width={17} height={17} className="order-2" />}
+                <span className="order-1">{importProduct.isPending ? "Getiriliyor…" : "Getir"}</span>
+              </button>
+            </div>
+            {importError && <p className="text-center text-[13px] text-red-500">{importError}</p>}
+          </div>
+        ) : (
         <button
           type="button"
           onClick={pick}
@@ -277,6 +369,7 @@ export function MediaComposer({
             <p className="mt-0.5 text-[12.5px] text-muted">(.mp4, .mov, .jpg, .png — birden fazla seçebilirsin)</p>
           </div>
         </button>
+        )
       ) : (
         <div className="no-scrollbar flex flex-nowrap items-center overflow-x-auto pb-1">
           {items.map((m, i) => (
