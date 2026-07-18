@@ -4,15 +4,16 @@ import re
 import subprocess
 import tempfile
 
-from .compose import build_captions_ass, compose_reel, make_thumbnail
+from .audio import mux_audio
 from .config import Config
 from .db import Db
 from .matte import matte_video_to_mov
-from .providers.captions_remotion import render_caption_overlay, render_caption_overlay_local
 from .providers.elevenlabs import ElevenLabs
 from .providers.heygen import HeyGen
+from .providers.reel_remotion import build_reel_props, render_reel, render_reel_local
 from .sfx import resolve_sfx_cues, tokenize_script
 from .storage import Storage
+from .thumbnail import make_thumbnail
 
 RATIO_DIMS = {"9:16": (1080, 1920), "1:1": (1080, 1080), "16:9": (1920, 1080)}
 # Reverse map (width, height) → HeyGen Avatar IV aspect_ratio label.
@@ -93,15 +94,6 @@ def _broll_segments(words: list, media: list[dict]) -> list[dict]:
         }
         for i, m in enumerate(media)
     ]
-
-
-def _resolve_logo(options: dict, storage: Storage, workdir: str) -> str | None:
-    logo_id = ((options or {}).get("branding") or {}).get("logoImageId")
-    if not logo_id:
-        return None
-    dest = f"{workdir}/logo.png"
-    storage.download(storage.image_url(logo_id), dest)
-    return dest
 
 
 def _resolve_music(options: dict, storage: Storage, workdir: str) -> str | None:
@@ -198,7 +190,8 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     avatar_cutout_path = f"{workdir}/avatar_cutout.mov"
     matte_video_to_mov(avatar_path, avatar_cutout_path)
 
-    # 3) Compose reel — B-roll fills the frame, avatar framed to one side.
+    # 3) Render the reel — ONE Remotion composition (avatar + B-roll + transitions + captions)
+    #    → opaque H.264. Identical to the in-app <Player> preview by construction.
     db.set_stage(video_id, "compose", 70)
     layout = options.get("layout") or {}
     avatar_side = layout.get("avatarSide", "right")
@@ -213,45 +206,35 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     cap_position = layout.get("captionPosition", "bottom")
 
     broll_media = _resolve_broll_media(options, storage, workdir)
-    segments = _broll_segments(words, broll_media)
+    segments = _broll_segments(words, broll_media)  # used for SFX slide timing (audio parity)
+
+    # Upload the matted avatar so the renderer can fetch it (signed R2 GET), then sign B-roll.
+    cutout_key = f"cutouts/{video_id}.mov"
+    storage.upload_r2(avatar_cutout_path, cutout_key, "video/quicktime")
+    avatar_signed = storage.signed_get_url(cutout_key, 86400)
+    broll_props = [
+        {"url": storage.signed_get_url(b["ref"], 86400) if b.get("kind") == "video" else storage.image_url(b["ref"]),
+         "kind": b.get("kind", "image"), "transition": b.get("transition")}
+        for b in broll_media if b.get("ref")
+    ]
+
+    props = build_reel_props(
+        words, avatar_url=avatar_signed, broll=broll_props,
+        style=cap_style, font=cap_font, color=cap_color,
+        layout=avatar_layout, position=cap_position, avatar_side=avatar_side,
+        captions=captions_on, width=width, height=height, fps=30,
+    )
+    reel_video = f"{workdir}/reel_video.mp4"
+    if cfg.reel_renderer_url:
+        render_reel(cfg.reel_renderer_url, storage, props, job_id=video_id, dest=reel_video)
+    else:
+        render_reel_local(props, dest=reel_video, workdir=workdir)
+
+    # 3b) Audio bed: voice + ducked music + transition/AI SFX (ffmpeg; video stream-copied).
     effects = options.get("effects") or {}
     transition_sfx = effects.get("transitionSfx", True)
     music_path = _resolve_music(options, storage, workdir)
     music_volume = float((options.get("music") or {}).get("volume", 0.15))
-    reel_path = f"{workdir}/reel.mp4"
-
-    # ffmpeg builds the whole reel. Captions: Remotion transparent overlay when enabled
-    # + configured, else libass ASS. A remotion caption failure falls back to libass.
-    captions_ass: str | None = None
-    caption_overlay: str | None = None
-    if captions_on:
-        if cfg.caption_engine == "remotion":
-            try:
-                if cfg.caption_renderer_url:
-                    caption_overlay = render_caption_overlay(
-                        cfg.caption_renderer_url, storage, words,
-                        job_id=video_id, style=cap_style, font=cap_font, color=cap_color,
-                        width=width, height=height, fps=30,
-                        layout=avatar_layout, position=cap_position, avatar_side=avatar_side,
-                        dest=f"{workdir}/caps.mov",
-                    )
-                else:
-                    caption_overlay = render_caption_overlay_local(
-                        words, style=cap_style, font=cap_font, color=cap_color,
-                        width=width, height=height, fps=30,
-                        layout=avatar_layout, position=cap_position, avatar_side=avatar_side,
-                        dest=f"{workdir}/caps.mov", workdir=workdir,
-                    )
-            except Exception as e:  # noqa: BLE001 — any renderer error degrades to libass
-                print(f"pipeline: remotion caption render failed ({e}); falling back to libass")
-                caption_overlay = None
-        if caption_overlay is None:
-            captions_ass = f"{workdir}/caps.ass"
-            build_captions_ass(
-                words, captions_ass, width=width, height=height,
-                avatar_side=avatar_side, position=cap_position, style=cap_style,
-                font=cap_font, color=cap_color, avatar_layout=avatar_layout,
-            )
     sfx_opt = options.get("sfx") or {}
     sfx_cues_resolved: list[dict] = []
     if sfx_opt.get("enabled") and sfx_opt.get("cues"):
@@ -261,21 +244,11 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
             print(f"pipeline: sfx cue resolution failed ({e}); continuing without AI SFX")
             sfx_cues_resolved = []
 
-    compose_reel(
-        avatar_cutout_path=avatar_cutout_path,
-        out_path=reel_path,
-        width=width,
-        height=height,
-        broll=segments,
-        transition_sfx=transition_sfx,
-        captions_ass=captions_ass,
-        caption_overlay=caption_overlay,
-        logo_path=_resolve_logo(options, storage, workdir),
-        music_path=music_path,
-        music_volume=music_volume,
-        avatar_side=avatar_side,
-        avatar_layout=avatar_layout,
-        sfx_cues=sfx_cues_resolved,
+    reel_path = f"{workdir}/reel.mp4"
+    mux_audio(
+        reel_video, audio_path, reel_path,
+        music_path=music_path, music_volume=music_volume,
+        broll=segments, transition_sfx=transition_sfx, sfx_cues=sfx_cues_resolved,
     )
 
     # 4) Thumbnail + upload
