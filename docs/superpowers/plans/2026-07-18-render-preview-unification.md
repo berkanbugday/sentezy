@@ -17,6 +17,7 @@
 - **Rules of Hooks:** every `useContext`/`useVideoConfig`/`useCurrentFrame` call goes ABOVE any conditional `return` — windowed components must not change hook order at their window boundary (only the persistent `<Player>` catches this, not `renderMedia`).
 - **Fonts:** loaded by `packages/remotion/src/fonts.ts` (`ensureFontsLoaded`, runs at module load). No worker-side fonts.
 - **Git:** commits are DEFERRED — do not `git commit` unless the user asks (Berkan's standing rule). Each task ends with a **verification checkpoint** (stage changes, run the listed checks green); batch-commit later on request.
+- **Bundle-standalone:** `packages/remotion` is bundled STANDALONE by the container (no `@sentezy/types` workspace pkg present). Therefore `@sentezy/types` may only be imported with `import type` (elided at build) — NEVER as a runtime value. Any needed constant (e.g. entrance ids) must be a local literal in the remotion package. (A runtime `@sentezy/types` import fails the container render with "Can't resolve '@sentezy/types'", even though the in-monorepo CLI render succeeds.)
 - **Nothing is a fallback:** there is exactly one render path. On renderer failure the worker raises and the Redis consumer retries — no ffmpeg-compositor second path.
 
 ---
