@@ -1,6 +1,6 @@
-# Cloudflare Container image: Node + Chromium + FFmpeg + the Remotion caption bundle.
+# Cloudflare Container image: Node + Chromium + FFmpeg + the Remotion reel bundle.
 # BUILD FROM THE REPO ROOT so the monorepo's packages/remotion is in the build context:
-#   docker build -f infra/cloudflare/caption-renderer/container/Dockerfile .
+#   docker build -f infra/cloudflare/reel-renderer/container/Dockerfile .
 # (wrangler does this automatically when it builds the container image.)
 FROM node:22-bookworm-slim
 
@@ -30,8 +30,8 @@ RUN cd remotion \
     && npm install --omit=dev --no-audit --no-fund
 
 # The container HTTP server + its deps.
-COPY infra/cloudflare/caption-renderer/container/package.json ./package.json
-COPY infra/cloudflare/caption-renderer/container/server.mjs ./server.mjs
+COPY infra/cloudflare/reel-renderer/container/package.json ./package.json
+COPY infra/cloudflare/reel-renderer/container/server.mjs ./server.mjs
 RUN npm install --omit=dev --no-audit --no-fund
 
 EXPOSE 8080

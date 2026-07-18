@@ -5,13 +5,13 @@
 # run on the host for hot-reload — see infra/README.md.
 #
 #   docker compose -f infra/docker-compose.yml up -d redis     # queue only
-#   docker compose -f infra/docker-compose.yml up --build      # redis + worker + caption-renderer
+#   docker compose -f infra/docker-compose.yml up --build      # redis + worker + reel-renderer
 #
 # The worker reads all secrets from the repo-root .env. Its REDIS_URL is
-# overridden to reach the redis service over the compose network. With
-# CAPTION_ENGINE=remotion the worker renders captions on the caption-renderer
+# overridden to reach the redis service over the compose network. The worker renders
+# the full reel (avatar + B-roll + captions + motion graphics) on the reel-renderer
 # service (Node + Chromium + FFmpeg + the @sentezy/remotion bundle), which streams
-# the transparent overlay back over the compose network — no R2/Cloudflare needed locally.
+# the opaque H.264 mp4 back over the compose network — no R2/Cloudflare needed locally.
 
 name: sentezy
 
@@ -33,14 +33,14 @@ services:
       timeout: 3s
       retries: 5
 
-  # Remotion caption renderer (Node + Chromium + FFmpeg + the @sentezy/remotion bundle).
-  # No R2 env → it streams the transparent overlay back inline over the compose network.
+  # Remotion reel renderer (Node + Chromium + FFmpeg + the @sentezy/remotion bundle).
+  # No R2 env → it streams the opaque reel mp4 back inline over the compose network.
   # Build context is the repo root (the Dockerfile COPYs packages/remotion).
-  caption-renderer:
+  reel-renderer:
     build:
       context: ..
-      dockerfile: infra/cloudflare/caption-renderer/container/Dockerfile
-    container_name: sentezy-caption-renderer
+      dockerfile: infra/cloudflare/reel-renderer/container/Dockerfile
+    container_name: sentezy-reel-renderer
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -60,16 +60,13 @@ services:
       # Reach redis over the compose network, not localhost.
       REDIS_URL: redis://redis:6379
       # Remotion is the FULL compositor (avatar + B-roll + captions + motion graphics → opaque
-      # video); ffmpeg only muxes the audio bed. The renderer runs on the caption-renderer service
+      # video); ffmpeg only muxes the audio bed. The renderer runs on the reel-renderer service
       # (its /render-reel), so the finished mp4 matches the in-browser <Player> preview exactly.
-      RENDER_ENGINE: remotion
-      # Caption engine for the ffmpeg fallback path (ignored while RENDER_ENGINE=remotion).
-      CAPTION_ENGINE: remotion
-      CAPTION_RENDERER_URL: http://caption-renderer:8080
+      REEL_RENDERER_URL: http://reel-renderer:8080
     depends_on:
       redis:
         condition: service_healthy
-      caption-renderer:
+      reel-renderer:
         condition: service_healthy
 
 volumes:

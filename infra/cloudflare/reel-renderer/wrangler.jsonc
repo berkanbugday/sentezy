@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "sentezy-caption-renderer",
+  "name": "sentezy-reel-renderer",
   "main": "src/index.ts",
   "compatibility_date": "2026-04-13",
   "compatibility_flags": ["nodejs_compat"],
@@ -10,7 +10,7 @@
   // REPO ROOT. Point `image` at the Dockerfile and set the context to the monorepo root.
   "containers": [
     {
-      "class_name": "CaptionRenderer",
+      "class_name": "ReelRenderer",
       "image": "./container/Dockerfile",
       "image_build_context": "../../..",
       "instance_type": "standard-2",
@@ -19,9 +19,9 @@
   ],
 
   "durable_objects": {
-    "bindings": [{ "name": "CAPTION_RENDERER", "class_name": "CaptionRenderer" }]
+    "bindings": [{ "name": "REEL_RENDERER", "class_name": "ReelRenderer" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CaptionRenderer"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ReelRenderer"] }],
 
   // Non-secret var. R2 credentials are secrets — see README (`wrangler secret put …`).
   "vars": { "R2_BUCKET": "sentezy-media" }

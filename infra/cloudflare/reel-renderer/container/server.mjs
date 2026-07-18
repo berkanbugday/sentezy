@@ -64,6 +64,9 @@ app.post("/render-reel", async (req, res) => {
   if (!jobId || !Array.isArray(words)) {
     return res.status(400).json({ error: "jobId and words[] are required" });
   }
+  if (!/^[A-Za-z0-9._-]+$/.test(jobId)) {
+    return res.status(400).json({ error: "invalid jobId" });
+  }
   const outPath = path.join(os.tmpdir(), `${jobId}.mp4`);
   try {
     const serveUrl = await getServeUrl();
