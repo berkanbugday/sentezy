@@ -1,6 +1,6 @@
 // packages/remotion/src/reel/BrollLayer.tsx
 import React from "react";
-import { AbsoluteFill, Img, OffthreadVideo, Sequence, useVideoConfig } from "remotion";
+import { AbsoluteFill, Img, OffthreadVideo, useVideoConfig } from "remotion";
 import { BrollEntrance, brollTransition, isEntrance, TransitionSeries } from "../broll/effects";
 import { brollSegments } from "./timing";
 
@@ -12,24 +12,25 @@ const Media: React.FC<{ item: ReelBrollItem }> = ({ item }) =>
   item.kind === "video" ? <OffthreadVideo src={item.url} muted style={COVER} /> : <Img src={item.url} style={COVER} />;
 
 /**
- * Full-frame B-roll: a clean dark backdrop behind the avatar-only hook/close beats (NO blur —
- * a blurred still read as a smeary intro/outro), with the sharp cutaways slotted into the mid
- * window as a TransitionSeries joined by each clip's chosen transition.
+ * Full-frame B-roll that fills the ENTIRE reel behind the avatar — the first clip is held through
+ * the opening beat, the cutaways transition through the middle, and the last clip is held through
+ * the close. There is NO separate backdrop (no gradient / blur / solid) at the start or end: the
+ * avatar always sits over real footage.
  *
- * Each cutaway's sequence is sized `base + Tin` (its even window plus its incoming transition),
- * so the TransitionSeries lays every slide down exactly on its even boundary. That keeps the
- * visible slide aligned with the transition-whoosh SFX, which the worker/preview time off the
- * same `brollSegments` boundaries.
+ * Each cutaway's sequence is sized `base + Tin` (its even window plus its incoming transition), and
+ * the first/last clips get extra head/tail padding, so the TransitionSeries spans frame 0 →
+ * durationInFrames AND lands every slide exactly on its even boundary (seg.clips[i].fromFrame) —
+ * which is where the worker/preview time the transition-whoosh SFX.
  */
 export const BrollLayer: React.FC<{ broll: ReelBrollItem[]; words: { start: number; end: number }[] }> = ({
   broll,
   words,
 }) => {
   const { fps, width, height, durationInFrames } = useVideoConfig();
-  if (broll.length === 0) return <AbsoluteFill style={{ background: "radial-gradient(120% 120% at 50% 0%, #1a1c22, #0b0b0d)" }} />;
+  if (broll.length === 0) return null; // no footage → the Reel's own base fill shows (no backdrop treatment)
 
   const seg = brollSegments(words, broll.length, fps);
-  const ov = Math.round(fps * 0.4); // transition overlap
+  const ov = Math.round(fps * 0.4); // max transition length, used as the sequence floor
 
   const children: React.ReactNode[] = [];
   broll.forEach((b, i) => {
@@ -37,14 +38,17 @@ export const BrollLayer: React.FC<{ broll: ReelBrollItem[]; words: { start: numb
       const tr = brollTransition(b.transition, { fps, width, height });
       children.push(<TransitionSeries.Transition key={`t${i}`} presentation={tr.presentation} timing={tr.timing} />);
     }
-    // Size the sequence as its even window (base) + its incoming transition frames (Tin), so the
-    // TransitionSeries — which pulls each clip earlier by the transition overlap — lands every
-    // slide back on its even boundary (seg.clips[i].fromFrame). `max(base, ov)` floors it so the
-    // sequence is always ≥ the transitions touching it (Remotion throws otherwise). Mirrors
-    // brollTransition()'s timing: fps*0.4 for real transitions, fps*0.12 for entrance ids.
     const base = seg.clips[i]?.durationInFrames ?? Math.round(durationInFrames / broll.length);
+    const from = seg.clips[i]?.fromFrame ?? 0;
+    // Tin = this clip's incoming transition frames; adding it makes the TransitionSeries (which
+    // pulls each clip earlier by the overlap) land the slide back on its even boundary. Mirrors
+    // brollTransition()'s timing: fps*0.4 for real transitions, fps*0.12 for entrance ids.
     const Tin = i > 0 ? Math.max(3, Math.round(fps * (isEntrance(b.transition) ? 0.12 : 0.4))) : 0;
-    const dur = Math.max(base, ov) + Tin;
+    // First clip extends back over the opening (its fromFrame = the hook length); last clip extends
+    // forward to the very end (close + tail). Together the series covers frame 0 → durationInFrames.
+    const headPad = i === 0 ? from : 0;
+    const tailPad = i === broll.length - 1 ? Math.max(0, durationInFrames - (from + base)) : 0;
+    const dur = Math.max(base, ov) + Tin + headPad + tailPad;
     const media = <Media item={b} />;
     children.push(
       <TransitionSeries.Sequence key={`s${i}`} durationInFrames={dur}>
@@ -53,18 +57,10 @@ export const BrollLayer: React.FC<{ broll: ReelBrollItem[]; words: { start: numb
     );
   });
 
-  // Start the cutaways at the first clip's frame; the sized sequences make the series span exactly
-  // the mid window, so it ends right as the avatar-only close begins (no cap needed).
-  const midFrom = seg.clips.length > 0 ? seg.clips[0]!.fromFrame : 0;
-
+  // Runs from frame 0 (no wrapper Sequence) so the first clip is on screen from the very first frame.
   return (
     <AbsoluteFill>
-      {/* clean dark backdrop for the avatar-only hook/close — no blur */}
-      <AbsoluteFill style={{ background: "radial-gradient(120% 120% at 50% 0%, #1a1c22, #0b0b0d)" }} />
-      {/* sharp cutaways starting at the mid window */}
-      <Sequence from={midFrom}>
-        <TransitionSeries>{children}</TransitionSeries>
-      </Sequence>
+      <TransitionSeries>{children}</TransitionSeries>
     </AbsoluteFill>
   );
 };
