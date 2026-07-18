@@ -36,7 +36,7 @@ export function brollSegments(
     hasClose = false;
   }
   const span = (midEnd - midStart) / clipCount;
-  const sec = (s: number) => Math.round((s - t0) * fps); // relative to composition start
+  const sec = (s: number) => Math.round(s * fps); // absolute: frame 0 = composition t=0 (word clock)
   const clips: BrollClipWindow[] = [];
   for (let i = 0; i < clipCount; i++) {
     const s = midStart + i * span;
