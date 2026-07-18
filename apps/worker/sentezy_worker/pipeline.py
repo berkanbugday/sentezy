@@ -7,7 +7,7 @@ import tempfile
 from .audio import mux_audio
 from .config import Config
 from .db import Db
-from .matte import matte_video_to_mov
+from .matte import matte_video
 from .providers.elevenlabs import ElevenLabs
 from .providers.heygen import HeyGen
 from .providers.reel_remotion import build_reel_props, render_reel, render_reel_local
@@ -187,8 +187,8 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     # 2b) Matte the avatar out of the green screen → alpha clip (keeps the voice),
     #     so the reel composites the cut-out avatar over the B-roll.
     db.set_stage(video_id, "avatar", 55)
-    avatar_cutout_path = f"{workdir}/avatar_cutout.mov"
-    matte_video_to_mov(avatar_path, avatar_cutout_path)
+    avatar_cutout_path = f"{workdir}/avatar_cutout.webm"
+    matte_video(avatar_path, avatar_cutout_path)
 
     # 3) Render the reel — ONE Remotion composition (avatar + B-roll + transitions + captions)
     #    → opaque H.264. Identical to the in-app <Player> preview by construction.
@@ -209,8 +209,8 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     segments = _broll_segments(words, broll_media)  # used for SFX slide timing (audio parity)
 
     # Upload the matted avatar so the renderer can fetch it (signed R2 GET), then sign B-roll.
-    cutout_key = f"cutouts/{video_id}.mov"
-    storage.upload_r2(avatar_cutout_path, cutout_key, "video/quicktime")
+    cutout_key = f"cutouts/{video_id}.webm"
+    storage.upload_r2(avatar_cutout_path, cutout_key, "video/webm")
     avatar_signed = storage.signed_get_url(cutout_key, 86400)
     broll_props = [
         {"url": storage.signed_get_url(b["ref"], 86400) if b.get("kind") == "video" else storage.image_url(b["ref"]),

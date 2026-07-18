@@ -96,15 +96,18 @@ def matte_image_to_png(in_path: str, out_path: str) -> None:
         input=rgba.tobytes(), check=True)
 
 
-def matte_video_to_mov(in_path: str, out_path: str) -> None:
-    """Cut the avatar out of the A-roll → a VIDEO-ONLY ProRes 4444 .mov (alpha).
+def matte_video(in_path: str, out_path: str) -> None:
+    """Cut the avatar out of the A-roll → a VIDEO-ONLY WebM VP9 clip with alpha (yuva420p).
 
     Streams frames through ffmpeg pipes, matting each with recurrent state for temporal
-    stability. No audio is embedded: the reel's voice is muxed separately downstream
-    (`audio.mux_audio` takes the voice from the TTS mp3), and the Remotion renderer decodes
-    the cutout with a muted `OffthreadVideo`. Muxing the source audio here with `-shortest`
-    also broke matting whenever the source's audio was shorter than its video (the encoder
-    would stop early → BrokenPipe on the next frame write), so it is intentionally omitted.
+    stability. WebM/VP9-alpha keeps the cutout ~130× smaller than ProRes 4444 (≈5MB vs
+    ≈670MB), so shipping it to the Remotion renderer is a ~2s upload + a fast OffthreadVideo
+    decode — the ProRes cutout was a ~5min upload and starved the renderer into a font-load
+    timeout. No audio is embedded: the reel's voice is muxed separately downstream
+    (`audio.mux_audio` takes the voice from the TTS mp3), and the renderer decodes the cutout
+    with a muted `OffthreadVideo`. Muxing the source audio with `-shortest` also broke matting
+    whenever the source audio was shorter than its video (the encoder stopped early → BrokenPipe
+    on the next frame write), so it is intentionally omitted.
     """
     w, h, fps = _probe(in_path)
     dsr = _downsample_ratio(h)
@@ -117,7 +120,8 @@ def matte_video_to_mov(in_path: str, out_path: str) -> None:
         ["ffmpeg", "-y", "-v", "error",
          "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{w}x{h}", "-r", f"{fps:.6f}", "-i", "pipe:0",
          "-map", "0:v",
-         "-c:v", "prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le", out_path],
+         "-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-b:v", "1500k",
+         "-deadline", "good", "-cpu-used", "4", out_path],
         stdin=subprocess.PIPE)
 
     rec = _zero_rec()
