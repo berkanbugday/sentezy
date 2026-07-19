@@ -14,8 +14,8 @@ export type ComposerSettings = {
 };
 
 export const DEFAULT_SETTINGS: ComposerSettings = {
-  avatarPosition: "right",
-  captionPosition: "bottom",
+  avatarPosition: "left",
+  captionPosition: "top",
   voiceEmotion: "",
   transitionSfx: true,
 };
