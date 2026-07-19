@@ -285,7 +285,12 @@ export async function videoRoutes(app: FastifyInstance) {
     }
     const existing = await prisma.video.findFirst({ where: { id, userId: req.user!.id, deletedAt: null } });
     if (!existing) return reply.code(404).send({ error: "not_found" });
-    const video = await prisma.video.update({ where: { id }, data: { title: parsed.data.title } });
+    // Mark the title as explicitly set by the user so videoDisplayTitle stops preferring
+    // options.product.title over it. MERGE into the existing options — never replace — since
+    // it also carries captions/background(+media)/layout/music/voice/effects/product.
+    const existingOptions = (existing.options as Record<string, unknown> | null) ?? {};
+    const options = { ...existingOptions, titleOverridden: true } as Prisma.InputJsonValue;
+    const video = await prisma.video.update({ where: { id }, data: { title: parsed.data.title, options } });
     return { video };
   });
 

@@ -14,10 +14,13 @@ export function cleanTitleText(text: string | null | undefined): string {
 
 /**
  * The title to SHOW for a video: the imported product's name when the reel was seeded from a
- * product link (stored in `options.product.title`), else the cleaned stored title.
+ * product link (stored in `options.product.title`), else the cleaned stored title. An explicit
+ * user rename (PATCH /videos/:id/title) sets `options.titleOverridden`, which wins over the
+ * product title from then on — otherwise a rename would appear to do nothing.
  * No character slicing — the full title is returned (the detail heading wraps it).
  */
 export function videoDisplayTitle(video: { title: string; options?: Record<string, unknown> | null }): string {
+  if (video.options?.titleOverridden === true) return cleanTitleText(video.title);
   const product = video.options?.product as { title?: string } | undefined;
   const name = product?.title?.trim();
   if (name) return name;
