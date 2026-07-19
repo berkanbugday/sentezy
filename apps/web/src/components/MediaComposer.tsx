@@ -18,7 +18,7 @@ import { CaptionPicker } from "./composer/CaptionPicker";
 import { EffectPicker } from "./composer/EffectPicker";
 import { MusicPicker } from "./composer/MusicPicker";
 import { PreviewModal } from "./composer/PreviewModal";
-import { SelectionChip } from "./composer/SelectionChip";
+import { SelectionItem } from "./composer/SelectionItem";
 import { SettingsModal } from "./composer/SettingsModal";
 import { Spinner } from "./composer/Spinner";
 import { VoicePicker } from "./composer/VoicePicker";
@@ -507,6 +507,7 @@ export function MediaComposer({
             disabled={!hasScript}
             title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
             icon={Icon.plus}
+            size="lg"
             items={[
               {
                 key: "avatar",
@@ -544,9 +545,9 @@ export function MediaComposer({
             onClick={() => setSettingsOpen(true)}
             aria-label="Ek ayarlar"
             title="Ek ayarlar"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist"
           >
-            <Icon.settings width={17} height={17} />
+            <Icon.settings width={21} height={21} />
           </button>
           {/* live preview */}
           <button
@@ -554,9 +555,9 @@ export function MediaComposer({
             onClick={openPreview}
             disabled={!hasScript}
             title={!hasScript ? "Önce konuşma metnini yaz" : "Reklamı önizle"}
-            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-2.5 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex h-11 items-center gap-2 rounded-full border border-hairline bg-paper pl-3.5 pr-4 text-[14.5px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <Icon.play width={14} height={14} className="text-slate" />
+            <Icon.play width={16} height={16} className="text-slate" />
             Önizle
           </button>
           {items.length > 0 && (
@@ -577,13 +578,13 @@ export function MediaComposer({
           <span className="order-1">{submitting ? "Oluşturuluyor…" : "Video oluştur"}</span>
         </button>
       </div>
-      {/* selected-item chips: each reopens its picker; avatar/music/caption can also be cleared
-         inline via ×. Voice has no × — it's required for canCreate, and clearing it here would
-         only produce a disabled "Video oluştur" with no explanation on-screen. */}
+      {/* selected-item list: each entry reopens its picker; all four (including voice) can be
+         cleared inline via ×. Clearing voice makes canCreate false — createHint already
+         explains "Bir ses seç" once it's gone. */}
       {hasSelection && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 px-1">
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2 px-1">
           {selectedAvatar && (
-            <SelectionChip
+            <SelectionItem
               onOpen={() => setAvatarOpen(true)}
               onClear={() => setSelectedAvatar(null)}
               clearLabel="Avatar'ı kaldır"
@@ -595,11 +596,13 @@ export function MediaComposer({
               }
             >
               {selectedAvatar.name}
-            </SelectionChip>
+            </SelectionItem>
           )}
           {selectedVoice && (
-            <SelectionChip
+            <SelectionItem
               onOpen={() => setVoiceOpen(true)}
+              onClear={() => setSelectedVoice(null)}
+              clearLabel="Sesi kaldır"
               visual={
                 <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-mist text-slate">
                   <Icon.voice width={13} height={13} />
@@ -607,10 +610,10 @@ export function MediaComposer({
               }
             >
               {selectedVoice.label}
-            </SelectionChip>
+            </SelectionItem>
           )}
           {selectedMusic && (
-            <SelectionChip
+            <SelectionItem
               onOpen={() => setMusicOpen(true)}
               onClear={() => setSelectedMusic(null)}
               clearLabel="Müziği kaldır"
@@ -621,10 +624,10 @@ export function MediaComposer({
               }
             >
               {selectedMusic.name}
-            </SelectionChip>
+            </SelectionItem>
           )}
           {selectedCaption && (
-            <SelectionChip
+            <SelectionItem
               onOpen={() => setCaptionOpen(true)}
               onClear={() => setCaptionId(null)}
               clearLabel="Alt yazıyı kaldır"
@@ -639,7 +642,7 @@ export function MediaComposer({
               }
             >
               {selectedCaption.family}
-            </SelectionChip>
+            </SelectionItem>
           )}
         </div>
       )}
