@@ -14,6 +14,8 @@ const EnhanceEmotionBody = z.object({
   tone: z.string().max(40).default(""),
 });
 
+const UpdateVideoTitle = z.object({ title: z.string().trim().min(1).max(120) });
+
 const CREDIT_COST = 1;
 
 // zod AspectRatio ("9:16") → Prisma enum member ("r9_16")
@@ -189,7 +191,7 @@ export async function videoRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: "invalid_body", details: parsed.error.flatten() });
     }
-    const existing = await prisma.video.findFirst({ where: { id, userId: req.user!.id } });
+    const existing = await prisma.video.findFirst({ where: { id, userId: req.user!.id, deletedAt: null } });
     if (!existing) return reply.code(404).send({ error: "not_found" });
     if (existing.status !== "draft") return reply.code(409).send({ error: "not_a_draft" });
     const d = parsed.data;
@@ -217,11 +219,36 @@ export async function videoRoutes(app: FastifyInstance) {
     return { video };
   });
 
+  // Rename a video at ANY status. Deliberately separate from PATCH /videos/:id, which is
+  // draft-only: a rendered video's script/avatar/options were already consumed by the
+  // render, so a title-only route is the safe way to allow the one edit that stays valid.
+  app.patch("/videos/:id/title", { preHandler: app.authenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const parsed = UpdateVideoTitle.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "invalid_body", details: parsed.error.flatten() });
+    }
+    const existing = await prisma.video.findFirst({ where: { id, userId: req.user!.id, deletedAt: null } });
+    if (!existing) return reply.code(404).send({ error: "not_found" });
+    const video = await prisma.video.update({ where: { id }, data: { title: parsed.data.title } });
+    return { video };
+  });
+
+  // Soft delete — the row is hidden from every read, the R2 objects are deliberately kept.
+  // A repeat call 404s because the ownership lookup filters deletedAt like all other reads.
+  app.delete("/videos/:id", { preHandler: app.authenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const existing = await prisma.video.findFirst({ where: { id, userId: req.user!.id, deletedAt: null } });
+    if (!existing) return reply.code(404).send({ error: "not_found" });
+    await prisma.video.update({ where: { id }, data: { deletedAt: new Date() } });
+    return reply.code(204).send();
+  });
+
   // Finalize a draft: validate, debit a credit, queue it for the worker.
   app.post("/videos/:id/generate", { preHandler: app.authenticate }, async (req, reply) => {
     const { id } = req.params as { id: string };
     const userId = req.user!.id;
-    const draft = await prisma.video.findFirst({ where: { id, userId } });
+    const draft = await prisma.video.findFirst({ where: { id, userId, deletedAt: null } });
     if (!draft) return reply.code(404).send({ error: "not_found" });
     if (draft.status !== "draft") return reply.code(409).send({ error: "already_generated" });
     // Avatar is OPTIONAL — a faceless reel needs voice + script + some B-roll media instead of a
