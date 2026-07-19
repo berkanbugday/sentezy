@@ -4,6 +4,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { readAvatarPosition } from "@sentezy/types";
+import { VOICE_EMOTIONS } from "@/components/wizard/constants";
+import { CAPTION_FAMILIES } from "@/lib/captionStyles";
+import { formatDuration } from "@/lib/duration";
 import { createClient } from "@/lib/supabase/client";
 import { qk, useDeleteVideo, useRenameVideo, useVideo } from "@/lib/queries";
 import { formatRatio, STAGE_LABEL, STATUS_LABEL, type VideoStage, type VideoStatus } from "@/lib/types";
@@ -59,6 +63,23 @@ export function VideoDetail({ id }: { id: string }) {
   const processing = live.status === "queued" || live.status === "processing";
   const ratioClass =
     v.aspectRatio === "16:9" ? "aspect-video" : v.aspectRatio === "1:1" ? "aspect-square" : "aspect-[9/16]";
+
+  const opts = (v.options ?? {}) as {
+    captions?: { style?: string; font?: string; color?: string };
+    layout?: { avatarPosition?: string; captionPosition?: string };
+    music?: { trackKey?: string; volume?: number };
+    voice?: { emotion?: string };
+  };
+  // Videos created before the settings cleanup stored avatarLayout+avatarSide; the shared
+  // reader maps those forward, so old and new videos both display correctly.
+  const AVATAR_POS_LABEL: Record<string, string> = { left: "Sol", center: "Orta", right: "Sağ" };
+  const avatarPos = AVATAR_POS_LABEL[readAvatarPosition(opts.layout)];
+  // The detail screen wants a human label, not a preset id — look the family up directly
+  // and append the font, e.g. "Vurgu · Poppins".
+  const fam = CAPTION_FAMILIES.find((f) => f.key === opts.captions?.style);
+  const captionName = fam ? [fam.label, opts.captions?.font].filter(Boolean).join(" · ") : null;
+  const emotionLabel = VOICE_EMOTIONS.find((e) => e.value === (opts.voice?.emotion ?? ""))?.label ?? null;
+  const scriptText = (v.script ?? "").replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -179,17 +200,63 @@ export function VideoDetail({ id }: { id: string }) {
           <div className="card p-5 text-[14px]">
             {(
               [
+                ["Avatar", detail.avatar?.name ?? null],
+                ["Ses", detail.voice?.label ?? null],
+                ["Alt yazı", captionName],
+                ["Duygu", emotionLabel],
                 ["En-boy oranı", formatRatio(v.aspectRatio)],
-                ["Süre", v.durationS ? `${Math.round(v.durationS)} sn` : "—"],
+                ["Süre", formatDuration(v.durationS) || "—"],
+                ["Yerleşim", `Avatar ${avatarPos} · alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`],
+                ["Müzik", opts.music?.trackKey ? `${opts.music.trackKey} · %${Math.round((opts.music.volume ?? 0) * 100)}` : null],
+                ["Kredi", v.creditsCost ? String(v.creditsCost) : null],
                 ["Oluşturuldu", new Date(v.createdAt).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" })],
-              ] as [string, string][]
-            ).map(([k, val]) => (
-              <div key={k} className="flex justify-between border-b border-hairline py-2 last:border-0">
-                <span className="text-muted">{k}</span>
-                <span className="font-semibold text-ink">{val}</span>
-              </div>
-            ))}
+              ] as [string, string | null][]
+            )
+              .filter((row): row is [string, string] => row[1] !== null)
+              .map(([k, val]) => (
+                <div key={k} className="flex justify-between gap-4 border-b border-hairline py-2 last:border-0">
+                  <span className="shrink-0 text-muted">{k}</span>
+                  <span className="truncate text-right font-semibold text-ink">{val}</span>
+                </div>
+              ))}
           </div>
+
+          {detail.avatar?.imageUrl && (
+            <div className="card flex items-center gap-3 p-4">
+              <img src={detail.avatar.imageUrl} alt="" className="h-14 w-14 rounded-lg bg-mist object-cover" />
+              <div className="min-w-0">
+                <p className="text-[13px] text-muted">Avatar</p>
+                <p className="truncate text-[14px] font-semibold text-ink">{detail.avatar.name}</p>
+              </div>
+            </div>
+          )}
+
+          {scriptText && (
+            <div className="card p-5">
+              <p className="mb-2 text-[13px] text-muted">Metin</p>
+              <p className="text-[14px] leading-relaxed text-ink">{scriptText}</p>
+            </div>
+          )}
+
+          {detail.brollMedia && detail.brollMedia.length > 0 && (
+            <div className="card p-5">
+              <p className="mb-2 text-[13px] text-muted">
+                Görseller · {detail.brollMedia.filter((m) => m.kind === "image").length} görsel,{" "}
+                {detail.brollMedia.filter((m) => m.kind === "video").length} video
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {detail.brollMedia.map((m) => (
+                  <div key={m.ref} className="h-16 w-16 overflow-hidden rounded-lg bg-mist">
+                    {m.kind === "image" ? (
+                      <img src={m.url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    ) : (
+                      <video src={m.url} muted className="h-full w-full object-cover" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {detail.downloadUrl && (
             <div className="flex flex-wrap gap-2">
