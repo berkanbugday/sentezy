@@ -56,7 +56,10 @@ export async function videoRoutes(app: FastifyInstance) {
 
   app.get("/videos/:id", { preHandler: app.authenticate }, async (req, reply) => {
     const { id } = req.params as { id: string };
-    const video = await prisma.video.findFirst({ where: { id, userId: req.user!.id, deletedAt: null } });
+    const video = await prisma.video.findFirst({
+      where: { id, userId: req.user!.id, deletedAt: null },
+      include: { avatar: true, voice: true },
+    });
     if (!video) return reply.code(404).send({ error: "not_found" });
 
     let downloadUrl: string | null = null;
@@ -97,7 +100,49 @@ export async function videoRoutes(app: FastifyInstance) {
     );
     const brollImageUrls = brollMedia.filter((m) => m.kind === "image").map((m) => m.url); // back-compat
 
-    return { video, downloadUrl, fileDownloadUrl, thumbnailUrl, brollImageUrls, brollMedia };
+    // Shaped to satisfy the composer's Avatar/Voice types verbatim (apps/web/src/components/
+    // wizard/types.ts) so a later "reuse this video" flow can assign these straight into
+    // composer state with no cast and no client-side catalog lookup.
+    //
+    // video.avatar.sourceImageId is the green-screen source key — rendering it raw shows a
+    // person on a bright green background, so prefer the catalog's matted thumbnail. The
+    // catalog row (matched by imageKey === sourceImageId) also supplies the sector/gender/age
+    // fields the composer's Avatar type requires. An uploaded avatar has no catalog row, so
+    // fall back to the source key for the image and neutral defaults for the catalog-only
+    // fields rather than returning null.
+    let avatar: {
+      id: string;
+      slug: string;
+      name: string;
+      imageUrl: string;
+      sector: string;
+      sectorLabel: string;
+      gender: "kadın" | "erkek";
+      age: "genç" | "yetişkin" | "olgun";
+      hijab: boolean;
+      ready: boolean;
+    } | null = null;
+    if (video.avatar) {
+      const catalog = await prisma.catalogAvatar.findFirst({ where: { imageKey: video.avatar.sourceImageId } });
+      const key = catalog?.displayImageKey || video.avatar.sourceImageId;
+      avatar = {
+        id: video.avatar.sourceImageId,
+        slug: catalog?.slug ?? "",
+        name: catalog?.name ?? video.avatar.name,
+        imageUrl: key ? await signedDownloadUrl(key, 86400) : "",
+        sector: catalog?.sector ?? "",
+        sectorLabel: catalog?.sectorLabel ?? "",
+        gender: catalog?.gender === "erkek" ? "erkek" : "kadın",
+        age: catalog?.age === "genç" || catalog?.age === "olgun" ? catalog.age : "yetişkin",
+        hijab: catalog?.hijab ?? false,
+        ready: Boolean(video.avatar.sourceImageId),
+      };
+    }
+    const voice = video.voice
+      ? { id: video.voice.id, label: video.voice.label, gender: video.voice.gender, style: video.voice.style }
+      : null;
+
+    return { video, downloadUrl, fileDownloadUrl, thumbnailUrl, brollImageUrls, brollMedia, avatar, voice };
   });
 
   app.post("/videos", { preHandler: app.authenticate }, async (req, reply) => {
