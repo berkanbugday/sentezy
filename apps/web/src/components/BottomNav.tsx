@@ -10,7 +10,7 @@ import { Icon } from "./icons";
 const DOCK = [
   { href: "/dashboard", label: "Ana sayfa", icon: Icon.home, ready: true },
   { href: "/library", label: "Videolar", icon: Icon.video, ready: true },
-  { href: "/avatars", label: "Avatar", icon: Icon.users, ready: false },
+  { href: "/avatars", label: "Avatar", icon: Icon.users, ready: true },
 ];
 
 /** Mobile bottom dock. Primary nav with a Material-style oval highlight behind the

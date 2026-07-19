@@ -3,8 +3,9 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MediaComposer, type ComposerSeed } from "@/components/MediaComposer";
+import { avatarSeed, pickSeed } from "@/lib/composerSeed";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
-import { useMusic, useVideo } from "@/lib/queries";
+import { useAvatars, useMusic, useVideo } from "@/lib/queries";
 import { optionsToComposerState } from "@/lib/reuse";
 
 /** Dashboard home: the import composer (hero). Owns the shared settings state, and — when
@@ -12,8 +13,21 @@ import { optionsToComposerState } from "@/lib/reuse";
 export function DashboardHome() {
   const [settings, setSettings] = useState<ComposerSettings>(DEFAULT_SETTINGS);
 
-  const reuseId = useSearchParams().get("reuse") ?? "";
+  const searchParams = useSearchParams();
+  const reuseId = searchParams.get("reuse") ?? "";
   const { data: source, isError: reuseFailed } = useVideo(reuseId);
+
+  // ?avatar=<id> — a single avatar chosen on /avatars. Only consulted when there is no
+  // ?reuse=, which carries a whole configuration and therefore wins.
+  const avatarId = searchParams.get("avatar") ?? "";
+  const avatarsQ = useAvatars({}, Boolean(avatarId) && !reuseId);
+  // Memoised like `reuseSeed` below: without it, `avatarSeed(...)` returns a fresh object
+  // every render, and MediaComposer's `useEffect(..., [seed])` would re-run on every render
+  // of this component (harmless only because its own `seededRef` short-circuits).
+  const avatarSeeded = useMemo(() => avatarSeed(avatarId, avatarsQ.data ?? []), [avatarId, avatarsQ.data]);
+  // The id is real but not in the catalog (removed, or never rendered) — degrade to a
+  // plain new-video flow with a notice, exactly as a missing ?reuse= video does.
+  const avatarFailed = Boolean(avatarId) && !reuseId && !avatarsQ.isFetching && !avatarSeeded;
 
   // Music is stored as a bare track key, so resolve it against the catalog to get the
   // MusicTrack object the picker needs. A track removed since the video was made simply
@@ -22,7 +36,7 @@ export function DashboardHome() {
   const tracks = musicQuery.data?.music ?? [];
 
   // No cast: the API returns `avatar`/`voice` already shaped as the composer's own types.
-  const seed = useMemo<ComposerSeed | undefined>(() => {
+  const reuseSeed = useMemo<ComposerSeed | undefined>(() => {
     if (!reuseId || !source) return undefined;
     const { captionId, music } = optionsToComposerState(source.video);
     // MediaComposer seeds only once per `seed.key` (the source video id), so if we emitted a
@@ -48,6 +62,8 @@ export function DashboardHome() {
     };
   }, [reuseId, source, tracks, musicQuery.isFetching]);
 
+  const seed = pickSeed(reuseSeed, avatarSeeded);
+
   // Settings live here, so seed them here — once per source video, for the same reason
   // the composer guards its own seeding.
   const seededRef = useRef<string | null>(null);
@@ -70,7 +86,11 @@ export function DashboardHome() {
                 ? "Önceki video bulunamadı — varsayılan ayarlarla başlıyorsun"
                 : reuseId
                   ? "Ayarlar önceki videodan alındı — yeni metnini yaz"
-                  : "Medyanı içe aktar ve videonu oluştur"}
+                  : avatarFailed
+                    ? "Avatar bulunamadı — varsayılan ayarlarla başlıyorsun"
+                    : avatarSeeded
+                      ? `${avatarSeeded.selectedAvatar?.name} seçildi — metnini yaz`
+                      : "Medyanı içe aktar ve videonu oluştur"}
             </p>
           </div>
           <MediaComposer extraSettings={settings} onSettingsChange={setSettings} seed={seed} />
