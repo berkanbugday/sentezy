@@ -33,6 +33,7 @@ export function ActionMenu({
   title,
   icon: TriggerIcon = Icon.more,
   size = "sm",
+  badge,
 }: {
   items: ActionMenuItem[];
   onOpenChange?: (open: boolean) => void;
@@ -47,6 +48,8 @@ export function ActionMenu({
   /** "sm" (default) keeps the original compact trigger/panel — used by the video detail
    *  screen's `⋯` menu. "lg" is the composer's larger touch-friendly control row. */
   size?: "sm" | "lg";
+  /** Count bubble rendered on the trigger's top-right corner. Omit or pass 0 to render nothing. */
+  badge?: number;
 }) {
   const [open, setOpenState] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -73,13 +76,21 @@ export function ActionMenu({
         type="button"
         onClick={() => setOpen(!open)}
         disabled={disabled}
-        aria-label={label}
+        aria-label={badge ? `${label} (${badge} seçili)` : label}
         title={title ?? label}
         className={`inline-flex shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45 ${
           lg ? "h-11 w-11" : "h-10 w-10"
         }`}
       >
         <TriggerIcon width={lg ? 21 : 18} height={lg ? 21 : 18} />
+        {!!badge && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-1 -top-1 flex h-[19px] min-w-[19px] items-center justify-center rounded-full bg-ink px-1 text-[11px] font-semibold text-paper ring-2 ring-paper"
+          >
+            {badge}
+          </span>
+        )}
       </button>
       {open && (
         <>

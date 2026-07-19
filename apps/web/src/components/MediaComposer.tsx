@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { type Avatar, type Voice } from "@/components/wizard/types";
 import { apiFetch } from "@/lib/api";
 import { presetById } from "@/lib/captionStyles";
@@ -18,7 +18,6 @@ import { CaptionPicker } from "./composer/CaptionPicker";
 import { EffectPicker } from "./composer/EffectPicker";
 import { MusicPicker } from "./composer/MusicPicker";
 import { PreviewModal } from "./composer/PreviewModal";
-import { SelectionItem } from "./composer/SelectionItem";
 import { SettingsModal } from "./composer/SettingsModal";
 import { Spinner } from "./composer/Spinner";
 import { VoicePicker } from "./composer/VoicePicker";
@@ -225,7 +224,7 @@ export function MediaComposer({
       : !selectedAvatar && !hasMedia
         ? "Avatar seç ya da görsel yükle (yüzsüz video)"
         : undefined;
-  const hasSelection = !!(selectedAvatar || selectedVoice || selectedMusic || selectedCaption);
+  const selectedCount = [selectedAvatar, selectedVoice, selectedMusic, captionId].filter(Boolean).length;
   const pick = () => inputRef.current?.click();
 
   function openPreview() {
@@ -315,94 +314,6 @@ export function MediaComposer({
       setSubmitError(messages[code] ?? "Video oluşturulamadı, lütfen tekrar dene.");
       setSubmitting(false);
     }
-  }
-
-  // Selected-feature chips, rendered above the control row. Built as a list (rather than four
-  // inline conditionals) so a divider can be inserted only *between* items — each divider is
-  // bundled into the same inline-flex span as the item that follows it, so a flex-wrap line
-  // break lands between a divider+item pair and never leaves a trailing "|" dangling at the
-  // end of a line.
-  const selectionChips: Array<{ key: string; node: ReactNode }> = [];
-  if (selectedAvatar) {
-    selectionChips.push({
-      key: "avatar",
-      node: (
-        <SelectionItem
-          onOpen={() => setAvatarOpen(true)}
-          onClear={() => setSelectedAvatar(null)}
-          clearLabel="Avatar'ı kaldır"
-          visual={
-            <span className="h-6 w-6 flex-none overflow-hidden rounded-full bg-mist">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={selectedAvatar.imageUrl} alt="" className="h-full w-full object-cover object-top" />
-            </span>
-          }
-        >
-          {selectedAvatar.name}
-        </SelectionItem>
-      ),
-    });
-  }
-  if (selectedVoice) {
-    selectionChips.push({
-      key: "voice",
-      node: (
-        <SelectionItem
-          onOpen={() => setVoiceOpen(true)}
-          onClear={() => setSelectedVoice(null)}
-          clearLabel="Sesi kaldır"
-          visual={
-            <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-mist text-slate">
-              <Icon.voice width={13} height={13} />
-            </span>
-          }
-        >
-          {selectedVoice.label}
-        </SelectionItem>
-      ),
-    });
-  }
-  if (selectedMusic) {
-    selectionChips.push({
-      key: "music",
-      node: (
-        <SelectionItem
-          onOpen={() => setMusicOpen(true)}
-          onClear={() => setSelectedMusic(null)}
-          clearLabel="Müziği kaldır"
-          visual={
-            <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-mist text-slate">
-              <Icon.musicNote width={13} height={13} />
-            </span>
-          }
-        >
-          {selectedMusic.name}
-        </SelectionItem>
-      ),
-    });
-  }
-  if (selectedCaption) {
-    selectionChips.push({
-      key: "caption",
-      node: (
-        <SelectionItem
-          onOpen={() => setCaptionOpen(true)}
-          onClear={() => setCaptionId(null)}
-          clearLabel="Alt yazıyı kaldır"
-          visual={
-            <span className="grid h-6 w-9 flex-none place-items-center overflow-hidden rounded-full bg-black">
-              <span
-                style={{ color: selectedCaption.color, fontFamily: `"${selectedCaption.font}", sans-serif`, fontWeight: 800, fontSize: 11, lineHeight: 1 }}
-              >
-                Aa
-              </span>
-            </span>
-          }
-        >
-          {selectedCaption.family}
-        </SelectionItem>
-      ),
-    });
   }
 
   return (
@@ -586,22 +497,6 @@ export function MediaComposer({
         />
       )}
 
-      {/* selected-feature chips: rendered ABOVE the control row so active choices read first.
-         Each entry reopens its picker; all four (including voice) can be cleared inline via ×.
-         Clearing voice makes canCreate false — createHint already explains "Bir ses seç" once
-         it's gone. A decorative "|" divider sits between adjacent chips, bundled with the chip
-         that follows it so a flex-wrap break falls between a divider+chip pair rather than
-         orphaning a divider at the end of a line. */}
-      {hasSelection && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-2 px-1">
-          {selectionChips.map(({ key, node }, i) => (
-            <span key={key} className="inline-flex items-center gap-x-2.5">
-              {i > 0 && <span aria-hidden="true" className="h-3.5 w-px shrink-0 bg-hairline" />}
-              {node}
-            </span>
-          ))}
-        </div>
-      )}
       {/* controls always visible, disabled until there's speech text to work with. Always a
          row (never column) so the create button's ml-auto keeps it right-aligned on its own
          flex line even when the row wraps on narrow screens. */}
@@ -614,6 +509,7 @@ export function MediaComposer({
             title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
             icon={Icon.plus}
             size="lg"
+            badge={selectedCount}
             items={[
               {
                 key: "avatar",
