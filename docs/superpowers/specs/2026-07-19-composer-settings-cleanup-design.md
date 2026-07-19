@@ -114,8 +114,9 @@ içermez.
 - **Alt** → avatar yanda (Sol/Sağ) iken ~%78; avatar **Orta** iken avatar alt bandı
   kapladığı için ~%62'ye yükselir.
 
-`captionBoxWidth` da `avatarPosition` alır: yan yerleşimde altyazı boş yarıya sığmalı,
-Orta yerleşimde tam genişlik kullanılabilir.
+Altyazı **tam genişlikte ve ortalanmış kalır** — mevcut bilinçli tasarım (`layout.ts`
+yorumu: "Big, centred captions: full width"). `captionBoxWidth` değişmez. Bildirilen hata
+yalnızca dikey konum; yatay düzeni değiştirmek kapsam dışı bir görsel karar olurdu.
 
 Davranış `packages/remotion/src/layout.test.ts` ile kilitlenir: üst ile alt arasında
 belirgin fark, Orta-avatar + alt kombinasyonunda yükselme, hiçbir kutunun kare dışına
