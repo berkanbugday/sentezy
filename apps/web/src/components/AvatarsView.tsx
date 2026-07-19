@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AvatarGrid } from "@/components/composer/AvatarGrid";
+import { AvatarPreview } from "@/components/AvatarPreview";
 import { type Avatar } from "@/components/wizard/types";
 
 /** The avatar catalog as a full page: browse, then start a video with one.
@@ -17,6 +18,7 @@ export function AvatarsView() {
       </div>
 
       <AvatarGrid columns="page" onSelect={(a) => setPreviewing(a)} />
+      <AvatarPreview avatar={previewing} onClose={() => setPreviewing(null)} />
     </div>
   );
 }
