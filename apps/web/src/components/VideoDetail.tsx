@@ -2,9 +2,10 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { qk, useVideo } from "@/lib/queries";
+import { qk, useDeleteVideo, useRenameVideo, useVideo } from "@/lib/queries";
 import { formatRatio, STAGE_LABEL, STATUS_LABEL, type VideoStage, type VideoStatus } from "@/lib/types";
 import { videoDisplayTitle } from "@/lib/videoTitle";
 
@@ -14,6 +15,12 @@ export function VideoDetail({ id }: { id: string }) {
   const { data: detail, isError } = useVideo(id);
   const queryClient = useQueryClient();
   const [liveOverride, setLiveOverride] = useState<Live | null>(null);
+  const router = useRouter();
+  const rename = useRenameVideo(id);
+  const remove = useDeleteVideo(id);
+  const [editing, setEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Live progress via Supabase Realtime; a terminal status refetches full detail.
   useEffect(() => {
@@ -49,12 +56,88 @@ export function VideoDetail({ id }: { id: string }) {
   return (
     <div className="mx-auto max-w-4xl">
       <Link href="/library" className="text-[13.5px] font-medium text-signal">← Videolarım</Link>
-      <h1 className="disp mt-3 text-[24px] font-semibold leading-tight text-ink">{title}</h1>
-      <div className="mt-2">
-        <span className={`badge ${cls}`}>
-          <span className="dot" />
-          {label}
-        </span>
+
+      <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          {editing ? (
+            <div>
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  value={draftTitle}
+                  onChange={(e) => setDraftTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setEditing(false);
+                    if (e.key === "Enter" && draftTitle.trim()) {
+                      rename.mutate(draftTitle.trim(), { onSuccess: () => setEditing(false) });
+                    }
+                  }}
+                  maxLength={120}
+                  className="w-full rounded-lg border border-hairline bg-paper px-3 py-1.5 text-[20px] font-semibold text-ink outline-none focus:border-signal"
+                />
+                <button
+                  type="button"
+                  disabled={!draftTitle.trim() || rename.isPending}
+                  onClick={() => rename.mutate(draftTitle.trim(), { onSuccess: () => setEditing(false) })}
+                  className="btn btn-primary shrink-0"
+                >
+                  Kaydet
+                </button>
+                <button type="button" onClick={() => setEditing(false)} className="shrink-0 text-[13.5px] text-muted">
+                  Vazgeç
+                </button>
+              </div>
+              {rename.isError && (
+                <p className="mt-1 text-[12.5px] text-red-600">Başlık kaydedilemedi — video silinmiş olabilir.</p>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setDraftTitle(title);
+                setEditing(true);
+              }}
+              className="disp text-left text-[24px] font-semibold leading-tight text-ink hover:text-signal"
+              title="Başlığı düzenle"
+            >
+              {title}
+            </button>
+          )}
+          <div className="mt-2">
+            <span className={`badge ${cls}`}>
+              <span className="dot" />
+              {label}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.push(`/dashboard?reuse=${v.id}`)}
+            className="inline-flex items-center rounded-full border border-hairline bg-paper px-4 py-2 text-[14px] font-medium text-ink transition hover:bg-mist"
+          >
+            Yeniden kullan
+          </button>
+          <button
+            type="button"
+            disabled={remove.isPending}
+            onClick={() => {
+              if (!confirmDelete) {
+                setConfirmDelete(true);
+                setTimeout(() => setConfirmDelete(false), 4000);
+                return;
+              }
+              // A 404 means it is already gone (deleted in another tab) — the destination
+              // is the same either way, so treat both outcomes as "leave".
+              remove.mutate(undefined, { onSuccess: () => router.push("/library"), onError: () => router.push("/library") });
+            }}
+            className="inline-flex items-center rounded-full border border-hairline bg-paper px-4 py-2 text-[14px] font-medium text-red-600 transition hover:bg-mist"
+          >
+            {confirmDelete ? "Emin misiniz?" : "Sil"}
+          </button>
+        </div>
       </div>
 
       <div className="mt-5 grid gap-6 md:grid-cols-[340px_1fr]">
