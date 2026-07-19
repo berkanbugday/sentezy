@@ -7,8 +7,8 @@ import type { AvatarPosition, CaptionPosition } from "./types";
  * each side — big, centred captions are the deliberate look.
  *
  * `position` picks a real band, not a nudge:
- *  - "top"    → an upper band at 20%, clear of the platform chrome at the very top.
- *  - "bottom" → a lower band at 78%.
+ *  - "top"    → an upper band at 14%, clear of the platform chrome at the very top.
+ *  - "bottom" → a lower band at 84%.
  * The avatar is always bottom-anchored, so only the bottom band has to dodge it: with
  * `avatarPosition: "center"` the avatar is bottom-centred at 54% frame height, so the band
  * lifts to 62% to sit just above the head. Side avatars (left/right) leave the bottom clear.
@@ -21,7 +21,7 @@ export function captionBox(opts: {
 }): CSSProperties {
   const { width, avatarPosition, position } = opts;
   const edge = Math.round(width * 0.06);
-  const centerPct = position === "top" ? 20 : avatarPosition === "center" ? 62 : 78;
+  const centerPct = position === "top" ? 14 : avatarPosition === "center" ? 62 : 84;
 
   return {
     position: "absolute",

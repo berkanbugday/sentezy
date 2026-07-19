@@ -50,6 +50,22 @@ export function PreviewModal({
   // Slide-synced whooshes, audible during real playback (the render muxes them with ffmpeg).
   const sfxCues = useMemo(() => slideSfxCues(broll, script, transitionSfx), [script, broll, transitionSfx]);
 
+  // Remotion's <Player> pre-mounts a fixed pool of `numberOfSharedAudioTags` <audio> elements
+  // (default 5) to dodge autoplay restrictions; every distinct <Audio> the Reel renders at once
+  // must fit in that pool or it throws — see
+  // https://remotion.dev/docs/player/autoplay#using-the-numberofsharedaudiotags-prop. The Reel
+  // mounts one boundary whoosh per clip transition (slideSfxCues emits `broll.length - 1` cues,
+  // only when transitionSfx is on and there are >= 2 clips) plus one more for the music bed
+  // (Reel.tsx). Each SFX <Sequence> has no explicit duration (SfxTrack.tsx), so once it starts it
+  // stays mounted for the rest of the reel — by the end all cues are mounted simultaneously. Size
+  // the pool to cover that total plus headroom, floored at Remotion's own default so a tiny reel
+  // is never starved.
+  const numberOfSharedAudioTags = useMemo(() => {
+    const boundaries = transitionSfx && broll.length >= 2 ? broll.length - 1 : 0;
+    const musicTags = musicUrl ? 1 : 0;
+    return Math.max(5, boundaries + musicTags + 2);
+  }, [broll.length, transitionSfx, musicUrl]);
+
   if (!open) return null;
   const inputProps = {
     words,
@@ -90,6 +106,7 @@ export function PreviewModal({
               fps={FPS}
               compositionWidth={W}
               compositionHeight={H}
+              numberOfSharedAudioTags={numberOfSharedAudioTags}
               controls
               loop
               clickToPlay
