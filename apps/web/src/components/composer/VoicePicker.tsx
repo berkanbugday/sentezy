@@ -10,8 +10,9 @@ import { VoiceSkeleton } from "./VoiceSkeleton";
 
 /** Voice picker — owns the paginated voice query, server-side filters, the filters
  *  sheet, infinite scroll, and TTS preview. `script` drives the opt-in real-text
- *  preview; `onSelect` passes the chosen voice up (or null) for the caller's chip. */
-export function VoicePicker({ open, onClose, selectedId, onSelect, script }: { open: boolean; onClose: () => void; selectedId: string | null; onSelect: (v: Voice | null) => void; script: string }) {
+ *  preview and `emotion` gives it the same delivery the render will use; `onSelect`
+ *  passes the chosen voice up (or null) for the caller's chip. */
+export function VoicePicker({ open, onClose, selectedId, onSelect, script, emotion = "" }: { open: boolean; onClose: () => void; selectedId: string | null; onSelect: (v: Voice | null) => void; script: string; emotion?: string }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
   const [ttsError, setTtsError] = useState<string | null>(null);
@@ -71,7 +72,7 @@ export function VoicePicker({ open, onClose, selectedId, onSelect, script }: { o
       // synthesize the user's own text with this voice (opt-in real TTS)
       setTtsLoading(id);
       try {
-        const { audio, mime } = await voicePreview.mutateAsync({ id, text });
+        const { audio, mime } = await voicePreview.mutateAsync({ id, text, emotion });
         url = `data:${mime};base64,${audio}`;
       } catch (e) {
         setTtsLoading(null);

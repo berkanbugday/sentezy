@@ -574,7 +574,7 @@ export function MediaComposer({
         boundaryLabel={boundaryIndex >= 0 ? `${boundaryIndex}. ve ${boundaryIndex + 1}. klip arası` : undefined}
       />
       <AvatarPicker open={avatarOpen} onClose={() => setAvatarOpen(false)} selectedId={selectedAvatar?.id ?? null} onSelect={setSelectedAvatar} />
-      <VoicePicker open={voiceOpen} onClose={() => setVoiceOpen(false)} selectedId={selectedVoice?.id ?? null} onSelect={setSelectedVoice} script={script} />
+      <VoicePicker open={voiceOpen} onClose={() => setVoiceOpen(false)} selectedId={selectedVoice?.id ?? null} onSelect={setSelectedVoice} script={script} emotion={settings.voiceEmotion ?? ""} />
       <CaptionPicker open={captionOpen} onClose={() => setCaptionOpen(false)} selectedId={captionId} onSelect={setCaptionId} />
       <SfxPreviewModal
         open={previewOpen}

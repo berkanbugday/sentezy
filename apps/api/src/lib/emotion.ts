@@ -13,10 +13,15 @@ import { env } from "../env";
  */
 
 // The v3 audio tags the model may insert (kept in sync with the worker's emotion.py).
-const ALLOWED_TAGS = [
-  "excited", "warmly", "cheerfully", "happily", "seriously", "sincerely", "calmly",
-  "curiously", "sadly", "nervously", "sarcastic", "whispers", "laughs", "sighs", "gasps",
+// Sound-effect tags ([applause], [gunshot], …) are deliberately excluded: this app has its
+// own cued SFX engine, and a model-invented sound would land in the voice track unanchored.
+const NONVERBAL_TAGS = ["laughs", "sighs", "exhales", "whispers"]; // documented as reliable in v3
+// Free-form delivery cues — v3 reads descriptive tags too, and these mirror VOICE_EMOTIONS.
+const TONE_TAGS = [
+  "excited", "curious", "warmly", "cheerfully", "happily", "seriously", "sincerely",
+  "calmly", "sarcastic", "mischievously",
 ];
+const ALLOWED_TAGS = [...TONE_TAGS, ...NONVERBAL_TAGS];
 
 // Wizard emotion value → a short natural-language tone description for the prompt.
 const TONE_DESC: Record<string, string> = {
@@ -27,24 +32,47 @@ const TONE_DESC: Record<string, string> = {
   sincerely: "sincere, heartfelt and genuine",
 };
 
+// Written against the ElevenLabs v3 best-practices guide: text structure is the PRIMARY
+// driver of v3 delivery, tags are the secondary one, and over-tagging destabilises output.
 const SYSTEM = [
-  "You annotate a Turkish voiceover script with ElevenLabs v3 audio tags so the delivery",
-  "sounds expressive and human, sentence by sentence. You are ALSO shown the background",
-  "photos that will play behind the voiceover — read their mood, setting and energy, and let",
-  "them guide which emotions you pick and where.",
+  "You direct the delivery of a Turkish voiceover script for ElevenLabs v3, so it sounds",
+  "expressive and human sentence by sentence. You are ALSO shown the background photos that",
+  "will play behind the voiceover — read their mood, setting and energy, and let them guide",
+  "which emotions you pick and where.",
+  "You have exactly two levers, and v3 reads both:",
+  "  A. Bracketed audio tags, placed IMMEDIATELY BEFORE the words they should colour.",
+  "  B. Pacing punctuation — an ellipsis '…' creates a pause or a beat of hesitation, and",
+  "     . ! ? set each sentence's energy.",
   "STRICT RULES:",
   "1. Output ONLY the annotated script text — no preamble, no explanation, no quotes.",
-  "2. Do NOT change, translate, reorder, add, or remove ANY of the original words.",
-  "   Insert bracketed tags only. Every original word must remain, in the same order.",
-  "3. Keep all original punctuation exactly.",
-  "4. Use tags sparingly and naturally — about one per sentence at most; fewer is fine.",
-  "5. Only use tags from this set: {tags}.",
-  "6. Match the emotional arc to BOTH the requested overall tone and the mood of the photos.",
+  "2. Never change, translate, reorder, add, or remove ANY word. Every original word must",
+  "   survive, in the same order and with the SAME letter case.",
+  "3. The ONLY edits allowed are inserting [tags] and adjusting sentence punctuation",
+  "   (. ! ? …). Do not add or remove any other character.",
+  "4. Attach an ellipsis to the end of the word before the pause ('denedim…'). NEVER leave",
+  "   '…' standing alone as its own word — that breaks caption timing.",
+  "5. Use tags sparingly — at most one per sentence, and fewer is better. Over-tagging makes",
+  "   v3 unstable.",
+  "6. Only use tags from this set: {tags}. Never invent sound-effect tags.",
+  "7. A tag must suit the voice and the moment — a calm read will not suddenly shout, and a",
+  "   sales line should not laugh mid-pitch.",
+  "8. Match the emotional arc to BOTH the requested overall tone and the mood of the photos.",
 ].join("\n");
 
 const stripTags = (text: string): string => text.replace(/\[[^\]]*\]/g, " ");
-const words = (text: string): string[] => text.split(/\s+/).filter(Boolean);
-const hasTag = (text: string): boolean => /\[[a-zA-Z]+\]/.test(text);
+const hasTag = (text: string): boolean => /\[[a-zA-Z]/.test(text);
+
+/** The invariant an annotated script must preserve: whitespace tokens with audio tags
+ *  removed and edge pacing punctuation normalised away (interior '.' — as in "3.5" — must
+ *  still match). Catches paraphrase, reordering, case changes, and a stray standalone '…',
+ *  which would survive as an empty token and desync caption/SFX word indices.
+ *  Mirrors words_only() in apps/worker/sentezy_worker/emotion.py. */
+export function wordsOnly(text: string): string[] {
+  return stripTags(text)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => t.replace(/^[.!?…]+|[.!?…]+$/g, ""));
+}
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -119,13 +147,15 @@ export async function enhanceScriptEmotion(
   // different upstream providers with independent rate limits, so if one is 429-saturated
   // the next usually answers. Accept the first response that passes the word guard.
   const models = env.OPENROUTER_VISION_MODEL.split(",").map((m) => m.trim()).filter(Boolean);
+  const baseline = wordsOnly(script).join(" ");
   for (const model of models) {
     const out = await callModel(key, model, messages);
     if (!out) continue; // 429/error for this model → try the next
     // Accept only if the model (a) actually inserted at least one tag — weak models just
-    // echo the script back, which must NOT count as "emotion added" — and (b) preserved
-    // every original word (no paraphrase, so TTS speaks the real script). Else try next.
-    if (hasTag(out) && words(stripTags(out)).join(" ") === words(script).join(" ")) {
+    // echo the script back, which must NOT count as "emotion added" — and (b) left the
+    // spoken words untouched, so the TTS word alignment still lines up with captions and
+    // SFX cues. Else try the next model.
+    if (hasTag(out) && wordsOnly(out).join(" ") === baseline) {
       return { script: out, changed: true };
     }
   }

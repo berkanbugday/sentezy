@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
+import { ElevenLabsError } from "@elevenlabs/elevenlabs-js";
 import { prisma } from "@sentezy/db";
 import { env } from "../env";
+import { TTS_MODEL_ID, TTS_VOICE_SETTINGS, applyEmotionTag, collectAudio, elevenlabs, trimToSentence } from "../lib/elevenlabs";
 import { type VoiceDTO, fetchSharedVoices, resolveVoice } from "../lib/voices";
 
 // The shared library is the same for everyone, so cache each browsed page+filter combo.
@@ -69,9 +71,12 @@ export async function voiceRoutes(app: FastifyInstance) {
 
   // Real TTS preview: synthesize a short clip of the user's own text with a voice (opt-in
   // on the client — spends ElevenLabs credits). Adopts a library voice if needed first.
-  app.post<{ Body: { id?: string; text?: string } }>("/voices/preview", { preHandler: app.authenticate }, async (req, reply) => {
+  app.post<{ Body: { id?: string; text?: string; emotion?: string } }>("/voices/preview", { preHandler: app.authenticate }, async (req, reply) => {
     if (!env.ELEVENLABS_API_KEY) return reply.code(503).send({ error: "tts_unavailable" });
-    const clip = (req.body?.text ?? "").trim().slice(0, 300); // cap to keep previews cheap
+    // Cap to keep previews cheap, but cut on a sentence boundary and carry the chosen
+    // emotion — v3 delivery depends on text structure, so a mid-word stub reads nothing
+    // like the render. Already-annotated scripts keep their per-sentence tags.
+    const clip = applyEmotionTag(trimToSentence(req.body?.text ?? ""), req.body?.emotion);
     if (!clip || !req.body?.id) return reply.code(400).send({ error: "bad_request" });
     let elevenId: string;
     try {
@@ -79,17 +84,19 @@ export async function voiceRoutes(app: FastifyInstance) {
     } catch {
       return reply.code(404).send({ error: "voice_not_found" });
     }
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elevenId}`, {
-      method: "POST",
-      headers: { "xi-api-key": env.ELEVENLABS_API_KEY, "content-type": "application/json", accept: "audio/mpeg" },
-      body: JSON.stringify({ text: clip, model_id: "eleven_multilingual_v2" }),
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      app.log.warn({ status: res.status, detail }, "elevenlabs tts preview failed");
-      return reply.code(502).send({ error: `tts_failed_${res.status}` });
+    try {
+      const stream = await elevenlabs().textToSpeech.convert(elevenId, {
+        text: clip,
+        modelId: TTS_MODEL_ID,
+        outputFormat: "mp3_44100_128",
+        voiceSettings: TTS_VOICE_SETTINGS,
+      });
+      const audio = (await collectAudio(stream)).toString("base64");
+      return { audio, mime: "audio/mpeg" };
+    } catch (e) {
+      const status = e instanceof ElevenLabsError ? e.statusCode : undefined;
+      app.log.warn({ err: e, status }, "elevenlabs tts preview failed");
+      return reply.code(502).send({ error: `tts_failed_${status ?? "unknown"}` });
     }
-    const audio = Buffer.from(await res.arrayBuffer()).toString("base64");
-    return { audio, mime: "audio/mpeg" };
   });
 }

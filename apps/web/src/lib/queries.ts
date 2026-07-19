@@ -52,7 +52,7 @@ export function useVoicesInfinite(filters: Record<string, string> = {}) {
  *  A shared-library voice id ("owner|voice") is adopted into the account server-side. */
 export function useVoicePreview() {
   return useMutation({
-    mutationFn: (input: { id: string; text: string }) =>
+    mutationFn: (input: { id: string; text: string; emotion?: string }) =>
       apiFetch<{ audio: string; mime: string }>("/voices/preview", { method: "POST", body: JSON.stringify(input) }),
   });
 }
