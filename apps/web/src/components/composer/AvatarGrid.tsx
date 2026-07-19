@@ -49,8 +49,8 @@ export function AvatarGrid({
       : "grid grid-cols-3 gap-3 sm:grid-cols-4";
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="sticky top-0 z-10 bg-paper pb-2 flex flex-col gap-2">
+    <div className="flex flex-col">
+      <div className="sticky top-0 z-10 bg-paper pb-3 flex flex-col gap-2">
         <div className="relative">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
             <Icon.search width={15} height={15} />
