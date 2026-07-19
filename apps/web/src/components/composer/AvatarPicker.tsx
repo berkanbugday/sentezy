@@ -1,13 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { type Avatar } from "@/components/wizard/types";
 import { Icon } from "@/components/icons";
 import { AvatarGrid } from "./AvatarGrid";
 
-/** Avatar picker sheet — the catalog browser in a modal. Selecting closes it.
- *  The grid itself lives in AvatarGrid, shared with the /avatars page. */
+/** Avatar picker sheet — the catalog browser in a modal. Tapping a tile only marks it;
+ *  the choice reaches the composer when "Tamam" is pressed, so closing any other way
+ *  discards it. The grid itself lives in AvatarGrid, shared with the /avatars page. */
 export function AvatarPicker({ open, onClose, selectedId, onSelect }: { open: boolean; onClose: () => void; selectedId: string | null; onSelect: (a: Avatar | null) => void }) {
   if (!open) return null;
+  /* Keyed on nothing — the sheet unmounts when closed, so the draft resets each time it opens. */
+  return <PickerSheet onClose={onClose} selectedId={selectedId} onSelect={onSelect} />;
+}
+
+function PickerSheet({ onClose, selectedId, onSelect }: { onClose: () => void; selectedId: string | null; onSelect: (a: Avatar | null) => void }) {
+  /* Wrapped rather than bare: `undefined` means "untouched, still showing the composer's
+   * avatar", while `{ value: null }` is the deliberate choice of the "Avatarsız" tile. */
+  const [draft, setDraft] = useState<{ value: Avatar | null } | undefined>(undefined);
+  const shownId = draft ? (draft.value?.id ?? null) : selectedId;
+
+  const confirm = () => {
+    if (draft) onSelect(draft.value);
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
@@ -23,18 +40,11 @@ export function AvatarPicker({ open, onClose, selectedId, onSelect }: { open: bo
         </div>
 
         <div className="no-scrollbar overflow-y-auto px-5 py-4">
-          <AvatarGrid
-            selectedId={selectedId}
-            showNoneOption
-            onSelect={(a) => {
-              onSelect(a);
-              onClose();
-            }}
-          />
+          <AvatarGrid selectedId={shownId} showNoneOption onSelect={(a) => setDraft({ value: a })} />
         </div>
 
         <div className="flex flex-none justify-end px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
-          <button type="button" onClick={onClose} className="btn btn-primary min-w-28">
+          <button type="button" onClick={confirm} className="btn btn-primary min-w-28">
             Tamam
           </button>
         </div>
