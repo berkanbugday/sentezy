@@ -233,7 +233,7 @@ export function VideoDetail({ id }: { id: string }) {
             </div>
           )}
 
-          <CollapsibleCard title="Ayarlar">
+          <CollapsibleCard defaultOpen title="Ayarlar">
             <div className="text-[14px]">
               {(
                 [
