@@ -2,10 +2,14 @@
 
 import Link from "next/link";
 import { VideoCard } from "@/components/VideoCard";
+import { groupVideosByDay } from "@/lib/videoGroups";
 import { useVideos } from "@/lib/queries";
+
+const GRID_CLS = "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4";
 
 export function LibraryView() {
   const { data: videos, isLoading } = useVideos();
+  const groups = videos ? groupVideosByDay(videos, new Date()) : [];
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -17,7 +21,18 @@ export function LibraryView() {
         <Link href="/dashboard" className="btn btn-primary">+ Yeni video</Link>
       </div>
 
-      {isLoading && <p className="text-[14px] text-muted">Yükleniyor…</p>}
+      {isLoading && (
+        <div className={GRID_CLS}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="card overflow-hidden">
+              <div className="ph-stripe aspect-[9/16]" />
+              <div className="p-3">
+                <div className="h-3.5 w-3/4 rounded bg-black/5" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {videos?.length === 0 && (
         <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
@@ -28,9 +43,16 @@ export function LibraryView() {
       )}
 
       {videos && videos.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {videos.map((v) => (
-            <VideoCard key={v.id} video={v} />
+        <div className="flex flex-col gap-8">
+          {groups.map((g) => (
+            <div key={g.key}>
+              <h2 className="mb-3 text-[13px] font-semibold text-muted">{g.label}</h2>
+              <div className={GRID_CLS}>
+                {g.videos.map((v) => (
+                  <VideoCard key={v.id} video={v} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
