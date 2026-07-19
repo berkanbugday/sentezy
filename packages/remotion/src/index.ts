@@ -7,8 +7,8 @@ export { CAPTION_FONT_FAMILIES, ensureFontsLoaded, resolveFamily } from "./fonts
 export { buildPages } from "./timing";
 export { SAMPLE_PROPS, SAMPLE_WORDS, SAMPLE_REEL_PROPS } from "./sample";
 export type {
+  AvatarPosition,
   CaptionCompositionProps,
-  CaptionLayout,
   CaptionOverlayProps,
   CaptionPosition,
   CaptionWord,

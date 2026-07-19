@@ -30,3 +30,6 @@ coverage/
 *.log
 .DS_Store
 tmp/
+
+# Superpowers SDD scratch (task briefs, reports, diffs) — process artifacts, not source
+.superpowers/

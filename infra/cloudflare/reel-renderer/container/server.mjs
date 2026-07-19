@@ -59,7 +59,7 @@ async function deliver(res, outPath, { key, contentType, keyField }) {
 }
 
 app.post("/render-reel", async (req, res) => {
-  const { jobId, words, avatarUrl, broll, captionStyle, layout, position, avatarSide, captions, width, height, fps } =
+  const { jobId, words, avatarUrl, broll, captionStyle, avatarPosition, position, captions, width, height, fps } =
     req.body ?? {};
   if (!jobId || !Array.isArray(words)) {
     return res.status(400).json({ error: "jobId and words[] are required" });
@@ -73,7 +73,7 @@ app.post("/render-reel", async (req, res) => {
     // previewAudio:false + sfxCues:[] → the render is opaque and silent; the worker muxes audio.
     const inputProps = {
       words, avatarUrl: avatarUrl ?? null, broll: broll ?? [],
-      captionStyle, layout, position, avatarSide,
+      captionStyle, avatarPosition, position,
       captions: captions !== false, previewAudio: false, sfxCues: [],
       width, height, fps,
     };

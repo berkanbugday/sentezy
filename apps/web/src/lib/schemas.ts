@@ -23,7 +23,6 @@ export const createReelSchema = z.object({
   script: z.string().min(1, "Senaryo gerekli").max(5000, "Senaryo 5000 karakteri aşamaz"),
   avatarId: z.string().uuid("Bir avatar seç"),
   voiceId: z.string().uuid("Bir ses seç"),
-  aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
   captions: z.boolean().default(true),
   // Caption look — one of the 20 canonical effect ids (see @sentezy/types CAPTION_STYLE_META).
   captionStyle: z.enum(CAPTION_STYLE_IDS).default("karaoke"),
@@ -43,11 +42,9 @@ export const createReelSchema = z.object({
   musicTrackKey: z.string().optional(),
   // Music bed level (0..1 of full scale; UI caps at 0.4 so the bed never buries the voice).
   musicVolume: z.number().min(0).max(1).default(0.15),
-  // Reel layout — avatar framed to a side over full-frame B-roll ("side"), or
-  // bottom-centred with B-roll filling a top band ("bottom"). Plus which side + caption pos.
-  avatarLayout: z.enum(["side", "bottom"]).default("side"),
-  avatarSide: z.enum(["left", "right"]).default("right"),
-  captionPosition: z.enum(["top", "bottom"]).default("bottom"),
+  // Where the cut-out avatar sits: an edge, or bottom-centred.
+  avatarPosition: z.enum(["left", "center", "right"]).default("left"),
+  captionPosition: z.enum(["top", "bottom"]).default("top"),
   // Energy effects — whoosh SFX on photo transitions.
   transitionSfx: z.boolean().default(true),
 });

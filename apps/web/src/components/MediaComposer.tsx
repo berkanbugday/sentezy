@@ -2,21 +2,23 @@
 
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState } from "react";
-import type { SfxCue } from "@sentezy/types";
 import { type Avatar, type Voice } from "@/components/wizard/types";
 import { apiFetch } from "@/lib/api";
-import { DEFAULT_PRESET, presetById } from "@/lib/captionStyles";
+import { presetById } from "@/lib/captionStyles";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
 import { type Media } from "@/lib/composer/media";
 import { TR_GRADIENT, TR_GRADIENT_SOFT, TRANSITION_LABELS } from "@/lib/composer/transitions";
-import { type ImportProductResult, useCreateAvatar, useGenerateVideo, useImportProduct, useMyAvatars, useSuggestSfx, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
+import { type ImportProductResult, type MusicTrack, useCreateAvatar, useGenerateVideo, useImportProduct, useMyAvatars, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
 import { videoPoster } from "@/lib/videoPoster";
 import { cleanTitleText } from "@/lib/videoTitle";
 import { DEFAULT_TRANSITION } from "./WizardSteps";
+import { ActionMenu } from "./composer/ActionMenu";
 import { AvatarPicker } from "./composer/AvatarPicker";
 import { CaptionPicker } from "./composer/CaptionPicker";
 import { EffectPicker } from "./composer/EffectPicker";
-import { SfxPreviewModal } from "./composer/SfxPreviewModal";
+import { MusicPicker } from "./composer/MusicPicker";
+import { PreviewModal } from "./composer/PreviewModal";
+import { SettingsModal } from "./composer/SettingsModal";
 import { Spinner } from "./composer/Spinner";
 import { VoicePicker } from "./composer/VoicePicker";
 import { Icon } from "./icons";
@@ -32,19 +34,35 @@ function deriveVideoTitle(script: string, productTitle?: string): string {
   return cleanTitleText(script) || "Yeni video";
 }
 
+export type ComposerSeed = {
+  key: string; // the source video id — changing it re-seeds
+  selectedAvatar: Avatar | null;
+  selectedVoice: Voice | null;
+  selectedMusic: MusicTrack | null;
+  musicVolume: number;
+  /** null = no caption style selected (opt-in captions). */
+  captionId: string | null;
+};
+
 /** Upload-first hero composer: accepts multiple images + videos, uploads each to
  *  storage (with per-tile progress), then builds a draft and queues it for render. */
 export function MediaComposer({
   extraSettings,
+  onSettingsChange,
+  seed,
 }: {
   extraSettings?: ComposerSettings;
+  /** Persists changes made in the settings modal. If absent, the modal still opens but
+   *  simply doesn't persist changes. */
+  onSettingsChange?: (s: ComposerSettings) => void;
+  /** "Yeniden kullan" seed: hydrates avatar/voice/music/caption once per source video. */
+  seed?: ComposerSeed;
 }) {
   const router = useRouter();
   const uploadImg = useUploadBackground();
   const uploadVid = useUploadBackgroundVideo();
   const createAvatar = useCreateAvatar();
   const generate = useGenerateVideo();
-  const suggestSfx = useSuggestSfx();
   const importProduct = useImportProduct();
   const myAvatars = useMyAvatars().data ?? [];
   const [mode, setMode] = useState<"link" | "upload">("link"); // paste a product link, or upload media
@@ -59,16 +77,35 @@ export function MediaComposer({
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState<Voice | null>(null);
+  const [musicOpen, setMusicOpen] = useState(false);
+  const [selectedMusic, setSelectedMusic] = useState<MusicTrack | null>(null);
+  const [musicVolume, setMusicVolume] = useState(0.15); // UI cap 0.4 — the bed never buries the voice
   const [captionOpen, setCaptionOpen] = useState(false);
-  const [captionId, setCaptionId] = useState(DEFAULT_PRESET.id);
+  // Captions are opt-in: no default preset pre-selected — the user must choose a style.
+  const [captionId, setCaptionId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [script, setScript] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [sfxCues, setSfxCues] = useState<SfxCue[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const selectedCaption = presetById(captionId);
+  const selectedCaption = captionId ? presetById(captionId) : null;
   const settings = extraSettings ?? DEFAULT_SETTINGS;
+
+  // "Yeniden kullan" seeding. Applied once per source video: the user may change any of
+  // these straight after, and a re-render must not undo that. Script and media stay empty
+  // by design — this reuses the look, not the content.
+  const seededRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!seed || seededRef.current === seed.key) return;
+    seededRef.current = seed.key;
+    setSelectedAvatar(seed.selectedAvatar);
+    setSelectedVoice(seed.selectedVoice);
+    setSelectedMusic(seed.selectedMusic);
+    setMusicVolume(seed.musicVolume);
+    setCaptionId(seed.captionId);
+    setMode("upload");
+  }, [seed]);
 
   // The transition effect only applies between 2+ media — close/hide otherwise.
   const multiple = items.length > 1;
@@ -90,11 +127,6 @@ export function MediaComposer({
       }),
     [],
   );
-
-  // AI SFX cues are placed by script word-index; a script edit invalidates them.
-  useEffect(() => {
-    setSfxCues([]);
-  }, [script]);
 
   const patch = (url: string, next: Partial<Media>) => setItems((prev) => prev.map((x) => (x.url === url ? { ...x, ...next } : x)));
 
@@ -192,20 +224,11 @@ export function MediaComposer({
       : !selectedAvatar && !hasMedia
         ? "Avatar seç ya da görsel yükle (yüzsüz video)"
         : undefined;
+  const selectedCount = [selectedAvatar, selectedVoice, selectedMusic, captionId].filter(Boolean).length;
   const pick = () => inputRef.current?.click();
 
-  // Open the preview modal, lazily fetching AI SFX cues the first time (if SFX is enabled)
-  // so the preview shows the same placements the real render will use.
-  async function openPreview() {
+  function openPreview() {
     setPreviewOpen(true);
-    if (settings.sfxEnabled && script.trim() && sfxCues.length === 0) {
-      try {
-        const { cues } = await suggestSfx.mutateAsync(script.trim());
-        setSfxCues(cues);
-      } catch {
-        // preview still works without SFX
-      }
-    }
   }
 
   // Build the draft straight from the composer state, debit + queue it, then send
@@ -216,7 +239,7 @@ export function MediaComposer({
     setSubmitting(true);
     try {
       const ready = items.filter((i) => i.status === "done" && i.ref);
-      const preset = presetById(captionId);
+      const preset = captionId ? presetById(captionId) : null;
 
       // A chosen catalog avatar becomes a user avatar record — reuse one for the same portrait, else create it.
       let avatarId: string | null = null;
@@ -240,20 +263,11 @@ export function MediaComposer({
         transition: idx === 0 ? DEFAULT_TRANSITION : i.transition ?? DEFAULT_TRANSITION,
       }));
 
-      // Ensure SFX cues exist before render if the setting is on but the preview was never
-      // opened (so cues were never fetched) — fall back to an empty list on failure.
       const scriptText = script.trim();
-      let cuesForRender = sfxCues;
-      if (settings.sfxEnabled && cuesForRender.length === 0 && scriptText.length > 0) {
-        try {
-          cuesForRender = (await suggestSfx.mutateAsync(scriptText)).cues;
-        } catch {
-          cuesForRender = [];
-        }
-      }
 
       const options = {
-        captions: { enabled: true, style: preset.base, font: preset.font, color: preset.color },
+        // Captions are opt-in: only write a style/font/color when the user actually chose one.
+        captions: preset ? { enabled: true, style: preset.base, font: preset.font, color: preset.color } : { enabled: false },
         background: media.length
           ? {
               type: "image" as const,
@@ -263,11 +277,10 @@ export function MediaComposer({
               media,
             }
           : { type: "color" as const, value: "#0B0B0D" },
-        ...(settings.musicTrackKey ? { music: { trackKey: settings.musicTrackKey, volume: settings.musicVolume ?? 0.15 } } : {}),
-        layout: { avatarLayout: settings.avatarLayout, avatarSide: settings.avatarSide, captionPosition: settings.captionPosition },
+        ...(selectedMusic ? { music: { trackKey: selectedMusic.key, volume: musicVolume } } : {}),
+        layout: { avatarPosition: settings.avatarPosition, captionPosition: settings.captionPosition },
         voice: { emotion: settings.voiceEmotion ?? "" },
         effects: { transitionSfx: settings.transitionSfx ?? true },
-        sfx: { enabled: settings.sfxEnabled, cues: cuesForRender },
         ...(product ? { product } : {}), // provenance when seeded from a product link
       };
 
@@ -284,7 +297,6 @@ export function MediaComposer({
           script: text,
           avatarId,
           voiceId,
-          aspectRatio: settings.aspectRatio,
           options,
         }),
       });
@@ -454,7 +466,7 @@ export function MediaComposer({
                 type="button"
                 onClick={() => remove(m.url)}
                 aria-label={`${m.name} kaldır`}
-                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/55 text-white opacity-100 transition hover:bg-black/75 sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute right-0.5 top-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white opacity-100 transition hover:bg-black/75 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <Icon.close width={12} height={12} className="block" />
               </button>
@@ -485,55 +497,59 @@ export function MediaComposer({
         />
       )}
 
-      {/* controls always visible, disabled until there's speech text to work with */}
-      <div className="mt-3 flex flex-col gap-2.5 px-1 sm:flex-row sm:items-center">
+      {/* controls always visible, disabled until there's speech text to work with. Always a
+         row (never column) so the create button's ml-auto keeps it right-aligned on its own
+         flex line even when the row wraps on narrow screens. */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-2.5 px-1">
         <div className="flex flex-wrap items-center gap-2">
-          {/* avatar mini-preview chip */}
-          <button
-            type="button"
-            onClick={() => setAvatarOpen(true)}
+          {/* avatar / voice / music / caption pickers, grouped behind one menu */}
+          <ActionMenu
+            label="Video seçenekleri"
             disabled={!hasScript}
             title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
-            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            <span className="flex h-7 w-7 flex-none items-center justify-center overflow-hidden rounded-full bg-mist text-muted">
-              {selectedAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={selectedAvatar.imageUrl} alt={selectedAvatar.name} className="h-full w-full object-cover" />
-              ) : (
-                <Icon.users width={15} height={15} />
-              )}
-            </span>
-            {selectedAvatar ? selectedAvatar.name : "Avatar (isteğe bağlı)"}
-            <Icon.chevronDown width={14} height={14} className="text-muted" />
-          </button>
-          {/* voice mini chip */}
+            icon={Icon.plus}
+            size="lg"
+            badge={selectedCount}
+            items={[
+              {
+                key: "avatar",
+                label: "Avatar",
+                icon: Icon.users,
+                value: selectedAvatar ? selectedAvatar.name : "isteğe bağlı",
+                onClick: () => setAvatarOpen(true),
+              },
+              {
+                key: "voice",
+                label: "Ses",
+                icon: Icon.voice,
+                value: selectedVoice ? selectedVoice.label : "seçilmedi",
+                onClick: () => setVoiceOpen(true),
+              },
+              {
+                key: "music",
+                label: "Müzik",
+                icon: Icon.musicNote,
+                value: selectedMusic ? selectedMusic.name : "seçilmedi",
+                onClick: () => setMusicOpen(true),
+              },
+              {
+                key: "caption",
+                label: "Alt yazı",
+                icon: Icon.captions,
+                value: selectedCaption ? selectedCaption.family : "seçilmedi",
+                onClick: () => setCaptionOpen(true),
+              },
+            ]}
+          />
+          {/* extra settings (avatar/caption position, voice tone, transition SFX) */}
           <button
             type="button"
-            onClick={() => setVoiceOpen(true)}
-            disabled={!hasScript}
-            title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
-            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Ek ayarlar"
+            title="Ek ayarlar"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist"
           >
-            <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-mist text-slate">
-              <Icon.voice width={15} height={15} />
-            </span>
-            {selectedVoice ? selectedVoice.label : "Ses seç"}
-            <Icon.chevronDown width={14} height={14} className="text-muted" />
-          </button>
-          {/* caption style chip */}
-          <button
-            type="button"
-            onClick={() => setCaptionOpen(true)}
-            disabled={!hasScript}
-            title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
-            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            <span className="grid h-7 w-11 flex-none place-items-center overflow-hidden rounded-full bg-black">
-              <span style={{ color: selectedCaption.color, fontFamily: `"${selectedCaption.font}", sans-serif`, fontWeight: 800, fontSize: 12, lineHeight: 1 }}>Aa</span>
-            </span>
-            {selectedCaption.family}
-            <Icon.chevronDown width={14} height={14} className="text-muted" />
+            <Icon.settings width={21} height={21} />
           </button>
           {/* live preview */}
           <button
@@ -541,9 +557,9 @@ export function MediaComposer({
             onClick={openPreview}
             disabled={!hasScript}
             title={!hasScript ? "Önce konuşma metnini yaz" : "Reklamı önizle"}
-            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-2.5 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex h-11 items-center gap-2 rounded-full border border-hairline bg-paper pl-3.5 pr-4 text-[14.5px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <Icon.play width={14} height={14} className="text-slate" />
+            <Icon.play width={16} height={16} className="text-slate" />
             Önizle
           </button>
           {items.length > 0 && (
@@ -553,14 +569,16 @@ export function MediaComposer({
             </span>
           )}
         </div>
+        {/* primary action — visibly larger than the other controls, and always right-aligned on
+           its own flex line (never full-width), on mobile included. */}
         <button
           type="button"
           onClick={create}
           disabled={uploading || submitting || !canCreate}
           title={createHint}
-          className="btn btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto sm:w-auto"
+          className="btn btn-primary btn-lg ml-auto shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {uploading || submitting ? <Spinner size={16} /> : <Icon.arrowRight width={17} height={17} className="order-2" />}
+          {uploading || submitting ? <Spinner size={16} /> : <Icon.arrowRight width={19} height={19} className="order-2" />}
           <span className="order-1">{submitting ? "Oluşturuluyor…" : "Video oluştur"}</span>
         </button>
       </div>
@@ -575,14 +593,28 @@ export function MediaComposer({
       />
       <AvatarPicker open={avatarOpen} onClose={() => setAvatarOpen(false)} selectedId={selectedAvatar?.id ?? null} onSelect={setSelectedAvatar} />
       <VoicePicker open={voiceOpen} onClose={() => setVoiceOpen(false)} selectedId={selectedVoice?.id ?? null} onSelect={setSelectedVoice} script={script} emotion={settings.voiceEmotion ?? ""} />
+      <MusicPicker
+        open={musicOpen}
+        onClose={() => setMusicOpen(false)}
+        selectedKey={selectedMusic?.key ?? null}
+        onSelect={setSelectedMusic}
+        volume={musicVolume}
+        onVolumeChange={setMusicVolume}
+      />
       <CaptionPicker open={captionOpen} onClose={() => setCaptionOpen(false)} selectedId={captionId} onSelect={setCaptionId} />
-      <SfxPreviewModal
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        settings={settings}
+        onChange={(s) => onSettingsChange?.(s)}
+        mediaCount={items.length}
+      />
+      <PreviewModal
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
         script={script}
-        cues={sfxCues}
-        captionStyle={{ styleId: selectedCaption.base, font: selectedCaption.font, color: selectedCaption.color }}
-        layout={{ avatarLayout: settings.avatarLayout, avatarSide: settings.avatarSide, captionPosition: settings.captionPosition }}
+        captionStyle={selectedCaption ? { styleId: selectedCaption.base, font: selectedCaption.font, color: selectedCaption.color } : null}
+        layout={{ avatarPosition: settings.avatarPosition, captionPosition: settings.captionPosition }}
         avatarImageUrl={selectedAvatar?.imageUrl ?? null}
         broll={items.map((i, idx) => ({
           url: i.serverUrl ?? i.url,
@@ -590,7 +622,8 @@ export function MediaComposer({
           transition: idx === 0 ? DEFAULT_TRANSITION : i.transition ?? DEFAULT_TRANSITION,
         }))}
         transitionSfx={settings.transitionSfx}
-        captions
+        musicUrl={selectedMusic?.previewUrl ?? null}
+        musicVolume={musicVolume}
       />
     </div>
   );

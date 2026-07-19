@@ -24,9 +24,8 @@ export function CaptionTile({ preset, selected, onSelect }: { preset: CaptionPre
     styleId: preset.base,
     font: preset.font,
     color: preset.color,
-    layout: "bottom" as const,
     position: "bottom" as const,
-    avatarSide: "right" as const,
+    avatarPosition: "right" as const,
   };
   return (
     <button

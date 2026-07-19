@@ -1,7 +1,6 @@
 "use client";
 
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { SfxCue } from "@sentezy/types";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Avatar, BgImage, UserAvatar, Voice } from "@/components/WizardSteps";
 import { apiFetch } from "@/lib/api";
 import type { ApiVideo } from "@/lib/types";
@@ -14,22 +13,44 @@ export type VideoDetailData = {
   thumbnailUrl: string | null;
   brollImageUrls?: string[];
   brollMedia?: BrollMediaItem[];
+  avatar?: Avatar | null;
+  voice?: Voice | null;
 };
 
-export type MusicTrack = { key: string; name: string; previewUrl: string };
+export type MusicTrack = {
+  key: string; // R2 object key — what lands in options.music.trackKey
+  slug: string;
+  name: string;
+  mood: string;
+  moodLabel: string;
+  durationSec: number;
+  previewUrl: string;
+};
+export type MusicMood = { slug: string; label: string };
 
 /** Query keys — one place so mutations can invalidate/update the right cache. */
 export const qk = {
   voices: ["voices"] as const,
   avatars: ["avatars"] as const,
   myAvatars: ["my-avatars"] as const,
-  music: ["music"] as const,
+  music: (mood = "") => ["music", mood] as const,
   videos: ["videos"] as const,
   video: (id: string) => ["video", id] as const,
 };
 
-export function useMusic(enabled = true) {
-  return useQuery({ queryKey: qk.music, queryFn: () => apiFetch<{ music: MusicTrack[] }>("/music").then((r) => r.music), enabled });
+/** The background-music catalog, optionally narrowed to one mood (filtered server-side). */
+export function useMusic(mood = "", enabled = true) {
+  return useQuery({
+    queryKey: qk.music(mood),
+    queryFn: () => apiFetch<{ music: MusicTrack[]; moods: MusicMood[] }>(`/music${mood ? `?mood=${encodeURIComponent(mood)}` : ""}`),
+    enabled,
+    // Changing `mood` changes the query key, so without this the mood chip row (and the
+    // track list) would collapse to empty/"Tümü" for a beat on every click. Keeping the
+    // previous page's data visible until the new one lands is a one-line fix — smaller
+    // than giving moods their own unfiltered query — and `moods` is identical across
+    // mood filters anyway (only `music` actually varies).
+    placeholderData: keepPreviousData,
+  });
 }
 
 export function useVoices(enabled = true) {
@@ -77,7 +98,7 @@ export function useVideos() {
 }
 
 export function useVideo(id: string) {
-  return useQuery({ queryKey: qk.video(id), queryFn: () => apiFetch<VideoDetailData>(`/videos/${id}`) });
+  return useQuery({ queryKey: qk.video(id), queryFn: () => apiFetch<VideoDetailData>(`/videos/${id}`), enabled: Boolean(id) });
 }
 
 // ── Mutations ──────────────────────────────────────────────────────────────
@@ -149,22 +170,39 @@ export function useImportProduct() {
   });
 }
 
-/** Ask the API to place AI sound effects for a script. */
-export function useSuggestSfx() {
-  return useMutation({
-    mutationFn: (script: string) =>
-      apiFetch<{ cues: SfxCue[]; enabled: boolean }>("/videos/suggest-sfx", {
-        method: "POST",
-        body: JSON.stringify({ script }),
-      }),
-  });
-}
-
 /** Finalize a draft → queue it for the worker. */
 export function useGenerateVideo() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiFetch<{ video: { id: string } }>(`/videos/${id}/generate`, { method: "POST", body: JSON.stringify({}) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.videos }),
+  });
+}
+
+/** Rename a video at any status (the draft-only PATCH /videos/:id cannot do this). */
+export function useRenameVideo(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (title: string) =>
+      apiFetch<{ video: ApiVideo }>(`/videos/${id}/title`, { method: "PATCH", body: JSON.stringify({ title }) }),
+    onSuccess: (data) => {
+      qc.setQueryData<VideoDetailData>(qk.video(id), (prev) =>
+        prev ? { ...prev, video: { ...prev.video, title: data.video.title, options: data.video.options } } : prev,
+      );
+      qc.invalidateQueries({ queryKey: qk.video(id) });
+      qc.invalidateQueries({ queryKey: qk.videos });
+    },
+  });
+}
+
+/** Soft delete — the row is hidden everywhere; the caller navigates away on success. */
+export function useDeleteVideo(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<void>(`/videos/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.videos });
+      qc.removeQueries({ queryKey: qk.video(id) });
+    },
   });
 }

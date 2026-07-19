@@ -152,12 +152,21 @@ with:
 Run: `cd packages/types && npx tsx src/layout.test.ts`
 Expected: PASS — prints `packages/types/src/layout.test.ts ok`
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add packages/types/src/index.ts packages/types/src/layout.test.ts
-git commit -m "feat(types): collapse avatarLayout+avatarSide into avatarPosition"
+bash .superpowers/sdd/snapshot.sh 1
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-1.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *feat(types): collapse avatarLayout+avatarSide into avatarPosition*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -411,12 +420,21 @@ Expected: PASS for `@sentezy/remotion`. `@sentezy/web` may still fail on `MediaC
 and `SfxPreviewModal.tsx` (they still pass `layout`/`avatarSide`) — that is expected and is
 fixed in Task 5. Confirm those are the ONLY web errors.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 9: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add packages/remotion/src apps/web/src/components/composer/CaptionTile.tsx
-git commit -m "refactor(remotion): single avatarPosition prop replaces layout+avatarSide"
+bash .superpowers/sdd/snapshot.sh 2
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-2.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *refactor(remotion): single avatarPosition prop replaces layout+avatarSide*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -546,12 +564,21 @@ Expected: PASS — prints `packages/remotion/src/layout.test.ts ok`
 Run: `cd packages/remotion && npx tsx src/reel/timing.test.ts && pnpm typecheck`
 Expected: both PASS (the timing test prints nothing on success and exits 0).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add packages/remotion/src/layout.ts packages/remotion/src/layout.test.ts
-git commit -m "fix(remotion): caption position now picks a real top/bottom band"
+bash .superpowers/sdd/snapshot.sh 3
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-3.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *fix(remotion): caption position now picks a real top/bottom band*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -763,12 +790,21 @@ Expected: **no output** apart from the back-compat comments inside `read_avatar_
 Run: `cd apps/worker && uv run pytest -q`
 Expected: PASS (`tests/test_sfx.py` still passes here; it is deleted in Task 7).
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 9: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add apps/worker infra/cloudflare
-git commit -m "refactor(worker): pass avatarPosition to the reel renderer"
+bash .superpowers/sdd/snapshot.sh 4
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-4.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *refactor(worker): pass avatarPosition to the reel renderer*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -1008,12 +1044,21 @@ SFX state until Task 7) is a miss — fix it.
 Run: `pnpm --filter @sentezy/web typecheck && pnpm --filter @sentezy/web build`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 8: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add apps/web/src
-git commit -m "feat(web): drawer down to four settings; avatar position merged, ratio fixed at 9:16"
+bash .superpowers/sdd/snapshot.sh 5
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-5.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *feat(web): drawer down to four settings; avatar position merged, ratio fixed at 9:16*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -1141,12 +1186,21 @@ Then in the browser at the dashboard:
 Run: `pnpm --filter @sentezy/web typecheck`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add apps/web/src
-git commit -m "fix(web): disable transition-SFX toggle until there are 2+ clips"
+bash .superpowers/sdd/snapshot.sh 6
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-6.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *fix(web): disable transition-SFX toggle until there are 2+ clips*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -1356,12 +1410,21 @@ Expected: all present — `SfxTrack.tsx` plus five `.wav` files in each director
 Run: `pnpm typecheck && pnpm --filter @sentezy/web build && cd apps/worker && uv run pytest -q`
 Expected: all PASS.
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 10: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add -A apps packages
-git commit -m "refactor: remove the AI sound-effects feature end to end"
+bash .superpowers/sdd/snapshot.sh 7
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-7.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *refactor: remove the AI sound-effects feature end to end*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -1518,12 +1581,21 @@ and call it from the main function alongside `await seedAvatarCatalog();`:
 Run: `pnpm --filter @sentezy/db seed`
 Expected: prints `Seeded music — 3 track(s) in catalog.`
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add packages/db apps/api/src/data/music.json
-git commit -m "feat(db): music_catalog table seeded from data/music.json"
+bash .superpowers/sdd/snapshot.sh 8
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-8.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *feat(db): music_catalog table seeded from data/music.json*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -1668,12 +1740,21 @@ and catalogued in `music.json` (seeded into the `music_catalog` table).
 Run: `pnpm --filter @sentezy/db seed`
 Expected: prints `Seeded music — 11 track(s) in catalog.` (3 original + at least 8 new).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add scripts/add-music.mjs apps/api/src/data/music.json apps/api/src/data/MUSIC_LICENSES.md
-git commit -m "feat: royalty-free music library + add-music acquisition script"
+bash .superpowers/sdd/snapshot.sh 9
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-9.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *feat: royalty-free music library + add-music acquisition script*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -1745,12 +1826,21 @@ non-zero `durationSec` for the tracks added in Task 9) and a `moods` array of 4 
 Run: `curl -s "localhost:4000/music?mood=calm" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d['music']), {t['mood'] for t in d['music']})"`
 Expected: a count of at least 2 and the set `{'calm'}`.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add apps/api/src/routes/music.ts
-git commit -m "feat(api): GET /music reads the music_catalog table with mood filtering"
+bash .superpowers/sdd/snapshot.sh 10
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-10.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *feat(api): GET /music reads the music_catalog table with mood filtering*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -2083,12 +2173,21 @@ With the API running, run `pnpm --filter @sentezy/web dev` and on the dashboard:
 5. "Yok" clears the selection and the chip returns to "Müzik seç".
 6. A mood chip narrows the list (verify the network tab shows `/music?mood=…`).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add apps/web/src
-git commit -m "feat(web): VoicePicker-grade music picker with its own composer chip"
+bash .superpowers/sdd/snapshot.sh 11
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-11.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *feat(web): VoicePicker-grade music picker with its own composer chip*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -2201,12 +2300,21 @@ Expected: the chosen bed plays under the reel at the level set by the slider; mo
 slider and reopening the preview changes the level; selecting "Yok" makes the preview silent
 apart from transition whooshes.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add packages/remotion apps/worker apps/web/src
-git commit -m "feat: play the music bed in the preview so it matches the render"
+bash .superpowers/sdd/snapshot.sh 12
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-12.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *feat: play the music bed in the preview so it matches the render*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -2262,80 +2370,144 @@ Run: `cd apps/api && npx tsx src/lib/emotion.test.ts`
 Expected: PASS — prints `apps/api/src/lib/emotion.test.ts ok`. If any assertion fails, fix
 `applyEmotionTag` (not the test) and note the fix in the commit message.
 
-- [ ] **Step 3: Write the worker test**
+- [ ] **Step 3: Write the failing worker test**
 
 Create `apps/worker/tests/test_voice_tone.py`:
 
 ```python
 """The tone the drawer sets must survive the trip into the TTS call.
 
-pipeline.py reads options.voice.emotion, then either (a) hands it to the LLM tagging pass,
-or (b) with no LLM key, passes it as a single leading v3 tag. An already-tagged script
-short-circuits both. These tests pin that decision table.
+pipeline.decide_tone_route reads options.voice.emotion and picks one of three routes:
+  - "passthrough": no tone, or the script already carries v3 tags (the per-sentence pass wins)
+  - "llm":         an LLM key is available, so emotion.add_emotion_tags does per-sentence tagging
+  - "leading-tag": no LLM key, so the tone becomes a single leading v3 tag
 """
-import re
+from sentezy_worker.pipeline import decide_tone_route
+
+DRAWER_TONES = ("warmly", "excited", "cheerfully", "seriously", "sincerely")
 
 
-def _decide(options: dict, script: str, has_llm_key: bool) -> tuple[str, str | None]:
-    """Mirror of pipeline.py's tone branch → (route, emotion_tag).
+def test_natural_tone_is_a_passthrough():
+    assert decide_tone_route({"voice": {"emotion": ""}}, "Merhaba.", True) == ("passthrough", None)
+    assert decide_tone_route({}, "Merhaba.", True) == ("passthrough", None)
+    assert decide_tone_route({"voice": {}}, "Merhaba.", False) == ("passthrough", None)
 
-    route is "passthrough" | "llm" | "leading-tag".
+
+def test_tone_with_an_llm_key_goes_through_the_tagging_pass():
+    assert decide_tone_route({"voice": {"emotion": "warmly"}}, "Merhaba.", True) == ("llm", "warmly")
+
+
+def test_tone_without_an_llm_key_becomes_a_single_leading_tag():
+    assert decide_tone_route({"voice": {"emotion": "excited"}}, "Merhaba.", False) == ("leading-tag", "excited")
+
+
+def test_an_already_tagged_script_is_never_re_tagged():
+    tagged = "[excited] Merhaba. [warmly] Ho\u015f geldin."
+    assert decide_tone_route({"voice": {"emotion": "seriously"}}, tagged, True) == ("passthrough", None)
+    assert decide_tone_route({"voice": {"emotion": "seriously"}}, tagged, False) == ("passthrough", None)
+
+
+def test_a_bracketed_number_is_not_mistaken_for_a_tag():
+    assert decide_tone_route({"voice": {"emotion": "warmly"}}, "[1] Merhaba.", False) == ("leading-tag", "warmly")
+
+
+def test_every_drawer_tone_reaches_the_tts_call():
+    for tone in DRAWER_TONES:
+        assert decide_tone_route({"voice": {"emotion": tone}}, "Merhaba.", False) == ("leading-tag", tone)
+        assert decide_tone_route({"voice": {"emotion": tone}}, "Merhaba.", True) == ("llm", tone)
+```
+
+- [ ] **Step 4: Run it to verify it fails**
+
+Run: `cd apps/worker && uv run pytest tests/test_voice_tone.py -v`
+Expected: FAIL — `ImportError: cannot import name 'decide_tone_route'`
+
+- [ ] **Step 5: Extract the real decision out of the pipeline**
+
+In `apps/worker/sentezy_worker/pipeline.py`, add this module-level function next to
+`read_avatar_position`:
+
+```python
+def decide_tone_route(options: dict, script: str, has_llm_key: bool) -> tuple[str, str | None]:
+    """How the drawer's "Ses tonu" reaches the TTS call → (route, tone).
+
+    "passthrough"  — no tone set, or the script already carries v3 tags (the wizard's
+                     per-sentence emotion pass must win over a blanket leading tag).
+    "llm"          — an LLM key is configured; emotion.add_emotion_tags inserts per-sentence tags.
+    "leading-tag"  — no LLM key; the tone becomes a single leading v3 tag on the script.
     """
     tone = ((options.get("voice") or {}).get("emotion")) or ""
     already_tagged = bool(re.search(r"\[[a-zA-Z]", script))
     if not tone or already_tagged:
         return ("passthrough", None)
-    return ("llm", None) if has_llm_key else ("leading-tag", tone)
-
-
-def test_natural_tone_is_a_passthrough():
-    assert _decide({"voice": {"emotion": ""}}, "Merhaba.", True) == ("passthrough", None)
-    assert _decide({}, "Merhaba.", True) == ("passthrough", None)
-
-
-def test_tone_with_an_llm_key_goes_through_the_tagging_pass():
-    assert _decide({"voice": {"emotion": "warmly"}}, "Merhaba.", True) == ("llm", None)
-
-
-def test_tone_without_an_llm_key_becomes_a_single_leading_tag():
-    assert _decide({"voice": {"emotion": "excited"}}, "Merhaba.", False) == ("leading-tag", "excited")
-
-
-def test_an_already_tagged_script_is_never_re_tagged():
-    assert _decide({"voice": {"emotion": "seriously"}}, "[excited] Merhaba.", True) == ("passthrough", None)
-    assert _decide({"voice": {"emotion": "seriously"}}, "[excited] Merhaba.", False) == ("passthrough", None)
-
-
-def test_every_drawer_tone_reaches_the_tts_call():
-    for tone in ("warmly", "excited", "cheerfully", "seriously", "sincerely"):
-        assert _decide({"voice": {"emotion": tone}}, "Merhaba.", False) == ("leading-tag", tone)
+    return ("llm", tone) if has_llm_key else ("leading-tag", tone)
 ```
 
-- [ ] **Step 4: Run it**
+Then replace the inline branch in the TTS section:
+
+```python
+    tone = ((options.get("voice") or {}).get("emotion")) or ""
+    script = video["script"]
+    emotion_tag: str | None = None
+    # If the wizard's "add emotion" pass already annotated the script with v3 tags, use it
+    # as-is — don't re-tag or prepend a leading tag (captions still strip the tags later).
+    already_tagged = bool(re.search(r"\[[a-zA-Z]", script))
+    if tone and not already_tagged:
+        if cfg.openrouter_api_key or cfg.anthropic_api_key:
+```
+
+with:
+
+```python
+    script = video["script"]
+    emotion_tag: str | None = None
+    has_llm_key = bool(cfg.openrouter_api_key or cfg.anthropic_api_key)
+    route, tone = decide_tone_route(options, script, has_llm_key)
+    if route == "llm":
+```
+
+and adjust the two branch bodies so the LLM branch keeps calling `add_emotion_tags(script, tone, …)`
+while the fallback becomes:
+
+```python
+    elif route == "leading-tag":
+        emotion_tag = tone  # no LLM key → a single leading tag sets the tone
+```
+
+Leave the `el.tts_with_timestamps(script, …, emotion_tag=emotion_tag)` call unchanged.
+
+- [ ] **Step 6: Run it to verify it passes**
 
 Run: `cd apps/worker && uv run pytest tests/test_voice_tone.py -v`
-Expected: PASS — 5 passed.
+Expected: PASS — 6 passed.
 
-- [ ] **Step 5: Confirm the mirror still matches the real code**
+- [ ] **Step 7: Run the whole worker suite for regressions**
 
-Run: `grep -n "already_tagged\|emotion_tag\|tone = " apps/worker/sentezy_worker/pipeline.py`
-Read the output and confirm the branch structure matches `_decide` exactly. If `pipeline.py`
-has drifted, update `_decide` (and the assertions) to match reality — the test documents the
-real code, not the other way around.
+Run: `cd apps/worker && uv run pytest -q`
+Expected: PASS.
 
-- [ ] **Step 6: Verify the tone reaches a real voice preview**
+- [ ] **Step 8: Verify the tone reaches a real voice preview**
 
 With web + API running: open "Ek ayarlar", set Ses tonu to "Enerjik", then open "Ses seç",
 enable the "kendi metninle dinle" (real TTS) option and play a voice.
 Expected: the request to `POST /voices/preview` carries `"emotion":"excited"` (check the
 network tab) and the delivery is audibly more energetic than with "Doğal".
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 9: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add apps/api/src/lib/emotion.test.ts apps/worker/tests/test_voice_tone.py
-git commit -m "test: pin the voice-tone contract from the drawer through to TTS"
+bash .superpowers/sdd/snapshot.sh 13
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-13.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *test: pin the voice-tone contract from the drawer through to TTS*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.
 
 ---
 
@@ -2424,9 +2596,18 @@ Append to `docs/superpowers/specs/2026-07-19-composer-settings-cleanup-design.md
 
 Fill in what actually happened, including anything that failed.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 8: Snapshot (NO commit)**
+
+This branch takes **no commits** — Berkan's standing rule. The git index marks task
+boundaries, so checkpoint with:
 
 ```bash
-git add docs/superpowers/specs/2026-07-19-composer-settings-cleanup-design.md
-git commit -m "docs: record end-to-end verification of the settings cleanup"
+bash .superpowers/sdd/snapshot.sh 14
 ```
+
+Expected: prints the path of `.superpowers/sdd/diffs/task-14.diff` (this task's delta)
+and a one-line stat summary. Report that path back to the controller.
+Intended change: *docs: record end-to-end verification of the settings cleanup*.
+
+**Never run `git commit`, `git stash`, `git checkout`, `git reset --hard`, or
+`git clean` in this worktree** — with no commits, the working tree is the only copy.

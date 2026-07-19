@@ -13,6 +13,9 @@ export type ApiVideo = {
   thumbnailUrl: string | null;
   durationS: number | null;
   createdAt: string;
+  script: string;
+  options: Record<string, unknown>;
+  creditsCost: number;
 };
 
 export const STATUS_LABEL: Record<VideoStatus, [string, string]> = {

@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { VideoCard } from "@/components/VideoCard";
 import { useVideos } from "@/lib/queries";
-import { formatRatio, STATUS_LABEL } from "@/lib/types";
-import { videoDisplayTitle } from "@/lib/videoTitle";
 
 export function LibraryView() {
   const { data: videos, isLoading } = useVideos();
@@ -30,35 +29,9 @@ export function LibraryView() {
 
       {videos && videos.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {videos.map((v) => {
-            const [label, cls] = STATUS_LABEL[v.status];
-            const href = `/videos/${v.id}`;
-            return (
-              <Link key={v.id} href={href} className="card overflow-hidden transition hover:-translate-y-0.5">
-                <div className="ph-stripe relative aspect-[9/16]">
-                  {v.thumbnailUrl && (
-                    <img
-                      src={v.thumbnailUrl}
-                      alt=""
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                  )}
-                  <span className={`badge ${cls} absolute left-2.5 top-2.5`}>
-                    <span className="dot" />
-                    {label}
-                  </span>
-                </div>
-                <div className="p-3">
-                  <p className="truncate text-[13.5px] font-semibold text-ink">{videoDisplayTitle(v)}</p>
-                  <div className="mt-1 flex items-center justify-between text-[12px] text-muted">
-                    <span>{new Date(v.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</span>
-                    <span className="mono">{formatRatio(v.aspectRatio)}</span>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+          {videos.map((v) => (
+            <VideoCard key={v.id} video={v} />
+          ))}
         </div>
       )}
     </div>

@@ -5,7 +5,6 @@ import { type AspectRatio, CreateVideoDraft, CreateVideoRequest, UpdateVideoDraf
 import { enqueueVideo } from "../lib/redis";
 import { SEP, resolveVoice } from "../lib/voices";
 import { emotionEnabled, enhanceScriptEmotion } from "../lib/emotion";
-import { sfxEnabled, suggestSfxCues } from "../lib/sfx";
 import { publicUrl, signedDownloadUrl } from "../lib/r2";
 import { isDev } from "../env";
 
@@ -15,7 +14,7 @@ const EnhanceEmotionBody = z.object({
   tone: z.string().max(40).default(""),
 });
 
-const SuggestSfxBody = z.object({ script: z.string().min(1).max(5000) });
+const UpdateVideoTitle = z.object({ title: z.string().trim().min(1).max(120) });
 
 const CREDIT_COST = 1;
 
@@ -39,7 +38,7 @@ async function ensureProfile(tx: Prisma.TransactionClient, userId: string): Prom
 export async function videoRoutes(app: FastifyInstance) {
   app.get("/videos", { preHandler: app.authenticate }, async (req) => {
     const rows = await prisma.video.findMany({
-      where: { userId: req.user!.id },
+      where: { userId: req.user!.id, deletedAt: null },
       orderBy: { createdAt: "desc" },
     });
     // R2 isn't a public bucket, so hand the browser a delivery URL per thumbnail
@@ -57,7 +56,10 @@ export async function videoRoutes(app: FastifyInstance) {
 
   app.get("/videos/:id", { preHandler: app.authenticate }, async (req, reply) => {
     const { id } = req.params as { id: string };
-    const video = await prisma.video.findFirst({ where: { id, userId: req.user!.id } });
+    const video = await prisma.video.findFirst({
+      where: { id, userId: req.user!.id, deletedAt: null },
+      include: { avatar: true, voice: true },
+    });
     if (!video) return reply.code(404).send({ error: "not_found" });
 
     let downloadUrl: string | null = null;
@@ -98,7 +100,59 @@ export async function videoRoutes(app: FastifyInstance) {
     );
     const brollImageUrls = brollMedia.filter((m) => m.kind === "image").map((m) => m.url); // back-compat
 
-    return { video, downloadUrl, fileDownloadUrl, thumbnailUrl, brollImageUrls, brollMedia };
+    // Shaped to satisfy the composer's Avatar/Voice types verbatim (apps/web/src/components/
+    // wizard/types.ts) so a later "reuse this video" flow can assign these straight into
+    // composer state with no cast and no client-side catalog lookup.
+    //
+    // video.avatar.sourceImageId is the green-screen source key — rendering it raw shows a
+    // person on a bright green background, so prefer the catalog's matted thumbnail. The
+    // catalog row (matched by imageKey === sourceImageId) also supplies the sector/gender/age
+    // fields the composer's Avatar type requires. An uploaded avatar has no catalog row, so
+    // fall back to the source key for the image and neutral defaults for the catalog-only
+    // fields rather than returning null.
+    let avatar: {
+      id: string;
+      slug: string;
+      name: string;
+      imageUrl: string;
+      sector: string;
+      sectorLabel: string;
+      gender: "kadın" | "erkek";
+      age: "genç" | "yetişkin" | "olgun";
+      hijab: boolean;
+      ready: boolean;
+    } | null = null;
+    if (video.avatar) {
+      const catalog = await prisma.catalogAvatar.findFirst({ where: { imageKey: video.avatar.sourceImageId } });
+      const key = catalog?.displayImageKey || video.avatar.sourceImageId;
+      avatar = {
+        id: video.avatar.sourceImageId,
+        slug: catalog?.slug ?? "",
+        name: catalog?.name ?? video.avatar.name,
+        imageUrl: key ? await signedDownloadUrl(key, 86400) : "",
+        sector: catalog?.sector ?? "",
+        sectorLabel: catalog?.sectorLabel ?? "",
+        gender: catalog?.gender === "erkek" ? "erkek" : "kadın",
+        age: catalog?.age === "genç" || catalog?.age === "olgun" ? catalog.age : "yetişkin",
+        hijab: catalog?.hijab ?? false,
+        ready: video.avatar.status === "ready",
+      };
+    }
+    const voice = video.voice
+      ? { id: video.voice.id, label: video.voice.label, gender: video.voice.gender, style: video.voice.style }
+      : null;
+
+    const { avatar: _avatarRow, voice: _voiceRow, ...videoRow } = video;
+    return {
+      video: videoRow,
+      downloadUrl,
+      fileDownloadUrl,
+      thumbnailUrl,
+      brollImageUrls,
+      brollMedia,
+      avatar,
+      voice,
+    };
   });
 
   app.post("/videos", { preHandler: app.authenticate }, async (req, reply) => {
@@ -192,7 +246,7 @@ export async function videoRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: "invalid_body", details: parsed.error.flatten() });
     }
-    const existing = await prisma.video.findFirst({ where: { id, userId: req.user!.id } });
+    const existing = await prisma.video.findFirst({ where: { id, userId: req.user!.id, deletedAt: null } });
     if (!existing) return reply.code(404).send({ error: "not_found" });
     if (existing.status !== "draft") return reply.code(409).send({ error: "not_a_draft" });
     const d = parsed.data;
@@ -220,11 +274,41 @@ export async function videoRoutes(app: FastifyInstance) {
     return { video };
   });
 
+  // Rename a video at ANY status. Deliberately separate from PATCH /videos/:id, which is
+  // draft-only: a rendered video's script/avatar/options were already consumed by the
+  // render, so a title-only route is the safe way to allow the one edit that stays valid.
+  app.patch("/videos/:id/title", { preHandler: app.authenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const parsed = UpdateVideoTitle.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "invalid_body", details: parsed.error.flatten() });
+    }
+    const existing = await prisma.video.findFirst({ where: { id, userId: req.user!.id, deletedAt: null } });
+    if (!existing) return reply.code(404).send({ error: "not_found" });
+    // Mark the title as explicitly set by the user so videoDisplayTitle stops preferring
+    // options.product.title over it. MERGE into the existing options — never replace — since
+    // it also carries captions/background(+media)/layout/music/voice/effects/product.
+    const existingOptions = (existing.options as Record<string, unknown> | null) ?? {};
+    const options = { ...existingOptions, titleOverridden: true } as Prisma.InputJsonValue;
+    const video = await prisma.video.update({ where: { id }, data: { title: parsed.data.title, options } });
+    return { video };
+  });
+
+  // Soft delete — the row is hidden from every read, the R2 objects are deliberately kept.
+  // A repeat call 404s because the ownership lookup filters deletedAt like all other reads.
+  app.delete("/videos/:id", { preHandler: app.authenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const existing = await prisma.video.findFirst({ where: { id, userId: req.user!.id, deletedAt: null } });
+    if (!existing) return reply.code(404).send({ error: "not_found" });
+    await prisma.video.update({ where: { id }, data: { deletedAt: new Date() } });
+    return reply.code(204).send();
+  });
+
   // Finalize a draft: validate, debit a credit, queue it for the worker.
   app.post("/videos/:id/generate", { preHandler: app.authenticate }, async (req, reply) => {
     const { id } = req.params as { id: string };
     const userId = req.user!.id;
-    const draft = await prisma.video.findFirst({ where: { id, userId } });
+    const draft = await prisma.video.findFirst({ where: { id, userId, deletedAt: null } });
     if (!draft) return reply.code(404).send({ error: "not_found" });
     if (draft.status !== "draft") return reply.code(409).send({ error: "already_generated" });
     // Avatar is OPTIONAL — a faceless reel needs voice + script + some B-roll media instead of a
@@ -287,17 +371,5 @@ export async function videoRoutes(app: FastifyInstance) {
     const imageUrls = await Promise.all(parsed.data.imageIds.map((id) => signedDownloadUrl(id, 86400)));
     const result = await enhanceScriptEmotion(parsed.data.script, imageUrls, parsed.data.tone);
     return reply.send({ ...result, enabled: true });
-  });
-
-  app.post("/videos/suggest-sfx", { preHandler: app.authenticate }, async (req, reply) => {
-    const parsed = SuggestSfxBody.safeParse(req.body);
-    if (!parsed.success) {
-      return reply.code(400).send({ error: "invalid_body", details: parsed.error.flatten() });
-    }
-    if (!sfxEnabled()) {
-      return reply.send({ cues: [], enabled: false });
-    }
-    const cues = await suggestSfxCues(parsed.data.script);
-    return reply.send({ cues, enabled: true });
   });
 }

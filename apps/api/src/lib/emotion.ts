@@ -13,8 +13,9 @@ import { env } from "../env";
  */
 
 // The v3 audio tags the model may insert (kept in sync with the worker's emotion.py).
-// Sound-effect tags ([applause], [gunshot], …) are deliberately excluded: this app has its
-// own cued SFX engine, and a model-invented sound would land in the voice track unanchored.
+// Sound-effect tags ([applause], [gunshot], …) are deliberately excluded: they'd bake an
+// LLM-invented sound directly into the voice track, with no way to mute, retime, or
+// remove it afterwards (unlike the transition whooshes, which the app places itself).
 const NONVERBAL_TAGS = ["laughs", "sighs", "exhales", "whispers"]; // documented as reliable in v3
 // Free-form delivery cues — v3 reads descriptive tags too, and these mirror VOICE_EMOTIONS.
 const TONE_TAGS = [
@@ -65,7 +66,7 @@ const hasTag = (text: string): boolean => /\[[a-zA-Z]/.test(text);
 /** The invariant an annotated script must preserve: whitespace tokens with audio tags
  *  removed and edge pacing punctuation normalised away (interior '.' — as in "3.5" — must
  *  still match). Catches paraphrase, reordering, case changes, and a stray standalone '…',
- *  which would survive as an empty token and desync caption/SFX word indices.
+ *  which would survive as an empty token and desync caption word indices.
  *  Mirrors words_only() in apps/worker/sentezy_worker/emotion.py. */
 export function wordsOnly(text: string): string[] {
   return stripTags(text)
@@ -153,8 +154,8 @@ export async function enhanceScriptEmotion(
     if (!out) continue; // 429/error for this model → try the next
     // Accept only if the model (a) actually inserted at least one tag — weak models just
     // echo the script back, which must NOT count as "emotion added" — and (b) left the
-    // spoken words untouched, so the TTS word alignment still lines up with captions and
-    // SFX cues. Else try the next model.
+    // spoken words untouched, so the TTS word alignment still lines up with captions.
+    // Else try the next model.
     if (hasTag(out) && wordsOnly(out).join(" ") === baseline) {
       return { script: out, changed: true };
     }

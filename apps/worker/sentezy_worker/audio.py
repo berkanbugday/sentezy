@@ -1,4 +1,4 @@
-"""ffmpeg audio bed — attaches the reel's audio (voice + ducked music + transition/AI SFX)
+"""ffmpeg audio bed — attaches the reel's audio (voice + ducked music + transition SFX)
 onto an opaque Remotion render via stream-copy. Engine-agnostic helpers below are copied
 verbatim from the former ffmpeg compositor;
 the transient duplication is intentional so this module has no dependency on that engine.
@@ -101,10 +101,9 @@ def _ffmpeg_audio_cmd(
     music_volume: float,
     broll: list[dict],
     transition_sfx: bool,
-    sfx_cues: list[dict],
 ) -> list[str]:
     """Build the ffmpeg argv that stream-copies the opaque render's video and attaches the
-    reel audio bed (voice + ducked music + transition/AI SFX). Pure — no process spawned."""
+    reel audio bed (voice + ducked music + transition SFX). Pure — no process spawned."""
     # [0] opaque video (video copied), [1] avatar voice.
     inputs: list[str] = ["-i", video_path, "-i", voice_path]
     voice_idx = 1
@@ -112,7 +111,11 @@ def _ffmpeg_audio_cmd(
 
     music_idx = None
     if music_path:
-        inputs += ["-i", music_path]
+        # Loop the bed indefinitely — most catalog tracks are shorter than a full ad.
+        # `amix ... duration=first` (below) truncates the mix back to the voice length,
+        # so this only prevents the bed from running out early; nothing else changes.
+        # Matches the preview, where <Audio loop /> plays the bed continuously (Reel.tsx).
+        inputs += ["-stream_loop", "-1", "-i", music_path]
         music_idx = idx
         idx += 1
 
@@ -136,14 +139,7 @@ def _ffmpeg_audio_cmd(
         sfx_input_idxs.append(idx)
         idx += 1
 
-    # AI voice-timed SFX: one input per cue, mixed at per-cue gain.
     sfx_gains: list[float] = [SFX_VOLUME] * len(sfx_input_idxs)
-    for cue in (sfx_cues or []):
-        inputs += ["-i", cue["path"]]
-        sfx_input_idxs.append(idx)
-        sfx_times.append(float(cue["time"]))
-        sfx_gains.append(float(cue["gain"]))
-        idx += 1
 
     fc: list[str] = []
     audio_map = _append_audio_bed(
@@ -179,11 +175,10 @@ def mux_audio(
     music_volume: float = 0.15,
     broll: list[dict] | None = None,
     transition_sfx: bool = True,
-    sfx_cues: list[dict] | None = None,
 ) -> None:
     """Attach the reel's audio bed to the opaque Remotion render (video stream-copied)."""
     _run(_ffmpeg_audio_cmd(
         video_path=video_path, voice_path=voice_path, out_path=out_path,
         music_path=music_path, music_volume=music_volume,
-        broll=broll or [], transition_sfx=transition_sfx, sfx_cues=sfx_cues or [],
+        broll=broll or [], transition_sfx=transition_sfx,
     ))

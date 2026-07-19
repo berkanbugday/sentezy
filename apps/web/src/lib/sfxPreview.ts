@@ -1,30 +1,14 @@
 import { staticFile } from "remotion";
 import { brollSegments, isEntrance, type ReelBrollItem, type ResolvedSfxCue } from "@sentezy/remotion";
-import { brollSfxStem, type SfxCue, tokenizeScript } from "@sentezy/types";
+import { brollSfxStem } from "@sentezy/types";
 import { previewWords } from "@/lib/captionPreview";
 
 const PER_WORD = 0.42; // MUST match captionPreview.ts estimated timing
 const FPS = 30;
 
-/** Public URL for a bundled AI SFX id (served from apps/web/public/sfx). */
-export function sfxSrc(id: string): string {
-  return staticFile(`sfx/${id}.mp3`);
-}
-
 /** Public URL for a slide-transition sound stem (apps/web/public/sfx/transitions). */
 export function transitionSfxSrc(stem: string): string {
   return staticFile(`sfx/transitions/${stem}.wav`);
-}
-
-/**
- * Resolve word-anchored cues to preview times using the SAME estimated timing the caption
- * preview uses (PER_WORD per token) over the full script.
- */
-export function resolvePreviewSfx(script: string, cues: SfxCue[]): ResolvedSfxCue[] {
-  const nTokens = tokenizeScript(script).length;
-  return cues
-    .filter((c) => c.wordIndex >= 0 && c.wordIndex < nTokens)
-    .map((c) => ({ src: sfxSrc(c.sfxId), time: c.wordIndex * PER_WORD, gain: c.gain }));
 }
 
 /**

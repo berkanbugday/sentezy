@@ -1,6 +1,6 @@
 // packages/remotion/src/reel/types.ts
 import type { CaptionStyleId } from "@sentezy/types";
-import type { AvatarSide, CaptionLayout, CaptionPosition, CaptionWord } from "../types";
+import type { AvatarPosition, CaptionPosition, CaptionWord } from "../types";
 import type { ResolvedSfxCue } from "./SfxTrack";
 import type { ReelBrollItem } from "./BrollLayer";
 
@@ -13,13 +13,16 @@ export type ReelProps = {
   avatarUrl: string | null;
   broll: ReelBrollItem[];
   captionStyle: { styleId: CaptionStyleId; font: string; color: string };
-  layout: CaptionLayout;
+  avatarPosition: AvatarPosition;
   position: CaptionPosition;
-  avatarSide: AvatarSide;
   captions: boolean;
   /** True only in the web <Player> — mounts audible SfxTrack. The render is opaque + silent. */
   previewAudio: boolean;
   sfxCues: ResolvedSfxCue[];
+  /** Preview-only background bed (a signed R2 URL). null = no music. */
+  musicUrl: string | null;
+  /** 0..1 bed level, matched to options.music.volume. */
+  musicVolume: number;
   width?: number;
   height?: number;
   fps?: number;

@@ -54,54 +54,6 @@ export const CAPTION_STYLE_IDS = CAPTION_STYLE_META.map((s) => s.id) as unknown 
 export const CaptionStyle = z.enum(CAPTION_STYLE_IDS);
 export type CaptionStyle = z.infer<typeof CaptionStyle>;
 
-// ── Sound effects ───────────────────────────────────────────────────────────
-// CANONICAL SFX registry — the single source of truth for the AI-placed sound
-// effects. The AI (POST /videos/suggest-sfx) chooses from these ids; files are
-// named {id}.mp3 and live in apps/web/public/sfx (preview) + apps/worker/sfx/library (render).
-export const SFX_META = [
-  { id: "whoosh",   label: "Whoosh",   tags: ["transition", "swipe", "scene change"] },
-  { id: "ding",     label: "Ding",     tags: ["highlight", "correct", "notify", "point"] },
-  { id: "pop",      label: "Pop",      tags: ["appear", "bubble", "reveal small"] },
-  { id: "boom",     label: "Boom",     tags: ["impact", "big reveal", "emphasis"] },
-  { id: "applause", label: "Applause", tags: ["success", "celebrate", "win"] },
-  { id: "cash",     label: "Cash",     tags: ["money", "sale", "price", "discount"] },
-  { id: "riser",    label: "Riser",    tags: ["buildup", "tension", "anticipation"] },
-  { id: "click",    label: "Click",    tags: ["tap", "select", "ui"] },
-  { id: "swoosh",   label: "Swoosh",   tags: ["fast", "motion", "swipe"] },
-  { id: "sparkle",  label: "Sparkle",  tags: ["magic", "shine", "premium"] },
-  { id: "airhorn",  label: "Airhorn",  tags: ["hype", "attention", "drop"] },
-  { id: "thud",     label: "Thud",     tags: ["drop", "land", "heavy"] },
-  { id: "bell",     label: "Bell",     tags: ["notify", "alert", "correct"] },
-  { id: "record_scratch", label: "Record scratch", tags: ["stop", "wait", "twist"] },
-  { id: "whistle",  label: "Whistle",  tags: ["rise", "fall", "cartoon"] },
-  { id: "camera",   label: "Camera",   tags: ["photo", "snapshot", "capture"] },
-] as const;
-
-export type SfxId = (typeof SFX_META)[number]["id"];
-export const SFX_IDS = SFX_META.map((s) => s.id) as unknown as [SfxId, ...SfxId[]];
-export const Sfx = z.enum(SFX_IDS);
-
-/** One placed sound effect: which SFX, anchored to which tokenizeScript() word index. */
-export const SfxCue = z.object({
-  sfxId: Sfx,
-  wordIndex: z.number().int().min(0),
-  gain: z.number().min(0).max(1).default(0.7),
-});
-export type SfxCue = z.infer<typeof SfxCue>;
-
-/**
- * Canonical script tokenization — the contract that makes SfxCue.wordIndex mean the
- * same thing on the web (estimated timing) and in the worker (real TTS timing).
- * MUST match apps/worker tokenize_script: strip [emotion] tags, split on whitespace.
- */
-export function tokenizeScript(script: string): string[] {
-  return script
-    .replace(/\[[a-zA-Z][^\]]*\]/g, " ")
-    .trim()
-    .split(/\s+/)
-    .filter((t) => t.length > 0);
-}
-
 // ── B-roll transitions & entrance effects ──────────────────────────────────
 // CANONICAL curated set — the single source of truth for the per-clip B-roll effect.
 // Rendered natively by Remotion (packages/remotion/src/broll): `transition` kinds are
@@ -134,7 +86,7 @@ export const BROLL_EFFECT_IDS = BROLL_EFFECT_META.map((e) => e.id) as unknown as
 export const BROLL_ENTRANCE_IDS = BROLL_EFFECT_META.filter((e) => e.kind === "entrance").map((e) => e.id);
 
 // CANONICAL slide-transition SFX — the sound played at each B-roll slide, matched to the
-// transition's character (separate from the AI voice-timed SFX_META palette). Values are file
+// transition's character (one per B-roll cut). Values are file
 // stems vendored (real MIT-licensed @remotion/sfx sounds) at:
 //   apps/web/public/sfx/transitions/{stem}.wav   (preview <Player>)
 //   apps/worker/sfx/transitions/{stem}.wav        (ffmpeg render)
@@ -182,6 +134,28 @@ export const CaptionsOptions = z.preprocess(
 );
 export type CaptionsOptions = z.infer<typeof CaptionsOptions>;
 
+// ── Reel layout ─────────────────────────────────────────────────────────────
+/** Where the cut-out avatar sits in the frame. "center" is bottom-centred (B-roll fills a
+ *  top band); "left"/"right" frame it to that edge over full-frame B-roll. Replaces the old
+ *  avatarLayout("side"|"bottom") + avatarSide("left"|"right") pair. */
+export const AvatarPosition = z.enum(["left", "center", "right"]);
+export type AvatarPosition = z.infer<typeof AvatarPosition>;
+
+/** Read the avatar position out of a stored `options.layout` blob. Drafts written before
+ *  2026-07-19 carry `avatarLayout` + `avatarSide` instead, so map those forward:
+ *  bottom → center, otherwise the stored side. */
+export function readAvatarPosition(layout: unknown): AvatarPosition {
+  const l = (layout ?? {}) as Record<string, unknown>;
+  const direct = AvatarPosition.safeParse(l.avatarPosition);
+  if (direct.success) return direct.data;
+  if (l.avatarLayout === "bottom") return "center";
+  // Legacy mapping (faithful): a stored avatarSide describes how this specific video
+  // already renders — preserve it exactly, this is not a default.
+  if (l.avatarSide === "left" || l.avatarSide === "right") return l.avatarSide;
+  // No usable layout data at all (missing/malformed) → the actual product default.
+  return "left";
+}
+
 // ── Reel composition options (stored on videos.options jsonb) ──────────────
 export const ReelOptions = z.object({
   background: z
@@ -221,17 +195,19 @@ export const ReelOptions = z.object({
       volume: z.number().min(0).max(1).default(0.15),
     })
     .default({ trackKey: null, volume: 0.15 }),
-  // Reel layout: which side the cut-out avatar is framed to, and where the
-  // captions sit (on the clear side, opposite the avatar).
+  // Reel layout: where the cut-out avatar sits, and whether captions ride the top
+  // or the bottom band. The preprocess folds legacy avatarLayout/avatarSide blobs
+  // forward; the inner object then strips those keys.
   layout: z
-    .object({
-      // "side" = avatar framed left/right over full-frame B-roll;
-      // "bottom" = avatar bottom-centred with B-roll filling a top band.
-      avatarLayout: z.enum(["side", "bottom"]).default("side"),
-      avatarSide: z.enum(["left", "right"]).default("right"),
-      captionPosition: z.enum(["top", "bottom"]).default("bottom"),
-    })
-    .default({ avatarLayout: "side", avatarSide: "right", captionPosition: "bottom" }),
+    .preprocess(
+      (v) =>
+        v && typeof v === "object" ? { ...(v as object), avatarPosition: readAvatarPosition(v) } : v,
+      z.object({
+        avatarPosition: AvatarPosition.default("left"),
+        captionPosition: z.enum(["top", "bottom"]).default("top"),
+      }),
+    )
+    .default({ avatarPosition: "left", captionPosition: "top" }),
   // Voice delivery — an ElevenLabs v3 audio tag setting the emotional tone
   // ("" = natural). Prepended to the script; drives both the voice and (audio-driven)
   // the HeyGen Avatar IV face.
@@ -246,14 +222,6 @@ export const ReelOptions = z.object({
       transitionSfx: z.boolean().default(true),
     })
     .default({ transitionSfx: true }),
-  // AI voice-timed sound effects (POST /videos/suggest-sfx). Separate from
-  // effects.transitionSfx (the automatic slide whooshes).
-  sfx: z
-    .object({
-      enabled: z.boolean().default(false),
-      cues: z.array(SfxCue).default([]),
-    })
-    .default({ enabled: false, cues: [] }),
   // Which wizard step the draft was last left on, so it can be resumed.
   wizardStep: z.number().int().min(0).max(4).optional(),
   // Provenance when the reel was seeded from a pasted product link (POST /import-product).
@@ -265,6 +233,11 @@ export const ReelOptions = z.object({
       price: z.string().optional(),
     })
     .optional(),
+  // Set by PATCH /videos/:id/title when the user explicitly renames a video — wins over the
+  // product title in videoDisplayTitle from then on. Written straight to Prisma by that route
+  // (bypassing this schema), but must survive a round trip through it (e.g. a later draft
+  // PATCH /videos/:id) or the flag would silently strip and the display would revert.
+  titleOverridden: z.boolean().optional(),
 });
 export type ReelOptions = z.infer<typeof ReelOptions>;
 

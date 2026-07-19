@@ -4,9 +4,10 @@ import type { CaptionStyleId } from "@sentezy/types";
  *  worker's ElevenLabs word alignment, `Word(text, start, end)`). */
 export type CaptionWord = { text: string; start: number; end: number };
 
-export type CaptionLayout = "side" | "bottom";
+/** Where the cut-out avatar sits: framed to an edge, or bottom-centred. */
+export type AvatarPosition = "left" | "center" | "right";
+/** Which band the captions ride. */
 export type CaptionPosition = "top" | "bottom";
-export type AvatarSide = "left" | "right";
 
 /** Input props for the CaptionOverlay composition — passed verbatim as Remotion
  *  `inputProps` by the Cloudflare renderer, and by the web `<Player>` for preview.
@@ -18,9 +19,8 @@ export type CaptionOverlayProps = {
   font: string;
   /** Accent hex ("#RRGGBB") for the highlighted word / marker / gradient. */
   color: string;
-  layout: CaptionLayout;
+  avatarPosition: AvatarPosition;
   position: CaptionPosition;
-  avatarSide: AvatarSide;
 };
 
 /** Composition-level input: the overlay props plus render dimensions/fps that
