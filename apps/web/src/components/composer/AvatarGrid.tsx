@@ -18,12 +18,12 @@ export function AvatarGrid({
   onSelect,
   selectedId = null,
   showNoneOption = false,
-  columns = "sheet",
+  surface = "sheet",
 }: {
   onSelect: (a: Avatar | null) => void;
   selectedId?: string | null;
   showNoneOption?: boolean;
-  columns?: "sheet" | "page";
+  surface?: "sheet" | "page";
 }) {
   const [q, setQ] = useState("");
   const [gender, setGender] = useState<Gender>("all");
@@ -44,13 +44,23 @@ export function AvatarGrid({
   };
 
   const gridCls =
-    columns === "page"
+    surface === "page"
       ? "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4"
       : "grid grid-cols-3 gap-3 sm:grid-cols-4";
 
+  /* The bar is sticky within a scroll container whose own padding would otherwise let
+   * tiles scroll through the gutter above/beside it. Negative margins bleed the bar's
+   * bg-paper out to that container's edges; matching positive padding puts the search
+   * field and dropdowns back where they'd sit without the bleed. The two surfaces sit
+   * in containers with different padding, so the cancellation differs per surface. */
+  const barCls =
+    surface === "page"
+      ? "sticky top-0 z-20 -mx-5 -mt-6 flex flex-col gap-2 border-b border-hairline bg-paper px-5 pb-4 pt-6 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.06)] sm:-mx-6 sm:px-6 md:-mx-8 md:px-8"
+      : "sticky top-0 z-20 -mx-5 -mt-4 flex flex-col gap-2 border-b border-hairline bg-paper px-5 pb-4 pt-4 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.06)]";
+
   return (
-    <div className="flex flex-col">
-      <div className="sticky top-0 z-20 bg-paper pb-3 flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
+      <div className={barCls}>
         <div className="relative">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
             <Icon.search width={15} height={15} />
@@ -126,7 +136,7 @@ export function AvatarGrid({
                   )}
                 </div>
                 <div className={`mt-1.5 truncate px-0.5 text-[12px] font-medium ${sel ? "text-ink" : "text-slate"}`}>{a.name}</div>
-                {columns === "page" && a.sectorLabel && (
+                {surface === "page" && a.sectorLabel && (
                   <div className="truncate px-0.5 text-[11px] text-muted">{a.sectorLabel}</div>
                 )}
               </button>

@@ -17,7 +17,7 @@ export function AvatarsView() {
         <p className="mt-1 text-[14.5px] text-slate">Videon için bir sunucu seç.</p>
       </div>
 
-      <AvatarGrid columns="page" onSelect={(a) => setPreviewing(a)} />
+      <AvatarGrid surface="page" onSelect={(a) => setPreviewing(a)} />
       <AvatarPreview avatar={previewing} onClose={() => setPreviewing(null)} />
     </div>
   );
