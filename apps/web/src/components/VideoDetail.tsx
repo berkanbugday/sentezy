@@ -78,7 +78,9 @@ export function VideoDetail({ id }: { id: string }) {
   // and append the font, e.g. "Vurgu · Poppins".
   const fam = CAPTION_FAMILIES.find((f) => f.key === opts.captions?.style);
   const captionName = fam ? [fam.label, opts.captions?.font].filter(Boolean).join(" · ") : null;
-  const emotionLabel = VOICE_EMOTIONS.find((e) => e.value === (opts.voice?.emotion ?? ""))?.label ?? null;
+  const emotionLabel = opts.voice
+    ? VOICE_EMOTIONS.find((e) => e.value === (opts.voice?.emotion ?? ""))?.label ?? null
+    : null;
   const scriptText = (v.script ?? "").replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
 
   return (
@@ -206,9 +208,14 @@ export function VideoDetail({ id }: { id: string }) {
                 ["Duygu", emotionLabel],
                 ["En-boy oranı", formatRatio(v.aspectRatio)],
                 ["Süre", formatDuration(v.durationS) || "—"],
-                ["Yerleşim", `Avatar ${avatarPos} · alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`],
+                [
+                  "Yerleşim",
+                  detail.avatar
+                    ? `Avatar ${avatarPos} · alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`
+                    : `Alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`,
+                ],
                 ["Müzik", opts.music?.trackKey ? `${opts.music.trackKey} · %${Math.round((opts.music.volume ?? 0) * 100)}` : null],
-                ["Kredi", v.creditsCost ? String(v.creditsCost) : null],
+                ["Kredi", v.status !== "draft" && v.creditsCost ? String(v.creditsCost) : null],
                 ["Oluşturuldu", new Date(v.createdAt).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" })],
               ] as [string, string | null][]
             )
