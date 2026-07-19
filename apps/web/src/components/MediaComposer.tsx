@@ -680,7 +680,7 @@ export function MediaComposer({
           onClick={create}
           disabled={uploading || submitting || !canCreate}
           title={createHint}
-          className="btn btn-primary ml-auto shrink-0 px-6! py-3.5! text-[15.5px]! disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn btn-primary btn-lg ml-auto shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {uploading || submitting ? <Spinner size={16} /> : <Icon.arrowRight width={19} height={19} className="order-2" />}
           <span className="order-1">{submitting ? "Oluşturuluyor…" : "Video oluştur"}</span>

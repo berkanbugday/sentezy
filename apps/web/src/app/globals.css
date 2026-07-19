@@ -73,6 +73,7 @@ button:disabled { cursor: not-allowed; }
 .btn-primary:hover { transform: translateY(-1px); opacity: 0.92; }
 .btn-ghost { background: transparent; color: var(--color-ink); border-color: var(--color-hairline); }
 .btn-ghost:hover { background: var(--wash); }
+.btn-lg { font-size: 15.5px; padding: 14px 24px; }
 
 .card {
   background: var(--color-paper); border: 1px solid var(--color-hairline);
