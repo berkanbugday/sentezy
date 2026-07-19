@@ -7,11 +7,16 @@ assert.strictEqual(readAvatarPosition({ avatarLayout: "bottom", avatarSide: "rig
 assert.strictEqual(readAvatarPosition({ avatarLayout: "side", avatarSide: "left" }), "left");
 assert.strictEqual(readAvatarPosition({ avatarLayout: "side", avatarSide: "right" }), "right");
 
+// Regression: a legacy blob with an explicit avatarSide: "right" is real stored data
+// describing how this video already renders — it must NOT be swept up by the "left"
+// default below.
+assert.strictEqual(readAvatarPosition({ avatarSide: "right" }), "right");
+
 // Missing / malformed input falls back to the default side.
-assert.strictEqual(readAvatarPosition({}), "right");
-assert.strictEqual(readAvatarPosition(undefined), "right");
-assert.strictEqual(readAvatarPosition(null), "right");
-assert.strictEqual(readAvatarPosition({ avatarPosition: "sideways" }), "right");
+assert.strictEqual(readAvatarPosition({}), "left");
+assert.strictEqual(readAvatarPosition(undefined), "left");
+assert.strictEqual(readAvatarPosition(null), "left");
+assert.strictEqual(readAvatarPosition({ avatarPosition: "sideways" }), "left");
 
 // An explicit new-shape value wins over any legacy key.
 assert.strictEqual(readAvatarPosition({ avatarPosition: "center", avatarSide: "left" }), "center");
@@ -29,8 +34,8 @@ assert.deepStrictEqual(fresh.layout, { avatarPosition: "left", captionPosition: 
 
 // Absent layout gets the defaults.
 assert.deepStrictEqual(ReelOptions.parse({}).layout, {
-  avatarPosition: "right",
-  captionPosition: "bottom",
+  avatarPosition: "left",
+  captionPosition: "top",
 });
 
 console.log("packages/types/src/layout.test.ts ok");

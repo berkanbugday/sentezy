@@ -13,9 +13,15 @@ def test_legacy_side_layout_keeps_its_side():
     assert read_avatar_position({"avatarLayout": "side", "avatarSide": "right"}) == "right"
 
 
-def test_missing_or_malformed_layout_falls_back_to_right():
-    assert read_avatar_position({}) == "right"
-    assert read_avatar_position({"avatarPosition": "sideways"}) == "right"
+def test_legacy_avatar_side_right_is_preserved_not_defaulted():
+    # Regression: real stored data describing how this video already renders must NOT
+    # be swept up by the "left" default below.
+    assert read_avatar_position({"avatarSide": "right"}) == "right"
+
+
+def test_missing_or_malformed_layout_falls_back_to_left():
+    assert read_avatar_position({}) == "left"
+    assert read_avatar_position({"avatarPosition": "sideways"}) == "left"
 
 
 def test_explicit_avatar_position_wins_over_legacy_keys():

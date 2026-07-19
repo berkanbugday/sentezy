@@ -43,8 +43,8 @@ export const createReelSchema = z.object({
   // Music bed level (0..1 of full scale; UI caps at 0.4 so the bed never buries the voice).
   musicVolume: z.number().min(0).max(1).default(0.15),
   // Where the cut-out avatar sits: an edge, or bottom-centred.
-  avatarPosition: z.enum(["left", "center", "right"]).default("right"),
-  captionPosition: z.enum(["top", "bottom"]).default("bottom"),
+  avatarPosition: z.enum(["left", "center", "right"]).default("left"),
+  captionPosition: z.enum(["top", "bottom"]).default("top"),
   // Energy effects — whoosh SFX on photo transitions.
   transitionSfx: z.boolean().default(true),
 });

@@ -153,7 +153,13 @@ def read_avatar_position(layout: dict) -> str:
         return pos
     if layout.get("avatarLayout") == "bottom":
         return "center"
-    return "left" if layout.get("avatarSide") == "left" else "right"
+    side = layout.get("avatarSide")
+    if side in ("left", "right"):
+        # Legacy mapping (faithful): a stored avatarSide describes how this specific
+        # video already renders — preserve it exactly, this is not a default.
+        return side
+    # No usable layout data at all (missing/malformed) → the actual product default.
+    return "left"
 
 
 def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: ElevenLabs, hg: HeyGen) -> None:
@@ -232,7 +238,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     cap_style = caps.get("style", "karaoke")
     cap_font = caps.get("font") or "General Sans"
     cap_color = caps.get("color")
-    cap_position = layout.get("captionPosition", "bottom")
+    cap_position = layout.get("captionPosition", "top")
 
     broll_media = _resolve_broll_media(options, storage, workdir)
     segments = _broll_segments(words, broll_media)  # used for SFX slide timing (audio parity)

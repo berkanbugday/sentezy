@@ -149,7 +149,11 @@ export function readAvatarPosition(layout: unknown): AvatarPosition {
   const direct = AvatarPosition.safeParse(l.avatarPosition);
   if (direct.success) return direct.data;
   if (l.avatarLayout === "bottom") return "center";
-  return l.avatarSide === "left" ? "left" : "right";
+  // Legacy mapping (faithful): a stored avatarSide describes how this specific video
+  // already renders — preserve it exactly, this is not a default.
+  if (l.avatarSide === "left" || l.avatarSide === "right") return l.avatarSide;
+  // No usable layout data at all (missing/malformed) → the actual product default.
+  return "left";
 }
 
 // ── Reel composition options (stored on videos.options jsonb) ──────────────
@@ -199,11 +203,11 @@ export const ReelOptions = z.object({
       (v) =>
         v && typeof v === "object" ? { ...(v as object), avatarPosition: readAvatarPosition(v) } : v,
       z.object({
-        avatarPosition: AvatarPosition.default("right"),
-        captionPosition: z.enum(["top", "bottom"]).default("bottom"),
+        avatarPosition: AvatarPosition.default("left"),
+        captionPosition: z.enum(["top", "bottom"]).default("top"),
       }),
     )
-    .default({ avatarPosition: "right", captionPosition: "bottom" }),
+    .default({ avatarPosition: "left", captionPosition: "top" }),
   // Voice delivery — an ElevenLabs v3 audio tag setting the emotional tone
   // ("" = natural). Prepended to the script; drives both the voice and (audio-driven)
   // the HeyGen Avatar IV face.
