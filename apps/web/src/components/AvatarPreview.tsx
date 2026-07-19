@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Icon } from "@/components/icons";
 import { type Avatar } from "@/components/wizard/types";
+import { AGE_OPTS } from "@/lib/composer/avatarFilters";
 
 /** A closer look at one avatar before committing to it — the grid tile is too small to
  *  judge a face. The action seeds the composer with this avatar via ?avatar=<id>. */
@@ -20,7 +21,8 @@ export function AvatarPreview({ avatar, onClose }: { avatar: Avatar | null; onCl
   }, [avatar, onClose]);
 
   if (!avatar) return null;
-  const meta = [avatar.sectorLabel, avatar.age, avatar.hijab ? "Başörtülü" : null].filter(Boolean).join(" · ");
+  const ageLabel = AGE_OPTS.find((o) => o.v === avatar.age)?.label ?? avatar.age;
+  const meta = [avatar.sectorLabel, ageLabel, avatar.hijab ? "Başörtülü" : null].filter(Boolean).join(" · ");
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">

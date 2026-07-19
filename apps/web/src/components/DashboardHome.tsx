@@ -13,14 +13,18 @@ import { optionsToComposerState } from "@/lib/reuse";
 export function DashboardHome() {
   const [settings, setSettings] = useState<ComposerSettings>(DEFAULT_SETTINGS);
 
-  const reuseId = useSearchParams().get("reuse") ?? "";
+  const searchParams = useSearchParams();
+  const reuseId = searchParams.get("reuse") ?? "";
   const { data: source, isError: reuseFailed } = useVideo(reuseId);
 
   // ?avatar=<id> — a single avatar chosen on /avatars. Only consulted when there is no
   // ?reuse=, which carries a whole configuration and therefore wins.
-  const avatarId = useSearchParams().get("avatar") ?? "";
+  const avatarId = searchParams.get("avatar") ?? "";
   const avatarsQ = useAvatars({}, Boolean(avatarId) && !reuseId);
-  const avatarSeeded = avatarSeed(avatarId, avatarsQ.data ?? []);
+  // Memoised like `reuseSeed` below: without it, `avatarSeed(...)` returns a fresh object
+  // every render, and MediaComposer's `useEffect(..., [seed])` would re-run on every render
+  // of this component (harmless only because its own `seededRef` short-circuits).
+  const avatarSeeded = useMemo(() => avatarSeed(avatarId, avatarsQ.data ?? []), [avatarId, avatarsQ.data]);
   // The id is real but not in the catalog (removed, or never rendered) — degrade to a
   // plain new-video flow with a notice, exactly as a missing ?reuse= video does.
   const avatarFailed = Boolean(avatarId) && !reuseId && !avatarsQ.isFetching && !avatarSeeded;

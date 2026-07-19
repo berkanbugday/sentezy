@@ -48,15 +48,17 @@ export function AvatarGrid({
       ? "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4"
       : "grid grid-cols-3 gap-3 sm:grid-cols-4";
 
-  /* The bar is sticky within a scroll container whose own padding would otherwise let
-   * tiles scroll through the gutter above/beside it. Negative margins bleed the bar's
-   * bg-paper out to that container's edges; matching positive padding puts the search
-   * field and dropdowns back where they'd sit without the bleed. The two surfaces sit
-   * in containers with different padding, so the cancellation differs per surface. */
+  /* The bar is sticky within a scroll container whose own top padding would otherwise let
+   * tiles scroll through the gutter ABOVE it. A negative top margin bleeds the bar's
+   * bg-paper up to that container's top edge; matching top padding puts the search field
+   * and dropdowns back where they'd sit without the bleed. No horizontal bleed is needed —
+   * the bar and the tiles share the same horizontal inset from their container, so nothing
+   * can appear in the side gutters. The two surfaces sit in containers with different top
+   * padding, so the vertical cancellation differs per surface. */
   const barCls =
     surface === "page"
-      ? "sticky top-0 z-20 -mx-5 -mt-6 flex flex-col gap-2 border-b border-hairline bg-paper px-5 pb-4 pt-6 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.06)] sm:-mx-6 sm:px-6 md:-mx-8 md:px-8"
-      : "sticky top-0 z-20 -mx-5 -mt-4 flex flex-col gap-2 border-b border-hairline bg-paper px-5 pb-4 pt-4 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.06)]";
+      ? "sticky top-0 z-20 -mt-6 flex flex-col gap-2 border-b border-hairline bg-paper pb-4 pt-6 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.06)]"
+      : "sticky top-0 z-20 -mt-4 flex flex-col gap-2 border-b border-hairline bg-paper pb-4 pt-4 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.06)]";
 
   return (
     <div className="flex flex-col gap-4">
@@ -123,7 +125,7 @@ export function AvatarGrid({
           {filtered.map((a) => {
             const sel = selectedId === a.id;
             return (
-              <button key={a.id} type="button" onClick={() => onSelect(sel ? null : a)} className="text-left">
+              <button key={a.id} type="button" onClick={() => onSelect(a)} className="text-left">
                 <div className={`relative aspect-[3/4] overflow-hidden rounded-xl border bg-mist transition ${sel ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a.imageUrl} alt={a.name} className="h-full w-full object-cover" />

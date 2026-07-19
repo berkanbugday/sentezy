@@ -14,7 +14,7 @@ export function AvatarsView() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-6">
         <h1 className="disp text-[28px] font-semibold text-ink">Avatarlar</h1>
-        <p className="mt-1 text-[14.5px] text-slate">Videon için bir sunucu seç.</p>
+        <p className="mt-1 text-[14.5px] text-slate">Videon için bir avatar seç.</p>
       </div>
 
       <AvatarGrid surface="page" onSelect={(a) => setPreviewing(a)} />

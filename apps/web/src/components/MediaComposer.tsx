@@ -101,7 +101,11 @@ export function MediaComposer({
       if (k === "musicVolume" && seed.musicVolume !== undefined) setMusicVolume(seed.musicVolume);
       if (k === "captionId") setCaptionId(seed.captionId ?? null);
     }
-    setMode("upload");
+    // A reuse seed (?reuse=) carries a whole configuration and has no product link of its
+    // own, so it belongs on the upload tab. An avatar-only seed (?avatar=) carries just the
+    // avatar — switching tabs would hide "Ürün linki", the app's headline flow, behind
+    // upload for no reason. `length > 1` tells the two apart without naming either seed shape.
+    if (seedKeys(seed).length > 1) setMode("upload");
   }, [seed]);
 
   // The transition effect only applies between 2+ media — close/hide otherwise.
