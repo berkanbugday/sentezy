@@ -3,8 +3,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { readAvatarPosition } from "@sentezy/types";
+import { ActionMenu } from "@/components/composer/ActionMenu";
+import { CollapsibleCard } from "@/components/composer/CollapsibleCard";
+import { Icon } from "@/components/icons";
 import { VOICE_EMOTIONS } from "@/components/wizard/constants";
 import { CAPTION_FAMILIES } from "@/lib/captionStyles";
 import { formatDuration } from "@/lib/duration";
@@ -91,6 +94,11 @@ export function VideoDetail({ id }: { id: string }) {
     ? musicQuery.data?.music.find((t) => t.key === opts.music?.trackKey)?.name ?? null
     : null;
   const scriptText = (v.script ?? "").replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
+  const wordCount = scriptText ? scriptText.split(" ").length : 0;
+  const brollCount = detail.brollMedia?.length ?? 0;
+  const brollSummary = brollCount
+    ? `${detail.brollMedia!.filter((m) => m.kind === "image").length} görsel, ${detail.brollMedia!.filter((m) => m.kind === "video").length} video`
+    : "";
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -118,12 +126,20 @@ export function VideoDetail({ id }: { id: string }) {
                   type="button"
                   disabled={!draftTitle.trim() || rename.isPending}
                   onClick={() => rename.mutate(draftTitle.trim(), { onSuccess: () => setEditing(false) })}
-                  className="btn btn-primary shrink-0"
+                  aria-label="Kaydet"
+                  title="Kaydet"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-paper transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Kaydet
+                  <Icon.check width={16} height={16} />
                 </button>
-                <button type="button" onClick={() => setEditing(false)} className="shrink-0 text-[13.5px] text-muted">
-                  Vazgeç
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  aria-label="Vazgeç"
+                  title="Vazgeç"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hairline text-muted transition hover:bg-mist"
+                >
+                  <Icon.close width={16} height={16} />
                 </button>
               </div>
               {rename.isError && (
@@ -131,17 +147,7 @@ export function VideoDetail({ id }: { id: string }) {
               )}
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setDraftTitle(title);
-                setEditing(true);
-              }}
-              className="disp text-left text-[24px] font-semibold leading-tight text-ink hover:text-signal"
-              title="Başlığı düzenle"
-            >
-              {title}
-            </button>
+            <h1 className="disp text-left text-[24px] font-semibold leading-tight text-ink">{title}</h1>
           )}
           <div className="mt-2">
             <span className={`badge ${cls}`}>
@@ -152,31 +158,50 @@ export function VideoDetail({ id }: { id: string }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => router.push(`/dashboard?reuse=${v.id}`)}
-            className="inline-flex items-center rounded-full border border-hairline bg-paper px-4 py-2 text-[14px] font-medium text-ink transition hover:bg-mist"
-          >
-            Yeniden kullan
-          </button>
-          <button
-            type="button"
-            disabled={remove.isPending}
-            onClick={() => {
-              if (!confirmDelete) {
-                setConfirmDelete(true);
+          <ActionMenu
+            onOpenChange={(open) => {
+              if (!open) {
+                setConfirmDelete(false);
                 if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
-                confirmDeleteTimerRef.current = setTimeout(() => setConfirmDelete(false), 4000);
-                return;
               }
-              // A 404 means it is already gone (deleted in another tab) — the destination
-              // is the same either way, so treat both outcomes as "leave".
-              remove.mutate(undefined, { onSuccess: () => router.push("/library"), onError: () => router.push("/library") });
             }}
-            className="inline-flex items-center rounded-full border border-hairline bg-paper px-4 py-2 text-[14px] font-medium text-red-600 transition hover:bg-mist"
-          >
-            {confirmDelete ? "Emin misiniz?" : "Sil"}
-          </button>
+            items={[
+              {
+                key: "edit",
+                label: "Başlığı düzenle",
+                icon: Icon.pencil,
+                onClick: () => {
+                  setDraftTitle(title);
+                  setEditing(true);
+                },
+              },
+              {
+                key: "reuse",
+                label: "Yeniden kullan",
+                icon: Icon.repeat,
+                onClick: () => router.push(`/dashboard?reuse=${v.id}`),
+              },
+              {
+                key: "delete",
+                label: confirmDelete ? "Emin misiniz?" : "Sil",
+                icon: Icon.trash,
+                danger: true,
+                keepOpen: true,
+                disabled: remove.isPending,
+                onClick: () => {
+                  if (!confirmDelete) {
+                    setConfirmDelete(true);
+                    if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
+                    confirmDeleteTimerRef.current = setTimeout(() => setConfirmDelete(false), 4000);
+                    return;
+                  }
+                  // A 404 means it is already gone (deleted in another tab) — the destination
+                  // is the same either way, so treat both outcomes as "leave".
+                  remove.mutate(undefined, { onSuccess: () => router.push("/library"), onError: () => router.push("/library") });
+                },
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -208,58 +233,59 @@ export function VideoDetail({ id }: { id: string }) {
             </div>
           )}
 
-          <div className="card p-5 text-[14px]">
-            {(
-              [
-                ["Avatar", detail.avatar?.name ?? null],
-                ["Ses", detail.voice?.label ?? null],
-                ["Alt yazı", captionName],
-                ["Duygu", emotionLabel],
-                ["En-boy oranı", formatRatio(v.aspectRatio)],
-                ["Süre", formatDuration(v.durationS) || "—"],
+          <CollapsibleCard title="Ayarlar">
+            <div className="text-[14px]">
+              {(
                 [
-                  "Yerleşim",
-                  detail.avatar
-                    ? `Avatar ${avatarPos} · alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`
-                    : `Alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`,
-                ],
-                ["Müzik", musicTrackName ? `${musicTrackName} · %${Math.round((opts.music?.volume ?? 0) * 100)}` : null],
-                ["Kredi", v.status !== "draft" && v.creditsCost ? String(v.creditsCost) : null],
-                ["Oluşturuldu", new Date(v.createdAt).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" })],
-              ] as [string, string | null][]
-            )
-              .filter((row): row is [string, string] => row[1] !== null)
-              .map(([k, val]) => (
-                <div key={k} className="flex justify-between gap-4 border-b border-hairline py-2 last:border-0">
-                  <span className="shrink-0 text-muted">{k}</span>
-                  <span className="truncate text-right font-semibold text-ink">{val}</span>
-                </div>
-              ))}
-          </div>
-
-          {detail.avatar?.imageUrl && (
-            <div className="card flex items-center gap-3 p-4">
-              <img src={detail.avatar.imageUrl} alt="" className="h-14 w-14 rounded-lg bg-mist object-cover" />
-              <div className="min-w-0">
-                <p className="text-[13px] text-muted">Avatar</p>
-                <p className="truncate text-[14px] font-semibold text-ink">{detail.avatar.name}</p>
-              </div>
+                  [
+                    "Avatar",
+                    detail.avatar ? (
+                      <span className="flex items-center justify-end gap-2">
+                        {detail.avatar.imageUrl && (
+                          <img
+                            src={detail.avatar.imageUrl}
+                            alt=""
+                            className="h-6 w-6 shrink-0 rounded-full bg-mist object-cover object-top"
+                          />
+                        )}
+                        <span className="truncate">{detail.avatar.name}</span>
+                      </span>
+                    ) : null,
+                  ],
+                  ["Ses", detail.voice?.label ?? null],
+                  ["Alt yazı", captionName],
+                  ["Duygu", emotionLabel],
+                  ["En-boy oranı", formatRatio(v.aspectRatio)],
+                  ["Süre", formatDuration(v.durationS) || "—"],
+                  [
+                    "Yerleşim",
+                    detail.avatar
+                      ? `Avatar ${avatarPos} · alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`
+                      : `Alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`,
+                  ],
+                  ["Müzik", musicTrackName ? `${musicTrackName} · %${Math.round((opts.music?.volume ?? 0) * 100)}` : null],
+                  ["Kredi", v.status !== "draft" && v.creditsCost ? String(v.creditsCost) : null],
+                  ["Oluşturuldu", new Date(v.createdAt).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" })],
+                ] as [string, ReactNode][]
+              )
+                .filter((row): row is [string, ReactNode] => row[1] !== null)
+                .map(([k, val]) => (
+                  <div key={k} className="flex justify-between gap-4 border-b border-hairline py-2 last:border-0">
+                    <span className="shrink-0 text-muted">{k}</span>
+                    <span className="truncate text-right font-semibold text-ink">{val}</span>
+                  </div>
+                ))}
             </div>
-          )}
+          </CollapsibleCard>
 
           {scriptText && (
-            <div className="card p-5">
-              <p className="mb-2 text-[13px] text-muted">Metin</p>
+            <CollapsibleCard title="Metin" summary={`${wordCount} kelime`}>
               <p className="text-[14px] leading-relaxed text-ink">{scriptText}</p>
-            </div>
+            </CollapsibleCard>
           )}
 
           {detail.brollMedia && detail.brollMedia.length > 0 && (
-            <div className="card p-5">
-              <p className="mb-2 text-[13px] text-muted">
-                Görseller · {detail.brollMedia.filter((m) => m.kind === "image").length} görsel,{" "}
-                {detail.brollMedia.filter((m) => m.kind === "video").length} video
-              </p>
+            <CollapsibleCard title="Görseller" summary={brollSummary}>
               <div className="flex flex-wrap gap-2">
                 {detail.brollMedia.map((m, i) => (
                   <div key={`${m.ref}-${i}`} className="h-16 w-16 overflow-hidden rounded-lg bg-mist">
@@ -271,7 +297,7 @@ export function VideoDetail({ id }: { id: string }) {
                   </div>
                 ))}
               </div>
-            </div>
+            </CollapsibleCard>
           )}
 
           {detail.downloadUrl && (
