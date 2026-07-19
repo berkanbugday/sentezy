@@ -135,14 +135,24 @@ export async function videoRoutes(app: FastifyInstance) {
         gender: catalog?.gender === "erkek" ? "erkek" : "kadın",
         age: catalog?.age === "genç" || catalog?.age === "olgun" ? catalog.age : "yetişkin",
         hijab: catalog?.hijab ?? false,
-        ready: Boolean(video.avatar.sourceImageId),
+        ready: video.avatar.status === "ready",
       };
     }
     const voice = video.voice
       ? { id: video.voice.id, label: video.voice.label, gender: video.voice.gender, style: video.voice.style }
       : null;
 
-    return { video, downloadUrl, fileDownloadUrl, thumbnailUrl, brollImageUrls, brollMedia, avatar, voice };
+    const { avatar: _avatarRow, voice: _voiceRow, ...videoRow } = video;
+    return {
+      video: videoRow,
+      downloadUrl,
+      fileDownloadUrl,
+      thumbnailUrl,
+      brollImageUrls,
+      brollMedia,
+      avatar,
+      voice,
+    };
   });
 
   app.post("/videos", { preHandler: app.authenticate }, async (req, reply) => {
