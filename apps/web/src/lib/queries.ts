@@ -200,6 +200,9 @@ export function useDeleteVideo(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => apiFetch<void>(`/videos/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.videos }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.videos });
+      qc.removeQueries({ queryKey: qk.video(id) });
+    },
   });
 }

@@ -21,7 +21,7 @@ export function DashboardHome() {
   // Music is stored as a bare track key, so resolve it against the catalog to get the
   // MusicTrack object the picker needs. A track removed since the video was made simply
   // does not resolve, and reuse continues without music.
-  const musicQuery = useMusic();
+  const musicQuery = useMusic("", Boolean(reuseId));
   const tracks = musicQuery.data?.music ?? [];
 
   // No cast: the API returns `avatar`/`voice` already shaped as the composer's own types.

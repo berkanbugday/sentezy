@@ -229,6 +229,11 @@ export const ReelOptions = z.object({
       price: z.string().optional(),
     })
     .optional(),
+  // Set by PATCH /videos/:id/title when the user explicitly renames a video — wins over the
+  // product title in videoDisplayTitle from then on. Written straight to Prisma by that route
+  // (bypassing this schema), but must survive a round trip through it (e.g. a later draft
+  // PATCH /videos/:id) or the flag would silently strip and the display would revert.
+  titleOverridden: z.boolean().optional(),
 });
 export type ReelOptions = z.infer<typeof ReelOptions>;
 

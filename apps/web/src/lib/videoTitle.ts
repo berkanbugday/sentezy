@@ -20,7 +20,7 @@ export function cleanTitleText(text: string | null | undefined): string {
  * No character slicing — the full title is returned (the detail heading wraps it).
  */
 export function videoDisplayTitle(video: { title: string; options?: Record<string, unknown> | null }): string {
-  if (video.options?.titleOverridden === true) return cleanTitleText(video.title);
+  if (video.options?.titleOverridden === true) return video.title;
   const product = video.options?.product as { title?: string } | undefined;
   const name = product?.title?.trim();
   if (name) return name;

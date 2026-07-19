@@ -9,7 +9,7 @@ import { VOICE_EMOTIONS } from "@/components/wizard/constants";
 import { CAPTION_FAMILIES } from "@/lib/captionStyles";
 import { formatDuration } from "@/lib/duration";
 import { createClient } from "@/lib/supabase/client";
-import { qk, useDeleteVideo, useRenameVideo, useVideo } from "@/lib/queries";
+import { qk, useDeleteVideo, useMusic, useRenameVideo, useVideo } from "@/lib/queries";
 import { formatRatio, STAGE_LABEL, STATUS_LABEL, type VideoStage, type VideoStatus } from "@/lib/types";
 import { videoDisplayTitle } from "@/lib/videoTitle";
 
@@ -17,6 +17,10 @@ type Live = { status: VideoStatus; stage: VideoStage; progress: number };
 
 export function VideoDetail({ id }: { id: string }) {
   const { data: detail, isError } = useVideo(id);
+  // Gated: only fires when this video actually has music, to resolve its raw R2 track key
+  // into a human name for the "Müzik" row below (never fetched unconditionally here).
+  const trackKey = (detail?.video.options as { music?: { trackKey?: string } } | null | undefined)?.music?.trackKey;
+  const musicQuery = useMusic("", Boolean(trackKey));
   const queryClient = useQueryClient();
   const [liveOverride, setLiveOverride] = useState<Live | null>(null);
   const router = useRouter();
@@ -80,6 +84,11 @@ export function VideoDetail({ id }: { id: string }) {
   const captionName = fam ? [fam.label, opts.captions?.font].filter(Boolean).join(" · ") : null;
   const emotionLabel = opts.voice
     ? VOICE_EMOTIONS.find((e) => e.value === (opts.voice?.emotion ?? ""))?.label ?? null
+    : null;
+  // Humanised music label: resolve the stored raw R2 track key against the catalog. If the
+  // track no longer resolves (deleted), hide the row rather than showing the raw key.
+  const musicTrackName = opts.music?.trackKey
+    ? musicQuery.data?.music.find((t) => t.key === opts.music?.trackKey)?.name ?? null
     : null;
   const scriptText = (v.script ?? "").replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
 
@@ -214,7 +223,7 @@ export function VideoDetail({ id }: { id: string }) {
                     ? `Avatar ${avatarPos} · alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`
                     : `Alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`,
                 ],
-                ["Müzik", opts.music?.trackKey ? `${opts.music.trackKey} · %${Math.round((opts.music.volume ?? 0) * 100)}` : null],
+                ["Müzik", musicTrackName ? `${musicTrackName} · %${Math.round((opts.music?.volume ?? 0) * 100)}` : null],
                 ["Kredi", v.status !== "draft" && v.creditsCost ? String(v.creditsCost) : null],
                 ["Oluşturuldu", new Date(v.createdAt).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" })],
               ] as [string, string | null][]
@@ -252,8 +261,8 @@ export function VideoDetail({ id }: { id: string }) {
                 {detail.brollMedia.filter((m) => m.kind === "video").length} video
               </p>
               <div className="flex flex-wrap gap-2">
-                {detail.brollMedia.map((m) => (
-                  <div key={m.ref} className="h-16 w-16 overflow-hidden rounded-lg bg-mist">
+                {detail.brollMedia.map((m, i) => (
+                  <div key={`${m.ref}-${i}`} className="h-16 w-16 overflow-hidden rounded-lg bg-mist">
                     {m.kind === "image" ? (
                       <img src={m.url} alt="" loading="lazy" className="h-full w-full object-cover" />
                     ) : (
