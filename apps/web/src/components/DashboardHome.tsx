@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SettingsDrawer } from "@/components/composer/SettingsDrawer";
 import { MediaComposer, type ComposerSeed } from "@/components/MediaComposer";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
 import { useMusic, useVideo } from "@/lib/queries";
@@ -12,8 +11,6 @@ import { optionsToComposerState } from "@/lib/reuse";
  *  arriving from a video's "Yeniden kullan" button (?reuse=<id>) — seeds it from that video. */
 export function DashboardHome() {
   const [settings, setSettings] = useState<ComposerSettings>(DEFAULT_SETTINGS);
-  // Lifted out of MediaComposer so the drawer can gate clip-only settings.
-  const [mediaCount, setMediaCount] = useState(0);
 
   const reuseId = useSearchParams().get("reuse") ?? "";
   const { data: source, isError: reuseFailed } = useVideo(reuseId);
@@ -58,22 +55,19 @@ export function DashboardHome() {
     <div>
       <section className="hero-aurora -mx-5 -mt-6 px-5 pb-10 pt-10 sm:-mx-6 sm:px-6 sm:pt-12 md:-mx-8 md:px-8">
         <div className="mx-auto max-w-4xl">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="disp text-[26px] font-semibold leading-tight text-ink sm:text-[34px]">Sentezy&apos;e hoş geldin</h1>
-              {/* A deleted or missing source degrades to a plain new-video flow with a
-                  notice — never an error screen, since the composer works fine without it. */}
-              <p className="mt-1.5 text-[14px] text-slate sm:text-[15px]">
-                {reuseFailed
-                  ? "Önceki video bulunamadı — varsayılan ayarlarla başlıyorsun"
-                  : reuseId
-                    ? "Ayarlar önceki videodan alındı — yeni metnini yaz"
-                    : "Medyanı içe aktar ve videonu oluştur"}
-              </p>
-            </div>
-            <SettingsDrawer settings={settings} onChange={setSettings} mediaCount={mediaCount} />
+          <div>
+            <h1 className="disp text-[26px] font-semibold leading-tight text-ink sm:text-[34px]">Sentezy&apos;e hoş geldin</h1>
+            {/* A deleted or missing source degrades to a plain new-video flow with a
+                notice — never an error screen, since the composer works fine without it. */}
+            <p className="mt-1.5 text-[14px] text-slate sm:text-[15px]">
+              {reuseFailed
+                ? "Önceki video bulunamadı — varsayılan ayarlarla başlıyorsun"
+                : reuseId
+                  ? "Ayarlar önceki videodan alındı — yeni metnini yaz"
+                  : "Medyanı içe aktar ve videonu oluştur"}
+            </p>
           </div>
-          <MediaComposer extraSettings={settings} onMediaCountChange={setMediaCount} seed={seed} />
+          <MediaComposer extraSettings={settings} onSettingsChange={setSettings} seed={seed} />
         </div>
       </section>
     </div>

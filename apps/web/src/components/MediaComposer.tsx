@@ -18,6 +18,7 @@ import { CaptionPicker } from "./composer/CaptionPicker";
 import { EffectPicker } from "./composer/EffectPicker";
 import { MusicPicker } from "./composer/MusicPicker";
 import { PreviewModal } from "./composer/PreviewModal";
+import { SettingsModal } from "./composer/SettingsModal";
 import { Spinner } from "./composer/Spinner";
 import { VoicePicker } from "./composer/VoicePicker";
 import { Icon } from "./icons";
@@ -46,12 +47,13 @@ export type ComposerSeed = {
  *  storage (with per-tile progress), then builds a draft and queues it for render. */
 export function MediaComposer({
   extraSettings,
-  onMediaCountChange,
+  onSettingsChange,
   seed,
 }: {
   extraSettings?: ComposerSettings;
-  /** Reports the uploaded-clip count so the settings drawer can gate clip-only options. */
-  onMediaCountChange?: (n: number) => void;
+  /** Persists changes made in the settings modal. If absent, the modal still opens but
+   *  simply doesn't persist changes. */
+  onSettingsChange?: (s: ComposerSettings) => void;
   /** "Yeniden kullan" seed: hydrates avatar/voice/music/caption once per source video. */
   seed?: ComposerSeed;
 }) {
@@ -79,6 +81,7 @@ export function MediaComposer({
   const [musicVolume, setMusicVolume] = useState(0.15); // UI cap 0.4 — the bed never buries the voice
   const [captionOpen, setCaptionOpen] = useState(false);
   const [captionId, setCaptionId] = useState(DEFAULT_PRESET.id);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [script, setScript] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -107,10 +110,6 @@ export function MediaComposer({
   useEffect(() => {
     if (!multiple) setEffectOpen(false);
   }, [multiple]);
-  // Transition SFX only exist between clips — the drawer needs the count to gate its toggle.
-  useEffect(() => {
-    onMediaCountChange?.(items.length);
-  }, [items.length, onMediaCountChange]);
   // The boundary currently being edited (its incoming transition), for the effect modal.
   const activeTransition = items.find((x) => x.url === activeBoundary)?.transition ?? DEFAULT_TRANSITION;
   const boundaryIndex = activeBoundary ? items.findIndex((x) => x.url === activeBoundary) : -1;
@@ -507,6 +506,7 @@ export function MediaComposer({
             label="Video seçenekleri"
             disabled={!hasScript}
             title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
+            icon={Icon.plus}
             items={[
               {
                 key: "avatar",
@@ -538,6 +538,16 @@ export function MediaComposer({
               },
             ]}
           />
+          {/* extra settings (avatar/caption position, voice tone, transition SFX) */}
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Ek ayarlar"
+            title="Ek ayarlar"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist"
+          >
+            <Icon.settings width={17} height={17} />
+          </button>
           {/* live preview */}
           <button
             type="button"
@@ -588,6 +598,13 @@ export function MediaComposer({
         onVolumeChange={setMusicVolume}
       />
       <CaptionPicker open={captionOpen} onClose={() => setCaptionOpen(false)} selectedId={captionId} onSelect={setCaptionId} />
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        settings={settings}
+        onChange={(s) => onSettingsChange?.(s)}
+        mediaCount={items.length}
+      />
       <PreviewModal
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}

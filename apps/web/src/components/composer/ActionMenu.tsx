@@ -27,15 +27,18 @@ export function ActionMenu({
   label = "Diğer işlemler",
   disabled,
   title,
+  icon: TriggerIcon = Icon.more,
 }: {
   items: ActionMenuItem[];
   onOpenChange?: (open: boolean) => void;
-  /** aria-label / tooltip for the ⋯ trigger button. Defaults to "Diğer işlemler". */
+  /** aria-label / tooltip for the trigger button. Defaults to "Diğer işlemler". */
   label?: string;
-  /** Disables the ⋯ trigger button itself. */
+  /** Disables the trigger button itself. */
   disabled?: boolean;
   /** Trigger tooltip override — falls back to `label` when omitted. */
   title?: string;
+  /** Trigger glyph. Defaults to the ⋯ "more" icon. */
+  icon?: (p: SVGProps<SVGSVGElement>) => ReactElement;
 }) {
   const [open, setOpenState] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -65,7 +68,7 @@ export function ActionMenu({
         title={title ?? label}
         className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
       >
-        <Icon.more width={18} height={18} />
+        <TriggerIcon width={18} height={18} />
       </button>
       {open && (
         <div className={`absolute right-0 top-full z-30 mt-1 ${hasValues ? "min-w-[260px]" : "min-w-[190px]"} overflow-hidden rounded-xl border border-hairline bg-paper py-1 shadow-lg`}>
