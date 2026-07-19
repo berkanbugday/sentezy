@@ -69,20 +69,24 @@ Avatar + metin videosunda yüklenen medya olmadığı için hiç geçiş yok, to
 
 ### 1. `ComposerSettings` yeni hali
 
+`ComposerSettings` tam olarak çekmecedeki dört kontrole eşitlenir:
+
 ```ts
 export type ComposerSettings = {
   avatarPosition: "left" | "center" | "right";
   captionPosition: "top" | "bottom";
   voiceEmotion: string;
-  musicTrackKey?: string;
-  musicVolume: number;   // 0..0.4
   transitionSfx: boolean;
 };
 ```
 
 `aspectRatio`, `avatarLayout`, `avatarSide`, `sfxEnabled` alanları kalkar.
 Varsayılanlar: `avatarPosition: "right"`, `captionPosition: "bottom"`,
-`voiceEmotion: ""`, `musicVolume: 0.15`, `transitionSfx: true`.
+`voiceEmotion: ""`, `transitionSfx: true`.
+
+`musicTrackKey`/`musicVolume` de `ComposerSettings`'ten çıkar: müzik artık çekmecede
+değil, composer'da kendi çipiyle yaşıyor — seçili parça ve seviye `MediaComposer`'ın
+kendi state'inde durur (`selectedAvatar`/`selectedVoice` ile aynı desen).
 
 ### 2. Avatar yerleşimi birleştirme
 
