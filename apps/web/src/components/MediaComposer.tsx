@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { presetById } from "@/lib/captionStyles";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
 import { type Media } from "@/lib/composer/media";
+import { seedKeys, type ComposerSeed } from "@/lib/composerSeed";
 import { TR_GRADIENT, TR_GRADIENT_SOFT, TRANSITION_LABELS } from "@/lib/composer/transitions";
 import { type ImportProductResult, type MusicTrack, useCreateAvatar, useGenerateVideo, useImportProduct, useMyAvatars, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
 import { videoPoster } from "@/lib/videoPoster";
@@ -35,15 +36,7 @@ function deriveVideoTitle(script: string, productTitle?: string): string {
   return cleanTitleText(script) || "Yeni video";
 }
 
-export type ComposerSeed = {
-  key: string; // the source video id — changing it re-seeds
-  selectedAvatar: Avatar | null;
-  selectedVoice: Voice | null;
-  selectedMusic: MusicTrack | null;
-  musicVolume: number;
-  /** null = no caption style selected (opt-in captions). */
-  captionId: string | null;
-};
+export type { ComposerSeed } from "@/lib/composerSeed";
 
 /** Upload-first hero composer: accepts multiple images + videos, uploads each to
  *  storage (with per-tile progress), then builds a draft and queues it for render. */
@@ -93,18 +86,21 @@ export function MediaComposer({
   const selectedCaption = captionId ? presetById(captionId) : null;
   const settings = extraSettings ?? DEFAULT_SETTINGS;
 
-  // "Yeniden kullan" seeding. Applied once per source video: the user may change any of
-  // these straight after, and a re-render must not undo that. Script and media stay empty
-  // by design — this reuses the look, not the content.
+  // "Yeniden kullan" / avatar seeding. Applied once per seed key: the user may change any
+  // of these straight after, and a re-render must not undo that. Script and media stay
+  // empty by design. Only the keys the seed actually carries are written — an avatar-only
+  // seed must not clear the voice, music or caption the user already has.
   const seededRef = useRef<string | null>(null);
   useEffect(() => {
     if (!seed || seededRef.current === seed.key) return;
     seededRef.current = seed.key;
-    setSelectedAvatar(seed.selectedAvatar);
-    setSelectedVoice(seed.selectedVoice);
-    setSelectedMusic(seed.selectedMusic);
-    setMusicVolume(seed.musicVolume);
-    setCaptionId(seed.captionId);
+    for (const k of seedKeys(seed)) {
+      if (k === "selectedAvatar") setSelectedAvatar(seed.selectedAvatar ?? null);
+      if (k === "selectedVoice") setSelectedVoice(seed.selectedVoice ?? null);
+      if (k === "selectedMusic") setSelectedMusic(seed.selectedMusic ?? null);
+      if (k === "musicVolume" && seed.musicVolume !== undefined) setMusicVolume(seed.musicVolume);
+      if (k === "captionId") setCaptionId(seed.captionId ?? null);
+    }
     setMode("upload");
   }, [seed]);
 
