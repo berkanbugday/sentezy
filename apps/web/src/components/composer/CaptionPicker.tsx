@@ -6,8 +6,10 @@ import { CAPTION_COLORS, CAPTION_FAMILIES, CAPTION_FONTS, CAPTION_PRESETS } from
 import { CaptionTile } from "./CaptionTile";
 
 /** Caption-style picker — owns the local catalog filters + incremental reveal. Each tile is a
- *  live self-animating preview of the real caption component. `onSelect(id)` sets the preset. */
-export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: boolean; onClose: () => void; selectedId: string; onSelect: (id: string) => void }) {
+ *  live self-animating preview of the real caption component. `onSelect(id)` sets the preset;
+ *  `onSelect(null)` clears it (captions are opt-in — "Alt yazı yok" is a first-class choice,
+ *  not just the absence of one, so a user who picked a style can turn captions back off). */
+export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: boolean; onClose: () => void; selectedId: string | null; onSelect: (id: string | null) => void }) {
   const [captionQ, setCaptionQ] = useState("");
   const [captionFamily, setCaptionFamily] = useState(""); // "" = all
   const [captionFontF, setCaptionFontF] = useState("");
@@ -63,6 +65,20 @@ export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: b
         </div>
 
         <div className="no-scrollbar overflow-y-auto px-5 py-4">
+          {/* explicit "no captions" choice — always visible, unaffected by search/filters */}
+          <button
+            type="button"
+            onClick={() => onSelect(null)}
+            className={`mb-3 flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-[13px] font-medium transition ${selectedId === null ? "border-ink bg-mist text-ink" : "border-hairline text-slate hover:bg-mist"}`}
+          >
+            <span className="flex items-center gap-2">
+              <Icon.close width={15} height={15} />
+              Alt yazı yok
+            </span>
+            {selectedId === null && (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7" /></svg>
+            )}
+          </button>
           {filteredCaptions.length === 0 ? (
             <div className="py-10 text-center text-[14px] text-muted">Stil bulunamadı</div>
           ) : (

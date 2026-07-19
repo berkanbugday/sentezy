@@ -12,6 +12,11 @@ const FPS = 30;
 const W = 1080;
 const H = 1920;
 
+// Reel always requires a captionStyle value even when captions are off (the `captions` boolean
+// is what actually gates the overlay's render — see packages/remotion/src/reel/Reel.tsx). This
+// placeholder is never displayed; its only job is to satisfy ReelProps' required field.
+const NO_CAPTION_STYLE: { styleId: CaptionStyleId; font: string; color: string } = { styleId: "clean", font: "Inter", color: "#FFFFFF" };
+
 export function PreviewModal({
   open,
   onClose,
@@ -21,19 +26,19 @@ export function PreviewModal({
   avatarImageUrl,
   broll,
   transitionSfx,
-  captions,
   musicUrl = null,
   musicVolume = 0.15,
 }: {
   open: boolean;
   onClose: () => void;
   script: string;
-  captionStyle: { styleId: CaptionStyleId; font: string; color: string };
+  /** No caption style selected (opt-in captions) → null, and the preview renders no captions,
+   *  exactly matching what the render will produce. */
+  captionStyle: { styleId: CaptionStyleId; font: string; color: string } | null;
   layout: { avatarPosition: "left" | "center" | "right"; captionPosition: "top" | "bottom" };
   avatarImageUrl?: string | null;
   broll: ReelBrollItem[];
   transitionSfx: boolean;
-  captions: boolean;
   musicUrl?: string | null;
   musicVolume?: number;
 }) {
@@ -50,10 +55,10 @@ export function PreviewModal({
     words,
     avatarUrl: avatarImageUrl ?? null,
     broll,
-    captionStyle: { styleId: captionStyle.styleId, font: captionStyle.font, color: captionStyle.color },
+    captionStyle: captionStyle ?? NO_CAPTION_STYLE,
     avatarPosition: layout.avatarPosition,
     position: layout.captionPosition,
-    captions,
+    captions: captionStyle !== null,
     previewAudio: true,
     sfxCues,
     musicUrl,

@@ -27,6 +27,24 @@ assert.strictEqual(
   DEFAULT_PRESET_ID,
 );
 
+// An explicitly enabled caption (the shape the composer now writes) round-trips to its
+// exact preset id — not just legacy blobs missing the `enabled` field.
+assert.strictEqual(
+  optionsToComposerState(video({
+    captions: { enabled: true, style: "clean", font: "Inter", color: "#FFD54A" },
+  })).captionId,
+  "clean-inter",
+);
+
+// A video explicitly stored with captions OFF must reuse as no captions, even though a
+// style/font/color still lingers in the blob (opt-in captions must not resurrect on reuse).
+assert.strictEqual(
+  optionsToComposerState(video({
+    captions: { enabled: false, style: "highlight", font: "Poppins", color: "#FFD54A" },
+  })).captionId,
+  null,
+);
+
 // New-shape options round-trip into the four-field settings object.
 const fresh = optionsToComposerState(video({
   layout: { avatarPosition: "left", captionPosition: "top" },
@@ -50,9 +68,10 @@ assert.strictEqual(
   "left",
 );
 
-// An empty options object yields the defaults and no music.
+// An empty options object yields the defaults and no music. Captions are opt-in — no stored
+// captions block means no captions, NOT the default preset.
 const empty = optionsToComposerState(video({}));
-assert.strictEqual(empty.captionId, DEFAULT_PRESET_ID);
+assert.strictEqual(empty.captionId, null);
 assert.deepStrictEqual(empty.settings, DEFAULT_SETTINGS);
 assert.strictEqual(empty.music, null);
 

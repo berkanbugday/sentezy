@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { type Avatar, type Voice } from "@/components/wizard/types";
 import { apiFetch } from "@/lib/api";
-import { DEFAULT_PRESET, presetById } from "@/lib/captionStyles";
+import { presetById } from "@/lib/captionStyles";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
 import { type Media } from "@/lib/composer/media";
 import { TR_GRADIENT, TR_GRADIENT_SOFT, TRANSITION_LABELS } from "@/lib/composer/transitions";
@@ -40,7 +40,8 @@ export type ComposerSeed = {
   selectedVoice: Voice | null;
   selectedMusic: MusicTrack | null;
   musicVolume: number;
-  captionId: string;
+  /** null = no caption style selected (opt-in captions). */
+  captionId: string | null;
 };
 
 /** Upload-first hero composer: accepts multiple images + videos, uploads each to
@@ -80,14 +81,15 @@ export function MediaComposer({
   const [selectedMusic, setSelectedMusic] = useState<MusicTrack | null>(null);
   const [musicVolume, setMusicVolume] = useState(0.15); // UI cap 0.4 — the bed never buries the voice
   const [captionOpen, setCaptionOpen] = useState(false);
-  const [captionId, setCaptionId] = useState(DEFAULT_PRESET.id);
+  // Captions are opt-in: no default preset pre-selected — the user must choose a style.
+  const [captionId, setCaptionId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [script, setScript] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const selectedCaption = presetById(captionId);
+  const selectedCaption = captionId ? presetById(captionId) : null;
   const settings = extraSettings ?? DEFAULT_SETTINGS;
 
   // "Yeniden kullan" seeding. Applied once per source video: the user may change any of
@@ -223,8 +225,9 @@ export function MediaComposer({
         ? "Avatar seç ya da görsel yükle (yüzsüz video)"
         : undefined;
   // Compact summary of what's currently picked, e.g. "Beyza · Damla - Energetic Content creator ·
-  // Fırtınadan Sonra · Vurgu" — only selected pickers contribute (caption always has a default).
-  const selectionSummary = [selectedAvatar?.name, selectedVoice?.label, selectedMusic?.name, selectedCaption.family]
+  // Fırtınadan Sonra · Vurgu" — only selected pickers contribute (captions are opt-in, so this
+  // omits them entirely rather than showing placeholder text when none is chosen).
+  const selectionSummary = [selectedAvatar?.name, selectedVoice?.label, selectedMusic?.name, selectedCaption?.family]
     .filter((v): v is string => !!v)
     .join(" · ");
   const pick = () => inputRef.current?.click();
@@ -241,7 +244,7 @@ export function MediaComposer({
     setSubmitting(true);
     try {
       const ready = items.filter((i) => i.status === "done" && i.ref);
-      const preset = presetById(captionId);
+      const preset = captionId ? presetById(captionId) : null;
 
       // A chosen catalog avatar becomes a user avatar record — reuse one for the same portrait, else create it.
       let avatarId: string | null = null;
@@ -268,7 +271,8 @@ export function MediaComposer({
       const scriptText = script.trim();
 
       const options = {
-        captions: { enabled: true, style: preset.base, font: preset.font, color: preset.color },
+        // Captions are opt-in: only write a style/font/color when the user actually chose one.
+        captions: preset ? { enabled: true, style: preset.base, font: preset.font, color: preset.color } : { enabled: false },
         background: media.length
           ? {
               type: "image" as const,
@@ -533,7 +537,7 @@ export function MediaComposer({
                 key: "caption",
                 label: "Alt yazı",
                 icon: Icon.captions,
-                value: selectedCaption.family,
+                value: selectedCaption ? selectedCaption.family : "seçilmedi",
                 onClick: () => setCaptionOpen(true),
               },
             ]}
@@ -609,7 +613,7 @@ export function MediaComposer({
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
         script={script}
-        captionStyle={{ styleId: selectedCaption.base, font: selectedCaption.font, color: selectedCaption.color }}
+        captionStyle={selectedCaption ? { styleId: selectedCaption.base, font: selectedCaption.font, color: selectedCaption.color } : null}
         layout={{ avatarPosition: settings.avatarPosition, captionPosition: settings.captionPosition }}
         avatarImageUrl={selectedAvatar?.imageUrl ?? null}
         broll={items.map((i, idx) => ({
@@ -618,7 +622,6 @@ export function MediaComposer({
           transition: idx === 0 ? DEFAULT_TRANSITION : i.transition ?? DEFAULT_TRANSITION,
         }))}
         transitionSfx={settings.transitionSfx}
-        captions
         musicUrl={selectedMusic?.previewUrl ?? null}
         musicVolume={musicVolume}
       />
