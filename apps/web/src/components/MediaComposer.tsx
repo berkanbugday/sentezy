@@ -18,6 +18,7 @@ import { CaptionPicker } from "./composer/CaptionPicker";
 import { EffectPicker } from "./composer/EffectPicker";
 import { MusicPicker } from "./composer/MusicPicker";
 import { PreviewModal } from "./composer/PreviewModal";
+import { SelectionChip } from "./composer/SelectionChip";
 import { SettingsModal } from "./composer/SettingsModal";
 import { Spinner } from "./composer/Spinner";
 import { VoicePicker } from "./composer/VoicePicker";
@@ -224,12 +225,7 @@ export function MediaComposer({
       : !selectedAvatar && !hasMedia
         ? "Avatar seç ya da görsel yükle (yüzsüz video)"
         : undefined;
-  // Compact summary of what's currently picked, e.g. "Beyza · Damla - Energetic Content creator ·
-  // Fırtınadan Sonra · Vurgu" — only selected pickers contribute (captions are opt-in, so this
-  // omits them entirely rather than showing placeholder text when none is chosen).
-  const selectionSummary = [selectedAvatar?.name, selectedVoice?.label, selectedMusic?.name, selectedCaption?.family]
-    .filter((v): v is string => !!v)
-    .join(" · ");
+  const hasSelection = !!(selectedAvatar || selectedVoice || selectedMusic || selectedCaption);
   const pick = () => inputRef.current?.click();
 
   function openPreview() {
@@ -471,7 +467,7 @@ export function MediaComposer({
                 type="button"
                 onClick={() => remove(m.url)}
                 aria-label={`${m.name} kaldır`}
-                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/55 text-white opacity-100 transition hover:bg-black/75 sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute right-0.5 top-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white opacity-100 transition hover:bg-black/75 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <Icon.close width={12} height={12} className="block" />
               </button>
@@ -548,7 +544,7 @@ export function MediaComposer({
             onClick={() => setSettingsOpen(true)}
             aria-label="Ek ayarlar"
             title="Ek ayarlar"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist"
           >
             <Icon.settings width={17} height={17} />
           </button>
@@ -581,7 +577,72 @@ export function MediaComposer({
           <span className="order-1">{submitting ? "Oluşturuluyor…" : "Video oluştur"}</span>
         </button>
       </div>
-      {selectionSummary && <p className="mt-1 truncate px-1 text-[12px] text-muted">{selectionSummary}</p>}
+      {/* selected-item chips: each reopens its picker; avatar/music/caption can also be cleared
+         inline via ×. Voice has no × — it's required for canCreate, and clearing it here would
+         only produce a disabled "Video oluştur" with no explanation on-screen. */}
+      {hasSelection && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 px-1">
+          {selectedAvatar && (
+            <SelectionChip
+              onOpen={() => setAvatarOpen(true)}
+              onClear={() => setSelectedAvatar(null)}
+              clearLabel="Avatar'ı kaldır"
+              visual={
+                <span className="h-6 w-6 flex-none overflow-hidden rounded-full bg-mist">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={selectedAvatar.imageUrl} alt="" className="h-full w-full object-cover object-top" />
+                </span>
+              }
+            >
+              {selectedAvatar.name}
+            </SelectionChip>
+          )}
+          {selectedVoice && (
+            <SelectionChip
+              onOpen={() => setVoiceOpen(true)}
+              visual={
+                <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-mist text-slate">
+                  <Icon.voice width={13} height={13} />
+                </span>
+              }
+            >
+              {selectedVoice.label}
+            </SelectionChip>
+          )}
+          {selectedMusic && (
+            <SelectionChip
+              onOpen={() => setMusicOpen(true)}
+              onClear={() => setSelectedMusic(null)}
+              clearLabel="Müziği kaldır"
+              visual={
+                <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-mist text-slate">
+                  <Icon.musicNote width={13} height={13} />
+                </span>
+              }
+            >
+              {selectedMusic.name}
+            </SelectionChip>
+          )}
+          {selectedCaption && (
+            <SelectionChip
+              onOpen={() => setCaptionOpen(true)}
+              onClear={() => setCaptionId(null)}
+              clearLabel="Alt yazıyı kaldır"
+              visual={
+                <span className="grid h-6 w-9 flex-none place-items-center overflow-hidden rounded-full bg-black">
+                  <span
+                    style={{ color: selectedCaption.color, fontFamily: `"${selectedCaption.font}", sans-serif`, fontWeight: 800, fontSize: 11, lineHeight: 1 }}
+                  >
+                    Aa
+                  </span>
+                </span>
+              }
+            >
+              {selectedCaption.family}
+            </SelectionChip>
+          )}
+        </div>
+      )}
       {submitError && <p className="mt-2 px-1 text-[13px] text-red-500">{submitError}</p>}
 
       <EffectPicker

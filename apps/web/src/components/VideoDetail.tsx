@@ -128,7 +128,7 @@ export function VideoDetail({ id }: { id: string }) {
                   onClick={() => rename.mutate(draftTitle.trim(), { onSuccess: () => setEditing(false) })}
                   aria-label="Kaydet"
                   title="Kaydet"
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-paper transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-paper transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Icon.check width={16} height={16} />
                 </button>
@@ -137,7 +137,7 @@ export function VideoDetail({ id }: { id: string }) {
                   onClick={() => setEditing(false)}
                   aria-label="Vazgeç"
                   title="Vazgeç"
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hairline text-muted transition hover:bg-mist"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-hairline text-muted transition hover:bg-mist"
                 >
                   <Icon.close width={16} height={16} />
                 </button>
@@ -147,7 +147,7 @@ export function VideoDetail({ id }: { id: string }) {
               )}
             </div>
           ) : (
-            <h1 className="disp text-left text-[24px] font-semibold leading-tight text-ink">{title}</h1>
+            <h1 className="disp break-words text-left text-[24px] font-semibold leading-tight text-ink">{title}</h1>
           )}
           <div className="mt-2">
             <span className={`badge ${cls}`}>
@@ -240,7 +240,7 @@ export function VideoDetail({ id }: { id: string }) {
                   [
                     "Avatar",
                     detail.avatar ? (
-                      <span className="flex items-center justify-end gap-2">
+                      <span className="flex min-w-0 items-center justify-end gap-2">
                         {detail.avatar.imageUrl && (
                           <img
                             src={detail.avatar.imageUrl}
@@ -248,7 +248,7 @@ export function VideoDetail({ id }: { id: string }) {
                             className="h-6 w-6 shrink-0 rounded-full bg-mist object-cover object-top"
                           />
                         )}
-                        <span className="truncate">{detail.avatar.name}</span>
+                        <span className="min-w-0 truncate">{detail.avatar.name}</span>
                       </span>
                     ) : null,
                   ],
@@ -272,7 +272,7 @@ export function VideoDetail({ id }: { id: string }) {
                 .map(([k, val]) => (
                   <div key={k} className="flex justify-between gap-4 border-b border-hairline py-2 last:border-0">
                     <span className="shrink-0 text-muted">{k}</span>
-                    <span className="truncate text-right font-semibold text-ink">{val}</span>
+                    <span className="min-w-0 flex-1 truncate text-right font-semibold text-ink">{val}</span>
                   </div>
                 ))}
             </div>
