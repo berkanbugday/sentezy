@@ -187,7 +187,7 @@ export function useRenameVideo(id: string) {
       apiFetch<{ video: ApiVideo }>(`/videos/${id}/title`, { method: "PATCH", body: JSON.stringify({ title }) }),
     onSuccess: (data) => {
       qc.setQueryData<VideoDetailData>(qk.video(id), (prev) =>
-        prev ? { ...prev, video: { ...prev.video, title: data.video.title } } : prev,
+        prev ? { ...prev, video: { ...prev.video, title: data.video.title, options: data.video.options } } : prev,
       );
       qc.invalidateQueries({ queryKey: qk.video(id) });
       qc.invalidateQueries({ queryKey: qk.videos });
