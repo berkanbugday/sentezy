@@ -21,7 +21,6 @@ export const SAMPLE_PROPS: CaptionCompositionProps = {
   font: "Poppins",
   color: "#FFD54A",
   position: "bottom",
-  avatarPosition: "right",
   width: 1080,
   height: 1920,
   fps: 30,

@@ -35,7 +35,6 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
   styleId,
   font,
   color,
-  avatarPosition,
   position,
 }) => {
   const { width, height, fps, durationInFrames } = useVideoConfig();
@@ -52,7 +51,7 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
   const fitSize = boxW / (longest * cw);
   const fontSize = Math.max(28, Math.min(baseSize, Math.floor(fitSize)));
   const pages = buildPages(words ?? [], meta.perChunk, fps, durationInFrames);
-  const box = captionBox({ width, height, avatarPosition, position });
+  const box = captionBox({ width, height, position });
   const Effect = meta.Component;
 
   return (

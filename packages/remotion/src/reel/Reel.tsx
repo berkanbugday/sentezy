@@ -38,7 +38,6 @@ export const Reel: React.FC<ReelProps> = ({
           styleId={captionStyle.styleId}
           font={captionStyle.font}
           color={captionStyle.color}
-          avatarPosition={avatarPosition}
           position={position}
         />
       )}

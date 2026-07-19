@@ -19,7 +19,6 @@ export type CaptionOverlayProps = {
   font: string;
   /** Accent hex ("#RRGGBB") for the highlighted word / marker / gradient. */
   color: string;
-  avatarPosition: AvatarPosition;
   position: CaptionPosition;
 };
 

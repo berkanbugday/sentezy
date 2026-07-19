@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { AvatarPosition, CaptionPosition } from "./types";
+import type { CaptionPosition } from "./types";
 
 /**
  * Compute the absolute box the caption block lives in. The box is anchored by its vertical
@@ -9,19 +9,18 @@ import type { AvatarPosition, CaptionPosition } from "./types";
  * `position` picks a real band, not a nudge:
  *  - "top"    → an upper band at 14%, clear of the platform chrome at the very top.
  *  - "bottom" → a lower band at 84%.
- * The avatar is always bottom-anchored, so only the bottom band has to dodge it: with
- * `avatarPosition: "center"` the avatar is bottom-centred at 54% frame height, so the band
- * lifts to 62% to sit just above the head. Side avatars (left/right) leave the bottom clear.
+ * The bands are the same whatever the avatar does. A bottom-centred avatar used to lift the
+ * bottom band to 62% to clear its head, which meant "Alt" landed in a different place for
+ * one avatar position than the other two; captions over the chest is the intended look.
  */
 export function captionBox(opts: {
   width: number;
   height: number;
-  avatarPosition: AvatarPosition;
   position: CaptionPosition;
 }): CSSProperties {
-  const { width, avatarPosition, position } = opts;
+  const { width, position } = opts;
   const edge = Math.round(width * 0.06);
-  const centerPct = position === "top" ? 14 : avatarPosition === "center" ? 62 : 84;
+  const centerPct = position === "top" ? 14 : 84;
 
   return {
     position: "absolute",
