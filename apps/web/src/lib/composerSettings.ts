@@ -1,26 +1,21 @@
-// Extra video settings surfaced in the dashboard "additional settings" drawer — the
-// generation options not shown as composer chips. Field names/enums mirror
-// createReelSchema (src/lib/schemas.ts) so they seed the create-reel form 1:1.
+// The four extra video settings surfaced in the dashboard "Ek ayarlar" drawer.
+// Everything else the composer needs — avatar, voice, music, caption style — lives in
+// MediaComposer's own state, next to the chip that picks it.
+// Every video is 9:16; there is no aspect-ratio setting.
 
 export type ComposerSettings = {
-  aspectRatio: "9:16" | "1:1" | "16:9";
-  avatarLayout: "side" | "bottom";
-  avatarSide: "left" | "right";
+  /** Where the cut-out avatar sits: an edge, or bottom-centred. */
+  avatarPosition: "left" | "center" | "right";
   captionPosition: "top" | "bottom";
+  /** ElevenLabs v3 audio tag ("" = natural delivery). */
   voiceEmotion: string;
-  musicTrackKey?: string;
-  musicVolume: number; // 0..0.4 (UI cap, so the bed never buries the voice)
+  /** Whoosh on each B-roll transition — only audible with 2+ clips. */
   transitionSfx: boolean;
-  sfxEnabled: boolean;
 };
 
 export const DEFAULT_SETTINGS: ComposerSettings = {
-  aspectRatio: "9:16",
-  avatarLayout: "side",
-  avatarSide: "right",
+  avatarPosition: "right",
   captionPosition: "bottom",
   voiceEmotion: "",
-  musicVolume: 0.15,
   transitionSfx: true,
-  sfxEnabled: false,
 };

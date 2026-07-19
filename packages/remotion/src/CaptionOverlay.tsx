@@ -35,9 +35,8 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
   styleId,
   font,
   color,
-  layout,
+  avatarPosition,
   position,
-  avatarSide,
 }) => {
   const { width, height, fps, durationInFrames } = useVideoConfig();
   const meta = EFFECTS[styleId] ?? EFFECTS.karaoke;
@@ -47,13 +46,13 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
   const baseSize = Math.max(meta.minSize, Math.round(height * meta.fontScale * 0.9));
   // Auto-fit: shrink the font so the LONGEST word fits the caption column — this prevents both
   // overflow and mid-word breaks (esp. in the narrow "side" layout). Never below a readable floor.
-  const boxW = captionBoxWidth({ width, layout });
+  const boxW = captionBoxWidth({ width });
   const cw = CHAR_W[family] ?? 0.58;
   const longest = Math.max(1, ...(words ?? []).map((w) => w.text.trim().length));
   const fitSize = boxW / (longest * cw);
   const fontSize = Math.max(28, Math.min(baseSize, Math.floor(fitSize)));
   const pages = buildPages(words ?? [], meta.perChunk, fps, durationInFrames);
-  const box = captionBox({ width, height, layout, position, avatarSide });
+  const box = captionBox({ width, height, avatarPosition, position });
   const Effect = meta.Component;
 
   return (

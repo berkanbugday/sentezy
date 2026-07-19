@@ -5,7 +5,6 @@ import { type AspectRatio, CreateVideoDraft, CreateVideoRequest, UpdateVideoDraf
 import { enqueueVideo } from "../lib/redis";
 import { SEP, resolveVoice } from "../lib/voices";
 import { emotionEnabled, enhanceScriptEmotion } from "../lib/emotion";
-import { sfxEnabled, suggestSfxCues } from "../lib/sfx";
 import { publicUrl, signedDownloadUrl } from "../lib/r2";
 import { isDev } from "../env";
 
@@ -14,8 +13,6 @@ const EnhanceEmotionBody = z.object({
   imageIds: z.array(z.string()).max(20).default([]),
   tone: z.string().max(40).default(""),
 });
-
-const SuggestSfxBody = z.object({ script: z.string().min(1).max(5000) });
 
 const CREDIT_COST = 1;
 
@@ -287,17 +284,5 @@ export async function videoRoutes(app: FastifyInstance) {
     const imageUrls = await Promise.all(parsed.data.imageIds.map((id) => signedDownloadUrl(id, 86400)));
     const result = await enhanceScriptEmotion(parsed.data.script, imageUrls, parsed.data.tone);
     return reply.send({ ...result, enabled: true });
-  });
-
-  app.post("/videos/suggest-sfx", { preHandler: app.authenticate }, async (req, reply) => {
-    const parsed = SuggestSfxBody.safeParse(req.body);
-    if (!parsed.success) {
-      return reply.code(400).send({ error: "invalid_body", details: parsed.error.flatten() });
-    }
-    if (!sfxEnabled()) {
-      return reply.send({ cues: [], enabled: false });
-    }
-    const cues = await suggestSfxCues(parsed.data.script);
-    return reply.send({ cues, enabled: true });
   });
 }

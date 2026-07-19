@@ -254,3 +254,37 @@ SFX palet tipleri
 - Ayarların oturumlar arası kalıcılığı (bugün `useState`, sayfa yenilenince sıfırlanır)
 - Önizlemede gerçek TTS
 - Önizlemede müzik ducking'i (render'da var, önizlemede sabit seviye)
+
+## Doğrulama sonucu
+
+- Tarih: 2026-07-19
+- Branch: `worktree-composer-settings-cleanup` (worktree, commit yok — Berkan'ın kuralı)
+
+**Otomatik (tamamı geçti):**
+
+| Kontrol | Sonuç |
+|---|---|
+| `pnpm typecheck` | 6/6 |
+| `pnpm lint` | 3/3 |
+| `pnpm build` | 3/3 |
+| `packages/types/src/layout.test.ts` | ok |
+| `packages/remotion/src/layout.test.ts` | ok |
+| `packages/remotion/src/reel/timing.test.ts` | ok |
+| `apps/api/src/lib/emotion.test.ts` | ok |
+| `apps/worker` pytest | 69 passed |
+
+**Son taramada bulunan ve düzeltilen iki sorun:**
+
+1. `packages/types/src/layout.test.ts` çalışma ağacından kaybolmuştu (Task 1'de yazılmıştı).
+   İçeriği `task-1.diff`'ten geri alındı. Kök neden: `packages/types` paketinde `@types/node`
+   yoktu, bu yüzden dosya `tsc`'yi kırıyordu — anlaşılan silinerek "çözülmüş".
+2. Gerçek düzeltme: `@types/node@22.10.5` `packages/types`'a devDependency olarak eklendi
+   (`packages/remotion` zaten aynısını taşıyor). Artık hem `tsx` ile çalışıyor hem `tsc` temiz.
+
+Diğer bütün görev çıktıları denetlendi: oluşturulması gereken 7 dosyanın 7'si yerinde,
+silinmesi gereken 5 şeyin 5'i gitmiş, hayatta kalması gereken 11 dosya (10 geçiş `.wav` +
+`SfxTrack.tsx`) duruyor.
+
+**Manuel (yapılmadı — tarayıcı ve gerçek render gerekiyor):**
+Önizleme matrisi, gerçek kuyruk render'ı ve eski `options` blob'u geriye uyum testi
+Berkan'a devredildi. Ajanlarda tarayıcı yok; hiçbir görev bu adımları yaptığını iddia etmedi.

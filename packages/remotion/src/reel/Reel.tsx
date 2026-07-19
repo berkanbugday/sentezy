@@ -1,6 +1,6 @@
 // packages/remotion/src/reel/Reel.tsx
 import React from "react";
-import { AbsoluteFill, useVideoConfig } from "remotion";
+import { AbsoluteFill, Audio, useVideoConfig } from "remotion";
 import { CaptionOverlay } from "../CaptionOverlay";
 import { AvatarLayer } from "./AvatarLayer";
 import { BrollLayer } from "./BrollLayer";
@@ -19,29 +19,30 @@ export const Reel: React.FC<ReelProps> = ({
   avatarUrl,
   broll,
   captionStyle,
-  layout,
+  avatarPosition,
   position,
-  avatarSide,
   captions,
   previewAudio,
   sfxCues,
+  musicUrl,
+  musicVolume,
 }) => {
   const { fps } = useVideoConfig();
   return (
     <AbsoluteFill style={{ backgroundColor: "#0b0b0d" }}>
       <BrollLayer broll={broll} words={words} />
-      {avatarUrl && <AvatarLayer src={avatarUrl} avatarSide={avatarSide} avatarLayout={layout} />}
+      {avatarUrl && <AvatarLayer src={avatarUrl} avatarPosition={avatarPosition} />}
       {captions && (
         <CaptionOverlay
           words={words}
           styleId={captionStyle.styleId}
           font={captionStyle.font}
           color={captionStyle.color}
-          layout={layout}
+          avatarPosition={avatarPosition}
           position={position}
-          avatarSide={avatarSide}
         />
       )}
+      {previewAudio && musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}
       {previewAudio && <SfxTrack cues={sfxCues} fps={fps} />}
     </AbsoluteFill>
   );

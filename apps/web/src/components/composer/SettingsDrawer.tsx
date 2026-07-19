@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RATIOS, VOICE_EMOTIONS } from "@/components/wizard/constants";
+import { VOICE_EMOTIONS } from "@/components/wizard/constants";
 import { Icon } from "@/components/icons";
 import { type ComposerSettings } from "@/lib/composerSettings";
-import { useMusic } from "@/lib/queries";
 
 type Opt<T> = { value: T; label: string };
 
@@ -34,12 +33,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const LAYOUT_OPTS: Opt<ComposerSettings["avatarLayout"]>[] = [
-  { value: "side", label: "Kenar" },
-  { value: "bottom", label: "Alt" },
-];
-const SIDE_OPTS: Opt<ComposerSettings["avatarSide"]>[] = [
+const AVATAR_POS_OPTS: Opt<ComposerSettings["avatarPosition"]>[] = [
   { value: "left", label: "Sol" },
+  { value: "center", label: "Orta" },
   { value: "right", label: "Sağ" },
 ];
 const CAPPOS_OPTS: Opt<ComposerSettings["captionPosition"]>[] = [
@@ -48,10 +44,17 @@ const CAPPOS_OPTS: Opt<ComposerSettings["captionPosition"]>[] = [
 ];
 
 /** Icon button that opens an animated right-side drawer of extra video settings. */
-export function SettingsDrawer({ settings, onChange }: { settings: ComposerSettings; onChange: (s: ComposerSettings) => void }) {
+export function SettingsDrawer({
+  settings,
+  onChange,
+  mediaCount = 0,
+}: {
+  settings: ComposerSettings;
+  onChange: (s: ComposerSettings) => void;
+  /** Uploaded clip count — transition SFX only exist between clips. */
+  mediaCount?: number;
+}) {
   const [open, setOpen] = useState(false);
-  const musicQ = useMusic(open); // only fetch once the drawer is opened
-  const tracks = musicQ.data ?? [];
   const set = <K extends keyof ComposerSettings>(k: K, v: ComposerSettings[K]) => onChange({ ...settings, [k]: v });
 
   useEffect(() => {
@@ -60,6 +63,9 @@ export function SettingsDrawer({ settings, onChange }: { settings: ComposerSetti
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  // A transition sound plays AT a cut, so it needs at least two clips to sit between.
+  const transitionSfxAvailable = mediaCount >= 2;
 
   return (
     <>
@@ -84,88 +90,33 @@ export function SettingsDrawer({ settings, onChange }: { settings: ComposerSetti
           </div>
 
           <div className="flex flex-col gap-5 px-5 py-5">
-              <Field label="En / boy">
-                <Pills options={RATIOS.map((r) => ({ value: r.value, label: r.label }))} value={settings.aspectRatio} onChange={(v) => set("aspectRatio", v)} />
-              </Field>
-              <Field label="Avatar yerleşimi">
-                <Pills options={LAYOUT_OPTS} value={settings.avatarLayout} onChange={(v) => set("avatarLayout", v)} />
-              </Field>
-              <Field label="Avatar tarafı">
-                <Pills options={SIDE_OPTS} value={settings.avatarSide} onChange={(v) => set("avatarSide", v)} />
-              </Field>
-              <Field label="Altyazı konumu">
-                <Pills options={CAPPOS_OPTS} value={settings.captionPosition} onChange={(v) => set("captionPosition", v)} />
-              </Field>
-              <Field label="Ses tonu">
-                <Pills options={VOICE_EMOTIONS} value={settings.voiceEmotion} onChange={(v) => set("voiceEmotion", v)} />
-              </Field>
-              <Field label="Müzik">
-                <div className="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => set("musicTrackKey", undefined)}
-                    className={`rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition ${!settings.musicTrackKey ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist"}`}
-                  >
-                    Yok
-                  </button>
-                  {tracks.map((t) => (
-                    <button
-                      key={t.key}
-                      type="button"
-                      onClick={() => set("musicTrackKey", t.key)}
-                      className={`rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition ${settings.musicTrackKey === t.key ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist"}`}
-                    >
-                      {t.name}
-                    </button>
-                  ))}
-                  {musicQ.isLoading && <span className="text-[12px] text-muted">Yükleniyor…</span>}
-                </div>
-                {settings.musicTrackKey && (
-                  <div className="mt-3">
-                    <div className="mb-1 flex items-center justify-between text-[11.5px] text-muted">
-                      <span>Müzik seviyesi</span>
-                      <span className="mono">{Math.round(settings.musicVolume * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={0.4}
-                      step={0.01}
-                      value={settings.musicVolume}
-                      onChange={(e) => set("musicVolume", Number(e.target.value))}
-                      className="w-full accent-ink"
-                    />
-                  </div>
-                )}
-              </Field>
-              <Field label="Geçiş efekti sesi">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={settings.transitionSfx}
-                  onClick={() => set("transitionSfx", !settings.transitionSfx)}
-                  className="flex items-center gap-2.5 text-[12.5px] font-medium text-ink"
-                >
-                  <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${settings.transitionSfx ? "bg-ink" : "bg-hairline"}`}>
-                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${settings.transitionSfx ? "left-[18px]" : "left-0.5"}`} />
-                  </span>
-                  {settings.transitionSfx ? "Açık" : "Kapalı"}
-                </button>
-              </Field>
-              <Field label="Yapay zekâ ses efektleri">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={settings.sfxEnabled}
-                  onClick={() => set("sfxEnabled", !settings.sfxEnabled)}
-                  className="flex items-center gap-2.5 text-[12.5px] font-medium text-ink"
-                >
-                  <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${settings.sfxEnabled ? "bg-ink" : "bg-hairline"}`}>
-                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${settings.sfxEnabled ? "left-[18px]" : "left-0.5"}`} />
-                  </span>
-                  {settings.sfxEnabled ? "Açık" : "Kapalı"}
-                </button>
-              </Field>
+            <Field label="Avatar yerleşimi">
+              <Pills options={AVATAR_POS_OPTS} value={settings.avatarPosition} onChange={(v) => set("avatarPosition", v)} />
+            </Field>
+            <Field label="Altyazı konumu">
+              <Pills options={CAPPOS_OPTS} value={settings.captionPosition} onChange={(v) => set("captionPosition", v)} />
+            </Field>
+            <Field label="Ses tonu">
+              <Pills options={VOICE_EMOTIONS} value={settings.voiceEmotion} onChange={(v) => set("voiceEmotion", v)} />
+            </Field>
+            <Field label="Geçiş efekti sesi">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={settings.transitionSfx}
+                disabled={!transitionSfxAvailable}
+                onClick={() => set("transitionSfx", !settings.transitionSfx)}
+                className="flex items-center gap-2.5 text-[12.5px] font-medium text-ink transition disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${settings.transitionSfx ? "bg-ink" : "bg-hairline"}`}>
+                  <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${settings.transitionSfx ? "left-[18px]" : "left-0.5"}`} />
+                </span>
+                {settings.transitionSfx ? "Açık" : "Kapalı"}
+              </button>
+              {!transitionSfxAvailable && (
+                <p className="mt-1.5 text-[11.5px] text-muted">Geçiş sesi klipler arasında çalar — en az 2 medya yükle.</p>
+              )}
+            </Field>
           </div>
         </aside>
       )}

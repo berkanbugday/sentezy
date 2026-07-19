@@ -8,6 +8,8 @@ import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings"
 /** Dashboard home: the import composer (hero). Owns the shared settings state. */
 export function DashboardHome() {
   const [settings, setSettings] = useState<ComposerSettings>(DEFAULT_SETTINGS);
+  // Lifted out of MediaComposer so the drawer can gate clip-only settings.
+  const [mediaCount, setMediaCount] = useState(0);
 
   return (
     <div>
@@ -18,9 +20,9 @@ export function DashboardHome() {
               <h1 className="disp text-[26px] font-semibold leading-tight text-ink sm:text-[34px]">Sentezy&apos;e hoş geldin</h1>
               <p className="mt-1.5 text-[14px] text-slate sm:text-[15px]">Medyanı içe aktar ve videonu oluştur</p>
             </div>
-            <SettingsDrawer settings={settings} onChange={setSettings} />
+            <SettingsDrawer settings={settings} onChange={setSettings} mediaCount={mediaCount} />
           </div>
-          <MediaComposer extraSettings={settings} />
+          <MediaComposer extraSettings={settings} onMediaCountChange={setMediaCount} />
         </div>
       </section>
     </div>

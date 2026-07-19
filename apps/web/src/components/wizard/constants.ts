@@ -1,5 +1,4 @@
 import { BROLL_EFFECT_META } from "@sentezy/types";
-import type { CreateReelValues } from "@/lib/schemas";
 
 export const fieldClass =
   "w-full rounded-xl border border-hairline bg-mist px-3.5 py-2.5 text-[14px] text-ink outline-none transition focus:border-signal";
@@ -19,12 +18,6 @@ export function chipClass(active: boolean) {
     active ? "border-signal bg-[var(--wash)] text-signal" : "border-hairline text-ink hover:border-signal/50"
   }`;
 }
-
-export const RATIOS: { value: CreateReelValues["aspectRatio"]; label: string; w: number; h: number }[] = [
-  { value: "9:16", label: "Reels · Story", w: 18, h: 32 },
-  { value: "1:1", label: "Kare · Feed", w: 28, h: 28 },
-  { value: "16:9", label: "Yatay · YouTube", w: 34, h: 19 },
-];
 
 export const CAPTION_STYLES = [
   { value: "karaoke", label: "Karaoke", hint: "Kelime kelime parlar" },

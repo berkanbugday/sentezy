@@ -11,7 +11,6 @@ from .matte import matte_video
 from .providers.elevenlabs import ElevenLabs
 from .providers.heygen import HeyGen
 from .providers.reel_remotion import build_reel_props, render_reel, render_reel_local
-from .sfx import resolve_sfx_cues, tokenize_script
 from .storage import Storage
 from .thumbnail import make_thumbnail
 
@@ -101,7 +100,11 @@ def _resolve_music(options: dict, storage: Storage, workdir: str) -> str | None:
     if not track_key:
         return None
     dest = f"{workdir}/music.mp3"
-    storage.download(storage.signed_get_url(track_key), dest)  # music stored in R2 (signed → always fetchable)
+    try:
+        storage.download(storage.signed_get_url(track_key), dest)  # music stored in R2 (signed → always fetchable)
+    except Exception as e:  # noqa: BLE001 — music is optional; never fail the job over a background bed
+        print(f"pipeline: music download failed ({e}); continuing without music")
+        return None
     return dest
 
 
@@ -124,6 +127,35 @@ def _still_avatar_video(photo_path: str, audio_path: str, out_path: str) -> None
     )
 
 
+def decide_tone_route(options: dict, script: str, has_llm_key: bool) -> tuple[str, str | None]:
+    """How the drawer's "Ses tonu" reaches the TTS call → (route, tone).
+
+    "passthrough"  — no tone set, or the script already carries v3 tags (the wizard's
+                     per-sentence emotion pass must win over a blanket leading tag).
+    "llm"          — an LLM key is configured; emotion.add_emotion_tags inserts per-sentence tags.
+    "leading-tag"  — no LLM key; the tone becomes a single leading v3 tag on the script.
+    """
+    tone = ((options.get("voice") or {}).get("emotion")) or ""
+    already_tagged = bool(re.search(r"\[[a-zA-Z]", script))
+    if not tone or already_tagged:
+        return ("passthrough", None)
+    return ("llm", tone) if has_llm_key else ("leading-tag", tone)
+
+
+def read_avatar_position(layout: dict) -> str:
+    """Where the avatar sits: "left" | "center" | "right".
+
+    Drafts written before 2026-07-19 store avatarLayout("side"|"bottom") + avatarSide
+    instead, so map those forward: bottom → center, otherwise the stored side.
+    """
+    pos = layout.get("avatarPosition")
+    if pos in ("left", "center", "right"):
+        return pos
+    if layout.get("avatarLayout") == "bottom":
+        return "center"
+    return "left" if layout.get("avatarSide") == "left" else "right"
+
+
 def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: ElevenLabs, hg: HeyGen) -> None:
     video = db.get_video(video_id)
     if not video:
@@ -144,25 +176,22 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     # 1) TTS (audio + word timings)
     db.set_stage(video_id, "tts", 10)
     audio_path = f"{workdir}/audio.mp3"
-    tone = ((options.get("voice") or {}).get("emotion")) or ""
     script = video["script"]
     emotion_tag: str | None = None
-    # If the wizard's "add emotion" pass already annotated the script with v3 tags, use it
-    # as-is — don't re-tag or prepend a leading tag (captions still strip the tags later).
-    already_tagged = bool(re.search(r"\[[a-zA-Z]", script))
-    if tone and not already_tagged:
-        if cfg.openrouter_api_key or cfg.anthropic_api_key:
-            # LLM pass: insert per-sentence v3 audio tags matching the tone (OpenRouter/free
-            # preferred, Anthropic fallback; falls back to the plain script on any failure).
-            # Tags are stripped from captions later.
-            from .emotion import add_emotion_tags
-            script = add_emotion_tags(
-                script, tone,
-                openrouter_key=cfg.openrouter_api_key, openrouter_model=cfg.openrouter_model,
-                anthropic_key=cfg.anthropic_api_key,
-            )
-        else:
-            emotion_tag = tone  # no LLM key → a single leading tag sets the tone
+    has_llm_key = bool(cfg.openrouter_api_key or cfg.anthropic_api_key)
+    route, tone = decide_tone_route(options, script, has_llm_key)
+    if route == "llm":
+        # LLM pass: insert per-sentence v3 audio tags matching the tone (OpenRouter/free
+        # preferred, Anthropic fallback; falls back to the plain script on any failure).
+        # Tags are stripped from captions later.
+        from .emotion import add_emotion_tags
+        script = add_emotion_tags(
+            script, tone,
+            openrouter_key=cfg.openrouter_api_key, openrouter_model=cfg.openrouter_model,
+            anthropic_key=cfg.anthropic_api_key,
+        )
+    elif route == "leading-tag":
+        emotion_tag = tone  # no LLM key → a single leading tag sets the tone
     words = el.tts_with_timestamps(script, voice["elevenlabs_voice_id"], audio_path, emotion_tag=emotion_tag)
     audio_key = f"audio/{video_id}.mp3"
     storage.upload_r2(audio_path, audio_key, "audio/mpeg")
@@ -195,8 +224,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     #    → opaque H.264. Identical to the in-app <Player> preview by construction.
     db.set_stage(video_id, "compose", 70)
     layout = options.get("layout") or {}
-    avatar_side = layout.get("avatarSide", "right")
-    avatar_layout = layout.get("avatarLayout", "side")
+    avatar_position = read_avatar_position(layout)
     caps = options.get("captions", True)
     if isinstance(caps, bool):  # legacy drafts store captions as a plain boolean
         caps = {"enabled": caps}
@@ -225,7 +253,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     props = build_reel_props(
         words, avatar_url=avatar_signed, broll=broll_props,
         style=cap_style, font=cap_font, color=cap_color,
-        layout=avatar_layout, position=cap_position, avatar_side=avatar_side,
+        avatar_position=avatar_position, position=cap_position,
         captions=captions_on, width=width, height=height, fps=30,
     )
     reel_video = f"{workdir}/reel_video.mp4"
@@ -234,25 +262,17 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     else:
         render_reel_local(props, dest=reel_video, workdir=workdir)
 
-    # 3b) Audio bed: voice + ducked music + transition/AI SFX (ffmpeg; video stream-copied).
+    # 3b) Audio bed: voice + ducked music + transition SFX (ffmpeg; video stream-copied).
     effects = options.get("effects") or {}
     transition_sfx = effects.get("transitionSfx", True)
     music_path = _resolve_music(options, storage, workdir)
     music_volume = float((options.get("music") or {}).get("volume", 0.15))
-    sfx_opt = options.get("sfx") or {}
-    sfx_cues_resolved: list[dict] = []
-    if sfx_opt.get("enabled") and sfx_opt.get("cues"):
-        try:
-            sfx_cues_resolved = resolve_sfx_cues(sfx_opt["cues"], words, tokenize_script(video["script"]))
-        except Exception as e:  # noqa: BLE001 — SFX are optional; never fail the job
-            print(f"pipeline: sfx cue resolution failed ({e}); continuing without AI SFX")
-            sfx_cues_resolved = []
 
     reel_path = f"{workdir}/reel.mp4"
     mux_audio(
         reel_video, audio_path, reel_path,
         music_path=music_path, music_volume=music_volume,
-        broll=segments, transition_sfx=transition_sfx, sfx_cues=sfx_cues_resolved,
+        broll=segments, transition_sfx=transition_sfx,
     )
 
     # 4) Thumbnail + upload

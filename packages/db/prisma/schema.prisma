@@ -66,6 +66,24 @@ model CatalogAvatar {
   @@map("avatar_catalog")
 }
 
+/// Curated background-music beds. Files live in R2 under music/*.mp3; seeded from
+/// apps/api/src/data/music.json.
+model CatalogMusic {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  mood        String
+  moodLabel   String   @map("mood_label")
+  r2Key       String   @map("r2_key")
+  durationSec Int      @default(0) @map("duration_sec")
+  source      String   @default("")
+  license     String   @default("")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([mood])
+  @@map("music_catalog")
+}
+
 model Voice {
   id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   elevenlabsVoiceId String   @map("elevenlabs_voice_id")

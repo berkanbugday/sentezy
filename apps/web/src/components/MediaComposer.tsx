@@ -2,21 +2,21 @@
 
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState } from "react";
-import type { SfxCue } from "@sentezy/types";
 import { type Avatar, type Voice } from "@/components/wizard/types";
 import { apiFetch } from "@/lib/api";
 import { DEFAULT_PRESET, presetById } from "@/lib/captionStyles";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
 import { type Media } from "@/lib/composer/media";
 import { TR_GRADIENT, TR_GRADIENT_SOFT, TRANSITION_LABELS } from "@/lib/composer/transitions";
-import { type ImportProductResult, useCreateAvatar, useGenerateVideo, useImportProduct, useMyAvatars, useSuggestSfx, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
+import { type ImportProductResult, type MusicTrack, useCreateAvatar, useGenerateVideo, useImportProduct, useMyAvatars, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
 import { videoPoster } from "@/lib/videoPoster";
 import { cleanTitleText } from "@/lib/videoTitle";
 import { DEFAULT_TRANSITION } from "./WizardSteps";
 import { AvatarPicker } from "./composer/AvatarPicker";
 import { CaptionPicker } from "./composer/CaptionPicker";
 import { EffectPicker } from "./composer/EffectPicker";
-import { SfxPreviewModal } from "./composer/SfxPreviewModal";
+import { MusicPicker } from "./composer/MusicPicker";
+import { PreviewModal } from "./composer/PreviewModal";
 import { Spinner } from "./composer/Spinner";
 import { VoicePicker } from "./composer/VoicePicker";
 import { Icon } from "./icons";
@@ -36,15 +36,17 @@ function deriveVideoTitle(script: string, productTitle?: string): string {
  *  storage (with per-tile progress), then builds a draft and queues it for render. */
 export function MediaComposer({
   extraSettings,
+  onMediaCountChange,
 }: {
   extraSettings?: ComposerSettings;
+  /** Reports the uploaded-clip count so the settings drawer can gate clip-only options. */
+  onMediaCountChange?: (n: number) => void;
 }) {
   const router = useRouter();
   const uploadImg = useUploadBackground();
   const uploadVid = useUploadBackgroundVideo();
   const createAvatar = useCreateAvatar();
   const generate = useGenerateVideo();
-  const suggestSfx = useSuggestSfx();
   const importProduct = useImportProduct();
   const myAvatars = useMyAvatars().data ?? [];
   const [mode, setMode] = useState<"link" | "upload">("link"); // paste a product link, or upload media
@@ -59,13 +61,15 @@ export function MediaComposer({
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState<Voice | null>(null);
+  const [musicOpen, setMusicOpen] = useState(false);
+  const [selectedMusic, setSelectedMusic] = useState<MusicTrack | null>(null);
+  const [musicVolume, setMusicVolume] = useState(0.15); // UI cap 0.4 — the bed never buries the voice
   const [captionOpen, setCaptionOpen] = useState(false);
   const [captionId, setCaptionId] = useState(DEFAULT_PRESET.id);
   const [script, setScript] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [sfxCues, setSfxCues] = useState<SfxCue[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedCaption = presetById(captionId);
   const settings = extraSettings ?? DEFAULT_SETTINGS;
@@ -75,6 +79,10 @@ export function MediaComposer({
   useEffect(() => {
     if (!multiple) setEffectOpen(false);
   }, [multiple]);
+  // Transition SFX only exist between clips — the drawer needs the count to gate its toggle.
+  useEffect(() => {
+    onMediaCountChange?.(items.length);
+  }, [items.length, onMediaCountChange]);
   // The boundary currently being edited (its incoming transition), for the effect modal.
   const activeTransition = items.find((x) => x.url === activeBoundary)?.transition ?? DEFAULT_TRANSITION;
   const boundaryIndex = activeBoundary ? items.findIndex((x) => x.url === activeBoundary) : -1;
@@ -90,11 +98,6 @@ export function MediaComposer({
       }),
     [],
   );
-
-  // AI SFX cues are placed by script word-index; a script edit invalidates them.
-  useEffect(() => {
-    setSfxCues([]);
-  }, [script]);
 
   const patch = (url: string, next: Partial<Media>) => setItems((prev) => prev.map((x) => (x.url === url ? { ...x, ...next } : x)));
 
@@ -194,18 +197,8 @@ export function MediaComposer({
         : undefined;
   const pick = () => inputRef.current?.click();
 
-  // Open the preview modal, lazily fetching AI SFX cues the first time (if SFX is enabled)
-  // so the preview shows the same placements the real render will use.
-  async function openPreview() {
+  function openPreview() {
     setPreviewOpen(true);
-    if (settings.sfxEnabled && script.trim() && sfxCues.length === 0) {
-      try {
-        const { cues } = await suggestSfx.mutateAsync(script.trim());
-        setSfxCues(cues);
-      } catch {
-        // preview still works without SFX
-      }
-    }
   }
 
   // Build the draft straight from the composer state, debit + queue it, then send
@@ -240,17 +233,7 @@ export function MediaComposer({
         transition: idx === 0 ? DEFAULT_TRANSITION : i.transition ?? DEFAULT_TRANSITION,
       }));
 
-      // Ensure SFX cues exist before render if the setting is on but the preview was never
-      // opened (so cues were never fetched) — fall back to an empty list on failure.
       const scriptText = script.trim();
-      let cuesForRender = sfxCues;
-      if (settings.sfxEnabled && cuesForRender.length === 0 && scriptText.length > 0) {
-        try {
-          cuesForRender = (await suggestSfx.mutateAsync(scriptText)).cues;
-        } catch {
-          cuesForRender = [];
-        }
-      }
 
       const options = {
         captions: { enabled: true, style: preset.base, font: preset.font, color: preset.color },
@@ -263,11 +246,10 @@ export function MediaComposer({
               media,
             }
           : { type: "color" as const, value: "#0B0B0D" },
-        ...(settings.musicTrackKey ? { music: { trackKey: settings.musicTrackKey, volume: settings.musicVolume ?? 0.15 } } : {}),
-        layout: { avatarLayout: settings.avatarLayout, avatarSide: settings.avatarSide, captionPosition: settings.captionPosition },
+        ...(selectedMusic ? { music: { trackKey: selectedMusic.key, volume: musicVolume } } : {}),
+        layout: { avatarPosition: settings.avatarPosition, captionPosition: settings.captionPosition },
         voice: { emotion: settings.voiceEmotion ?? "" },
         effects: { transitionSfx: settings.transitionSfx ?? true },
-        sfx: { enabled: settings.sfxEnabled, cues: cuesForRender },
         ...(product ? { product } : {}), // provenance when seeded from a product link
       };
 
@@ -284,7 +266,6 @@ export function MediaComposer({
           script: text,
           avatarId,
           voiceId,
-          aspectRatio: settings.aspectRatio,
           options,
         }),
       });
@@ -521,6 +502,16 @@ export function MediaComposer({
             {selectedVoice ? selectedVoice.label : "Ses seç"}
             <Icon.chevronDown width={14} height={14} className="text-muted" />
           </button>
+          {/* music chip */}
+          <button
+            type="button"
+            onClick={() => setMusicOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-2.5 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist"
+          >
+            <Icon.play width={14} height={14} className="text-slate" />
+            {selectedMusic ? selectedMusic.name : "Müzik seç"}
+            <Icon.chevronDown width={14} height={14} className="text-muted" />
+          </button>
           {/* caption style chip */}
           <button
             type="button"
@@ -575,14 +566,21 @@ export function MediaComposer({
       />
       <AvatarPicker open={avatarOpen} onClose={() => setAvatarOpen(false)} selectedId={selectedAvatar?.id ?? null} onSelect={setSelectedAvatar} />
       <VoicePicker open={voiceOpen} onClose={() => setVoiceOpen(false)} selectedId={selectedVoice?.id ?? null} onSelect={setSelectedVoice} script={script} emotion={settings.voiceEmotion ?? ""} />
+      <MusicPicker
+        open={musicOpen}
+        onClose={() => setMusicOpen(false)}
+        selectedKey={selectedMusic?.key ?? null}
+        onSelect={setSelectedMusic}
+        volume={musicVolume}
+        onVolumeChange={setMusicVolume}
+      />
       <CaptionPicker open={captionOpen} onClose={() => setCaptionOpen(false)} selectedId={captionId} onSelect={setCaptionId} />
-      <SfxPreviewModal
+      <PreviewModal
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
         script={script}
-        cues={sfxCues}
         captionStyle={{ styleId: selectedCaption.base, font: selectedCaption.font, color: selectedCaption.color }}
-        layout={{ avatarLayout: settings.avatarLayout, avatarSide: settings.avatarSide, captionPosition: settings.captionPosition }}
+        layout={{ avatarPosition: settings.avatarPosition, captionPosition: settings.captionPosition }}
         avatarImageUrl={selectedAvatar?.imageUrl ?? null}
         broll={items.map((i, idx) => ({
           url: i.serverUrl ?? i.url,
@@ -591,6 +589,8 @@ export function MediaComposer({
         }))}
         transitionSfx={settings.transitionSfx}
         captions
+        musicUrl={selectedMusic?.previewUrl ?? null}
+        musicVolume={musicVolume}
       />
     </div>
   );

@@ -30,7 +30,7 @@ Not in the pnpm workspace — it deploys independently to **your** Cloudflare ac
   "broll": [{ "url": "https://…signed…", "kind": "image", "start": 1.2, "end": 2.6, "transition": "fade" }],
   "theme": { "accent": "#FFD54A", "font": "General Sans", "logoUrl": null },
   "captionStyle": { "styleId": "highlight", "font": "Poppins", "color": "#FFD54A" },
-  "layout": { "avatarSide": "right", "avatarLayout": "side", "captionPosition": "bottom" },
+  "avatarPosition": "right", "position": "bottom",
   "width": 1080, "height": 1920, "fps": 30
 }
 ```

@@ -1,0 +1,115 @@
+{
+  "note": "Background music catalog — seed source for the music_catalog table. Add tracks with scripts/add-music.mjs, then re-run `pnpm --filter @sentezy/db seed`.",
+  "tracks": [
+    {
+      "slug": "cinematic",
+      "name": "Sinematik",
+      "mood": "cinematic",
+      "moodLabel": "Sinematik",
+      "r2Key": "music/cinematic.mp3",
+      "durationSec": 31,
+      "source": "https://pixabay.com/music/",
+      "license": "Pixabay Content License"
+    },
+    {
+      "slug": "calm",
+      "name": "Sakin",
+      "mood": "calm",
+      "moodLabel": "Sakin",
+      "r2Key": "music/calm.mp3",
+      "durationSec": 31,
+      "source": "https://pixabay.com/music/",
+      "license": "Pixabay Content License"
+    },
+    {
+      "slug": "upbeat",
+      "name": "Enerjik",
+      "mood": "upbeat",
+      "moodLabel": "Enerjik",
+      "r2Key": "music/upbeat.mp3",
+      "durationSec": 30,
+      "source": "https://pixabay.com/music/",
+      "license": "Pixabay Content License"
+    },
+    {
+      "slug": "firtinadan-sonra",
+      "name": "Fırtınadan Sonra",
+      "mood": "cinematic",
+      "moodLabel": "Sinematik",
+      "r2Key": "music/firtinadan-sonra.mp3",
+      "durationSec": 123,
+      "source": "https://opengameart.org/sites/default/files/keyframe_audio-inspirational-cinematic-ambient-after-the-storm-133540.mp3",
+      "license": "CC0 1.0 Universal (Public Domain Dedication)"
+    },
+    {
+      "slug": "golge-cete",
+      "name": "Gölge Çetesi",
+      "mood": "cinematic",
+      "moodLabel": "Sinematik",
+      "r2Key": "music/golge-cete.mp3",
+      "durationSec": 74,
+      "source": "https://opengameart.org/sites/default/files/cinematic_entrance_gang_lands_by_alex_mcculloch_0.mp3",
+      "license": "CC0 1.0 Universal (Public Domain Dedication)"
+    },
+    {
+      "slug": "huzurlu-an",
+      "name": "Huzurlu An",
+      "mood": "calm",
+      "moodLabel": "Sakin",
+      "r2Key": "music/huzurlu-an.mp3",
+      "durationSec": 19,
+      "source": "https://opengameart.org/sites/default/files/Relaxing_0.mp3",
+      "license": "CC0 1.0 Universal (Public Domain Dedication)"
+    },
+    {
+      "slug": "sakin-kasaba",
+      "name": "Sakin Kasaba",
+      "mood": "calm",
+      "moodLabel": "Sakin",
+      "r2Key": "music/sakin-kasaba.mp3",
+      "durationSec": 116,
+      "source": "https://opengameart.org/sites/default/files/peacful_town_0.mp3",
+      "license": "CC0 1.0 Universal (Public Domain Dedication)"
+    },
+    {
+      "slug": "nese-dolu",
+      "name": "Neşe Dolu",
+      "mood": "upbeat",
+      "moodLabel": "Enerjik",
+      "r2Key": "music/nese-dolu.mp3",
+      "durationSec": 21,
+      "source": "https://opengameart.org/sites/default/files/happy%20loop_0.mp3",
+      "license": "CC0 1.0 Universal (Public Domain Dedication)"
+    },
+    {
+      "slug": "zafer-ani",
+      "name": "Zafer Anı",
+      "mood": "upbeat",
+      "moodLabel": "Enerjik",
+      "r2Key": "music/zafer-ani.mp3",
+      "durationSec": 57,
+      "source": "https://opengameart.org/sites/default/files/Victory1_1.mp3",
+      "license": "CC0 1.0 Universal (Public Domain Dedication)"
+    },
+    {
+      "slug": "motivasyon-dalgasi",
+      "name": "Motivasyon Dalgası",
+      "mood": "corporate",
+      "moodLabel": "Kurumsal",
+      "r2Key": "music/motivasyon-dalgasi.mp3",
+      "durationSec": 170,
+      "source": "https://opengameart.org/sites/default/files/motivation_to_wake_up_0.mp3",
+      "license": "CC0 1.0 Universal (Public Domain Dedication)"
+    },
+    {
+      "slug": "basari-ani",
+      "name": "Başarı Anı",
+      "mood": "corporate",
+      "moodLabel": "Kurumsal",
+      "r2Key": "music/basari-ani.mp3",
+      "durationSec": 27,
+      "source": "https://opengameart.org/sites/default/files/triumphant_0.mp3",
+      "license": "CC0 1.0 Universal (Public Domain Dedication)"
+    }
+  ]
+}

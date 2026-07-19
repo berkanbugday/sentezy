@@ -1,27 +1,27 @@
 import type { CSSProperties } from "react";
-import type { AvatarSide, CaptionLayout, CaptionPosition } from "./types";
+import type { AvatarPosition, CaptionPosition } from "./types";
 
 /**
- * Compute the absolute box the caption block lives in, mirroring the worker's ASS
- * margin logic (build_captions_ass, compose.py:232-248) so Remotion captions land in
- * the same clear area:
- *  - "bottom" layout: avatar is bottom-centred, B-roll fills a top band → captions span
- *    full width, anchored high (top) or mid (bottom position).
- *  - "side" layout: avatar occupies one half → captions centre in the clear opposite half.
+ * Compute the absolute box the caption block lives in. The box is anchored by its vertical
+ * CENTRE (`top: N%` + translateY(-50%)) and spans the full frame width minus a 6% inset on
+ * each side — big, centred captions are the deliberate look.
+ *
+ * `position` picks a real band, not a nudge:
+ *  - "top"    → an upper band at 20%, clear of the platform chrome at the very top.
+ *  - "bottom" → a lower band at 78%.
+ * The avatar is always bottom-anchored, so only the bottom band has to dodge it: with
+ * `avatarPosition: "center"` the avatar is bottom-centred at 54% frame height, so the band
+ * lifts to 62% to sit just above the head. Side avatars (left/right) leave the bottom clear.
  */
 export function captionBox(opts: {
   width: number;
   height: number;
-  layout: CaptionLayout;
+  avatarPosition: AvatarPosition;
   position: CaptionPosition;
-  avatarSide: AvatarSide;
 }): CSSProperties {
-  const { width, position } = opts;
+  const { width, avatarPosition, position } = opts;
   const edge = Math.round(width * 0.06);
-
-  // Big, centred captions: full width, sitting around the vertical middle (a touch above true
-  // centre so the small bottom-anchored avatar has room). `position` nudges it up (top) or down.
-  const centerPct = position === "top" ? 26 : 40;
+  const centerPct = position === "top" ? 20 : avatarPosition === "center" ? 62 : 78;
 
   return {
     position: "absolute",
@@ -40,7 +40,7 @@ export function captionBox(opts: {
 /** The usable caption width in px (frame width minus the box's left+right insets) — used to
  *  auto-fit the font so the longest word never overflows or has to break mid-word. Mirrors the
  *  inset math in `captionBox`. */
-export function captionBoxWidth(opts: { width: number; layout: CaptionLayout }): number {
+export function captionBoxWidth(opts: { width: number }): number {
   // Captions are full-width now (centred), so the usable width is the frame minus both edge insets.
   return opts.width - 2 * opts.width * 0.06;
 }

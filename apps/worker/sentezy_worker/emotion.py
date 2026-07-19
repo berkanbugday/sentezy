@@ -128,7 +128,7 @@ def words_only(text: str) -> list[str]:
     """The invariant an annotated script must preserve: the whitespace tokens of the script
     with audio tags removed and edge pacing punctuation normalised away. Comparing these
     lists catches paraphrase, reordering, case changes — and a stray standalone '…', which
-    would survive as an empty token and desync caption/SFX word indices."""
+    would survive as an empty token and desync caption word indices."""
     return [_PACING_RE.sub("", t) for t in _strip_tags(text).split()]
 
 

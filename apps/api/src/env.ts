@@ -31,11 +31,6 @@ const schema = z.object({
   OPENROUTER_VISION_MODEL: z
     .string()
     .default("google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free,google/gemini-2.5-flash"),
-  // Text-only "suggest sound effects" pass (lib/sfx.ts). Comma-separated free-model
-  // fallback chain (free models 429 often). Empty OPENROUTER_API_KEY = endpoint no-ops.
-  OPENROUTER_SFX_MODEL: z
-    .string()
-    .default("google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free,google/gemini-2.5-flash"),
 
   // Managed-scraper fallback for the product-import feature (lib/scrape.ts). Used only
   // when the in-house fetch+cheerio parse comes back thin (JS-rendered / bot-blocked

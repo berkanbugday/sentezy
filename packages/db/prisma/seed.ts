@@ -79,9 +79,74 @@ async function seedAvatarCatalog() {
   console.log(`Seeded avatar catalog — ${total} personas (${ready} with portraits).`);
 }
 
+type MusicEntry = {
+  slug: string;
+  name: string;
+  mood: string;
+  moodLabel: string;
+  r2Key: string;
+  durationSec: number;
+  source: string;
+  license: string;
+};
+
+function loadMusicCatalog(): MusicEntry[] {
+  const path = join(here, "../../../apps/api/src/data/music.json");
+  const data = JSON.parse(readFileSync(path, "utf8")) as { tracks: MusicEntry[] };
+  return data.tracks;
+}
+
+async function seedMusicCatalog() {
+  const tracks = loadMusicCatalog();
+  for (const t of tracks) {
+    const fields = {
+      name: t.name,
+      mood: t.mood,
+      moodLabel: t.moodLabel,
+      r2Key: t.r2Key,
+      durationSec: t.durationSec,
+      source: t.source,
+      license: t.license,
+    };
+    // Idempotent upsert keyed by the stable slug — safe to re-run after adding tracks.
+    await prisma.catalogMusic.upsert({
+      where: { slug: t.slug },
+      update: fields,
+      create: { slug: t.slug, ...fields },
+    });
+  }
+  // Prune rows whose slug is no longer in music.json — upsert alone never deletes, so a
+  // track removed from the file (e.g. a license takedown) would otherwise leave an orphan
+  // DB row pointing at an R2 object that no longer exists. Keep the table an exact mirror
+  // of the file.
+  //
+  // Guard: Prisma compiles `notIn: []` to SQL `WHERE 1=1`, which matches every row — so if
+  // `keepSlugs` is empty (music.json parsed but its tracks array is empty), the deleteMany
+  // below would wipe the ENTIRE live table instead of doing nothing. An empty catalog file
+  // is overwhelmingly more likely to be a mistake (bad hand-edit, mis-resolved merge
+  // conflict, upstream script bug) than a deliberate "delete everything" instruction, so we
+  // refuse to prune in that case and leave existing rows untouched.
+  const keepSlugs = tracks.map((t) => t.slug);
+  if (keepSlugs.length === 0) {
+    console.warn(
+      "WARNING: music.json has zero tracks — skipping prune to avoid wiping the catalog. " +
+        "If this is intentional, delete rows manually.",
+    );
+  } else {
+    const { count: removed } = await prisma.catalogMusic.deleteMany({
+      where: { slug: { notIn: keepSlugs } },
+    });
+    if (removed > 0) {
+      console.log(`Pruned ${removed} music track(s) no longer in music.json.`);
+    }
+  }
+  console.log(`Seeded music — ${await prisma.catalogMusic.count()} track(s) in catalog.`);
+}
+
 async function main() {
   await seedVoices();
   await seedAvatarCatalog();
+  await seedMusicCatalog();
 }
 
 main()

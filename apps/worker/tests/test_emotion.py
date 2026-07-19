@@ -1,9 +1,8 @@
 """The emotion pass may only re-time a script, never rewrite it. `words_only` is the
 invariant that enforces that: whatever the LLM returns, the spoken words (and their count)
-must survive so the ElevenLabs word alignment still matches the caption and SFX indices."""
+must survive so the ElevenLabs word alignment still matches the caption timing."""
 
 from sentezy_worker.emotion import words_only
-from sentezy_worker.sfx import tokenize_script
 
 SCRIPT = "Bu ürünü denedim ve gerçekten şaşırdım. Fiyatı da 3.5 kat uygun."
 
@@ -47,9 +46,3 @@ def test_rejects_capitalisation_change():
 def test_rejects_interior_punctuation_change():
     # Only edge punctuation is normalised, so "3.5" cannot silently become "35".
     assert not _accepts("Bu ürünü denedim ve gerçekten şaşırdım. Fiyatı da 35 kat uygun.")
-
-
-def test_annotation_preserves_sfx_token_count():
-    # The contract that makes SfxCue.wordIndex survive the emotion pass.
-    annotated = "[curious] Bu ürünü denedim… [excited] ve gerçekten şaşırdım! Fiyatı da 3.5 kat uygun."
-    assert len(tokenize_script(annotated)) == len(tokenize_script(SCRIPT))

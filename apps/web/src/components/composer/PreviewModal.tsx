@@ -2,48 +2,48 @@
 
 import { Player } from "@remotion/player";
 import { type ReelBrollItem, Reel } from "@sentezy/remotion";
-import type { CaptionStyleId, SfxCue } from "@sentezy/types";
+import type { CaptionStyleId } from "@sentezy/types";
 import { useMemo } from "react";
 import { Icon } from "@/components/icons";
 import { previewWords } from "@/lib/captionPreview";
-import { resolvePreviewSfx, slideSfxCues } from "@/lib/sfxPreview";
+import { slideSfxCues } from "@/lib/sfxPreview";
 
 const FPS = 30;
 const W = 1080;
 const H = 1920;
 
-export function SfxPreviewModal({
+export function PreviewModal({
   open,
   onClose,
   script,
-  cues,
   captionStyle,
   layout,
   avatarImageUrl,
   broll,
   transitionSfx,
   captions,
+  musicUrl = null,
+  musicVolume = 0.15,
 }: {
   open: boolean;
   onClose: () => void;
   script: string;
-  cues: SfxCue[];
   captionStyle: { styleId: CaptionStyleId; font: string; color: string };
-  layout: { avatarLayout: "side" | "bottom"; avatarSide: "left" | "right"; captionPosition: "top" | "bottom" };
+  layout: { avatarPosition: "left" | "center" | "right"; captionPosition: "top" | "bottom" };
   avatarImageUrl?: string | null;
   broll: ReelBrollItem[];
   transitionSfx: boolean;
   captions: boolean;
+  musicUrl?: string | null;
+  musicVolume?: number;
 }) {
   const words = useMemo(() => previewWords(script), [script]);
   const durationInFrames = useMemo(() => {
     const last = words.length > 0 ? words[words.length - 1]!.end : 5;
     return Math.max(1, Math.ceil((last + 0.3) * FPS));
   }, [words]);
-  // AI voice-timed SFX + slide-synced whooshes, both audible during real playback.
-  const sfxCues = useMemo(() => {
-    return [...resolvePreviewSfx(script, cues), ...slideSfxCues(broll, script, transitionSfx)];
-  }, [script, cues, broll, transitionSfx]);
+  // Slide-synced whooshes, audible during real playback (the render muxes them with ffmpeg).
+  const sfxCues = useMemo(() => slideSfxCues(broll, script, transitionSfx), [script, broll, transitionSfx]);
 
   if (!open) return null;
   const inputProps = {
@@ -51,12 +51,13 @@ export function SfxPreviewModal({
     avatarUrl: avatarImageUrl ?? null,
     broll,
     captionStyle: { styleId: captionStyle.styleId, font: captionStyle.font, color: captionStyle.color },
-    layout: layout.avatarLayout,
+    avatarPosition: layout.avatarPosition,
     position: layout.captionPosition,
-    avatarSide: layout.avatarSide,
     captions,
     previewAudio: true,
     sfxCues,
+    musicUrl,
+    musicVolume,
     width: W,
     height: H,
     fps: FPS,
@@ -92,7 +93,7 @@ export function SfxPreviewModal({
             />
           </div>
         </div>
-        <div className="px-5 py-3 text-[12px] text-muted">Sesi duymak için oynat&apos;a bas — ses efektleri gerçek seslendirmeye göre hizalanır</div>
+        <div className="px-5 py-3 text-[12px] text-muted">Sesi duymak için oynat&apos;a bas — seslendirme render sırasında eklenir</div>
       </div>
     </div>
   );

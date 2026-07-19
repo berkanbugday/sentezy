@@ -1,6 +1,7 @@
 // packages/remotion/src/reel/AvatarLayer.tsx
 import React from "react";
 import { AbsoluteFill, Img, OffthreadVideo } from "remotion";
+import type { AvatarPosition } from "../types";
 
 /** True when the src is a still image (data/blob URL or image extension) vs a video matte. */
 export function isImageSrc(src: string): boolean {
@@ -18,11 +19,10 @@ export function isImageSrc(src: string): boolean {
  */
 export const AvatarLayer: React.FC<{
   src: string;
-  avatarSide: "left" | "right";
-  avatarLayout: "side" | "bottom";
-}> = ({ src, avatarSide, avatarLayout }) => {
-  const heightPct = avatarLayout === "bottom" ? "54%" : "48%";
-  const align = avatarLayout === "bottom" ? "center" : avatarSide === "left" ? "flex-start" : "flex-end";
+  avatarPosition: AvatarPosition;
+}> = ({ src, avatarPosition }) => {
+  const heightPct = avatarPosition === "center" ? "54%" : "48%";
+  const align = avatarPosition === "center" ? "center" : avatarPosition === "left" ? "flex-start" : "flex-end";
   const media = isImageSrc(src) ? (
     <Img src={src} style={{ height: heightPct, objectFit: "contain" }} />
   ) : (
