@@ -116,6 +116,7 @@ model Video {
   durationS        Decimal?       @map("duration_s") @db.Decimal
   creditsCost      Int            @default(1) @map("credits_cost")
   error            String?
+  deletedAt        DateTime?      @map("deleted_at") @db.Timestamptz(6)
   createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
   avatar           Avatar?        @relation(fields: [avatarId], references: [id], onDelete: SetNull)

@@ -36,7 +36,7 @@ async function ensureProfile(tx: Prisma.TransactionClient, userId: string): Prom
 export async function videoRoutes(app: FastifyInstance) {
   app.get("/videos", { preHandler: app.authenticate }, async (req) => {
     const rows = await prisma.video.findMany({
-      where: { userId: req.user!.id },
+      where: { userId: req.user!.id, deletedAt: null },
       orderBy: { createdAt: "desc" },
     });
     // R2 isn't a public bucket, so hand the browser a delivery URL per thumbnail
@@ -54,7 +54,7 @@ export async function videoRoutes(app: FastifyInstance) {
 
   app.get("/videos/:id", { preHandler: app.authenticate }, async (req, reply) => {
     const { id } = req.params as { id: string };
-    const video = await prisma.video.findFirst({ where: { id, userId: req.user!.id } });
+    const video = await prisma.video.findFirst({ where: { id, userId: req.user!.id, deletedAt: null } });
     if (!video) return reply.code(404).send({ error: "not_found" });
 
     let downloadUrl: string | null = null;
