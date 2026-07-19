@@ -511,6 +511,7 @@ export function MediaComposer({
             <span className="inline-flex" tabIndex={!hasScript ? 0 : -1}>
               <ActionMenu
                 label="Video seçenekleri"
+                icon={Icon.plus}
                 disabled={!hasScript}
                 size="lg"
                 badge={selectedCount}

@@ -31,7 +31,7 @@ export function ActionMenu({
   label = "Diğer işlemler",
   disabled,
   title,
-  icon: TriggerIcon = Icon.plus,
+  icon: TriggerIcon = Icon.more,
   size = "sm",
   badge,
 }: {
