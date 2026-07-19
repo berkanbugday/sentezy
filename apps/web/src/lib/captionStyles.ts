@@ -33,7 +33,10 @@ export const CAPTION_COLORS: { name: string; hex: string }[] = [
 export const CAPTION_FAMILIES: { key: CaptionStyleId; label: string; accent: boolean }[] =
   CAPTION_STYLE_META.map((s) => ({ key: s.id, label: s.label, accent: s.accent }));
 
-const slug = (s: string) => s.toLocaleLowerCase("tr").replace(/[^a-z0-9]+/g, "");
+// Plain (non-locale) lowercase: inputs are always ASCII font names or hex colors, and the
+// Turkish locale's I→ı (dotless) case-folding would corrupt "Inter" into "nter" once the
+// regex below strips the resulting non-ASCII ı.
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
 function build(): CaptionPreset[] {
   const out: CaptionPreset[] = [];
@@ -68,4 +71,14 @@ export const DEFAULT_PRESET_ID = DEFAULT_PRESET.id;
 
 export function presetById(id: string): CaptionPreset {
   return CAPTION_PRESETS.find((p) => p.id === id) ?? DEFAULT_PRESET;
+}
+
+/** Rebuild a preset id from the {style, font, color} an existing video stored in
+ *  options.captions. Ids are deterministic (see build() above), so this recovers the exact
+ *  preset for any video ever created — no extra field needed. Unknown input → the default. */
+export function presetIdFor(base: string, font: string, color: string): string {
+  const fam = CAPTION_FAMILIES.find((f) => f.key === base);
+  if (!fam) return DEFAULT_PRESET_ID;
+  const id = fam.accent ? `${base}-${slug(font)}-${slug(color)}` : `${base}-${slug(font)}`;
+  return CAPTION_PRESETS.some((p) => p.id === id) ? id : DEFAULT_PRESET_ID;
 }
