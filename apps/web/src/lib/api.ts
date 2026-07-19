@@ -22,7 +22,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   } = await supabase.auth.getSession();
 
   const headers = new Headers(init.headers);
-  if (!(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
+  if (init.body !== undefined && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
   if (session?.access_token) headers.set("Authorization", `Bearer ${session.access_token}`);
 
   const res = await fetch(`${API}${path}`, { ...init, headers });
@@ -30,5 +30,6 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     const body = await res.json().catch(() => ({}));
     throw new ApiError(res.status, (body as { error?: string })?.error ?? res.statusText, body);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }

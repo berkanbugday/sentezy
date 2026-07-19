@@ -13,6 +13,8 @@ export type VideoDetailData = {
   thumbnailUrl: string | null;
   brollImageUrls?: string[];
   brollMedia?: BrollMediaItem[];
+  avatar?: Avatar | null;
+  voice?: Voice | null;
 };
 
 export type MusicTrack = {
@@ -173,6 +175,28 @@ export function useGenerateVideo() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiFetch<{ video: { id: string } }>(`/videos/${id}/generate`, { method: "POST", body: JSON.stringify({}) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.videos }),
+  });
+}
+
+/** Rename a video at any status (the draft-only PATCH /videos/:id cannot do this). */
+export function useRenameVideo(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (title: string) =>
+      apiFetch<{ video: ApiVideo }>(`/videos/${id}/title`, { method: "PATCH", body: JSON.stringify({ title }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.video(id) });
+      qc.invalidateQueries({ queryKey: qk.videos });
+    },
+  });
+}
+
+/** Soft delete — the row is hidden everywhere; the caller navigates away on success. */
+export function useDeleteVideo(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<void>(`/videos/${id}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.videos }),
   });
 }
