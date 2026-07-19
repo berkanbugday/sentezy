@@ -48,21 +48,12 @@ export function AvatarGrid({
       ? "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4"
       : "grid grid-cols-3 gap-3 sm:grid-cols-4";
 
-  /* The bar is sticky within a scroll container whose own top padding would otherwise let
-   * tiles scroll through the gutter ABOVE it. A negative top margin bleeds the bar's
-   * bg-paper up to that container's top edge; matching top padding puts the search field
-   * and dropdowns back where they'd sit without the bleed. No horizontal bleed is needed —
-   * the bar and the tiles share the same horizontal inset from their container, so nothing
-   * can appear in the side gutters. The two surfaces sit in containers with different top
-   * padding, so the vertical cancellation differs per surface. */
-  const barCls =
-    surface === "page"
-      ? "sticky top-0 z-20 -mt-6 flex flex-col gap-2 border-b border-hairline bg-paper pb-4 pt-6 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.06)]"
-      : "sticky top-0 z-20 -mt-4 flex flex-col gap-2 border-b border-hairline bg-paper pb-4 pt-4 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.06)]";
-
   return (
     <div className="flex flex-col gap-4">
-      <div className={barCls}>
+      {/* Scrolls with the grid — deliberately not sticky. Pinning it needed an opaque
+       * background bled to the scroll container's edges, and the two surfaces have
+       * different padding, so the result read as a heavy toolbar over the faces. */}
+      <div className="flex flex-col gap-2">
         <div className="relative">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
             <Icon.search width={15} height={15} />
