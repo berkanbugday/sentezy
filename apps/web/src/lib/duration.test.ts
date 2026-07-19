@@ -20,4 +20,13 @@ assert.strictEqual(formatDuration(59.6), "1:00");
 // videos.duration_s is a Prisma Decimal and can arrive as a string over JSON.
 assert.strictEqual(formatDuration("28.4" as unknown as number), "0:28");
 
+// Rounds down to zero seconds, so nothing to show.
+assert.strictEqual(formatDuration(0.4), "");
+
+// Rounds up to a real second.
+assert.strictEqual(formatDuration(0.6), "0:01");
+
+// A negative duration is meaningless.
+assert.strictEqual(formatDuration(-5), "");
+
 console.log("apps/web/src/lib/duration.test.ts ok");
