@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { qk, useDeleteVideo, useRenameVideo, useVideo } from "@/lib/queries";
 import { formatRatio, STAGE_LABEL, STATUS_LABEL, type VideoStage, type VideoStatus } from "@/lib/types";
@@ -21,6 +21,13 @@ export function VideoDetail({ id }: { id: string }) {
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const confirmDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
+    };
+  }, []);
 
   // Live progress via Supabase Realtime; a terminal status refetches full detail.
   useEffect(() => {
@@ -126,7 +133,8 @@ export function VideoDetail({ id }: { id: string }) {
             onClick={() => {
               if (!confirmDelete) {
                 setConfirmDelete(true);
-                setTimeout(() => setConfirmDelete(false), 4000);
+                if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
+                confirmDeleteTimerRef.current = setTimeout(() => setConfirmDelete(false), 4000);
                 return;
               }
               // A 404 means it is already gone (deleted in another tab) — the destination
