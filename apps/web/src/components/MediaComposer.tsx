@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { type Avatar, type Voice } from "@/components/wizard/types";
 import { apiFetch } from "@/lib/api";
 import { presetById } from "@/lib/captionStyles";
@@ -317,6 +317,94 @@ export function MediaComposer({
     }
   }
 
+  // Selected-feature chips, rendered above the control row. Built as a list (rather than four
+  // inline conditionals) so a divider can be inserted only *between* items — each divider is
+  // bundled into the same inline-flex span as the item that follows it, so a flex-wrap line
+  // break lands between a divider+item pair and never leaves a trailing "|" dangling at the
+  // end of a line.
+  const selectionChips: Array<{ key: string; node: ReactNode }> = [];
+  if (selectedAvatar) {
+    selectionChips.push({
+      key: "avatar",
+      node: (
+        <SelectionItem
+          onOpen={() => setAvatarOpen(true)}
+          onClear={() => setSelectedAvatar(null)}
+          clearLabel="Avatar'ı kaldır"
+          visual={
+            <span className="h-6 w-6 flex-none overflow-hidden rounded-full bg-mist">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={selectedAvatar.imageUrl} alt="" className="h-full w-full object-cover object-top" />
+            </span>
+          }
+        >
+          {selectedAvatar.name}
+        </SelectionItem>
+      ),
+    });
+  }
+  if (selectedVoice) {
+    selectionChips.push({
+      key: "voice",
+      node: (
+        <SelectionItem
+          onOpen={() => setVoiceOpen(true)}
+          onClear={() => setSelectedVoice(null)}
+          clearLabel="Sesi kaldır"
+          visual={
+            <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-mist text-slate">
+              <Icon.voice width={13} height={13} />
+            </span>
+          }
+        >
+          {selectedVoice.label}
+        </SelectionItem>
+      ),
+    });
+  }
+  if (selectedMusic) {
+    selectionChips.push({
+      key: "music",
+      node: (
+        <SelectionItem
+          onOpen={() => setMusicOpen(true)}
+          onClear={() => setSelectedMusic(null)}
+          clearLabel="Müziği kaldır"
+          visual={
+            <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-mist text-slate">
+              <Icon.musicNote width={13} height={13} />
+            </span>
+          }
+        >
+          {selectedMusic.name}
+        </SelectionItem>
+      ),
+    });
+  }
+  if (selectedCaption) {
+    selectionChips.push({
+      key: "caption",
+      node: (
+        <SelectionItem
+          onOpen={() => setCaptionOpen(true)}
+          onClear={() => setCaptionId(null)}
+          clearLabel="Alt yazıyı kaldır"
+          visual={
+            <span className="grid h-6 w-9 flex-none place-items-center overflow-hidden rounded-full bg-black">
+              <span
+                style={{ color: selectedCaption.color, fontFamily: `"${selectedCaption.font}", sans-serif`, fontWeight: 800, fontSize: 11, lineHeight: 1 }}
+              >
+                Aa
+              </span>
+            </span>
+          }
+        >
+          {selectedCaption.family}
+        </SelectionItem>
+      ),
+    });
+  }
+
   return (
     <div
       className={`mt-7 rounded-[22px] border bg-paper p-3.5 shadow-sm transition ${drag ? "border-ink ring-2 ring-ink/10" : "border-hairline"}`}
@@ -498,8 +586,26 @@ export function MediaComposer({
         />
       )}
 
-      {/* controls always visible, disabled until there's speech text to work with */}
-      <div className="mt-3 flex flex-col gap-2.5 px-1 sm:flex-row sm:items-center">
+      {/* selected-feature chips: rendered ABOVE the control row so active choices read first.
+         Each entry reopens its picker; all four (including voice) can be cleared inline via ×.
+         Clearing voice makes canCreate false — createHint already explains "Bir ses seç" once
+         it's gone. A decorative "|" divider sits between adjacent chips, bundled with the chip
+         that follows it so a flex-wrap break falls between a divider+chip pair rather than
+         orphaning a divider at the end of a line. */}
+      {hasSelection && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-2 px-1">
+          {selectionChips.map(({ key, node }, i) => (
+            <span key={key} className="inline-flex items-center gap-x-2.5">
+              {i > 0 && <span aria-hidden="true" className="h-3.5 w-px shrink-0 bg-hairline" />}
+              {node}
+            </span>
+          ))}
+        </div>
+      )}
+      {/* controls always visible, disabled until there's speech text to work with. Always a
+         row (never column) so the create button's ml-auto keeps it right-aligned on its own
+         flex line even when the row wraps on narrow screens. */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-2.5 px-1">
         <div className="flex flex-wrap items-center gap-2">
           {/* avatar / voice / music / caption pickers, grouped behind one menu */}
           <ActionMenu
@@ -567,85 +673,19 @@ export function MediaComposer({
             </span>
           )}
         </div>
+        {/* primary action — visibly larger than the other controls, and always right-aligned on
+           its own flex line (never full-width), on mobile included. */}
         <button
           type="button"
           onClick={create}
           disabled={uploading || submitting || !canCreate}
           title={createHint}
-          className="btn btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto sm:w-auto"
+          className="btn btn-primary ml-auto shrink-0 px-6! py-3.5! text-[15.5px]! disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {uploading || submitting ? <Spinner size={16} /> : <Icon.arrowRight width={17} height={17} className="order-2" />}
+          {uploading || submitting ? <Spinner size={16} /> : <Icon.arrowRight width={19} height={19} className="order-2" />}
           <span className="order-1">{submitting ? "Oluşturuluyor…" : "Video oluştur"}</span>
         </button>
       </div>
-      {/* selected-item list: each entry reopens its picker; all four (including voice) can be
-         cleared inline via ×. Clearing voice makes canCreate false — createHint already
-         explains "Bir ses seç" once it's gone. */}
-      {hasSelection && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2 px-1">
-          {selectedAvatar && (
-            <SelectionItem
-              onOpen={() => setAvatarOpen(true)}
-              onClear={() => setSelectedAvatar(null)}
-              clearLabel="Avatar'ı kaldır"
-              visual={
-                <span className="h-6 w-6 flex-none overflow-hidden rounded-full bg-mist">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={selectedAvatar.imageUrl} alt="" className="h-full w-full object-cover object-top" />
-                </span>
-              }
-            >
-              {selectedAvatar.name}
-            </SelectionItem>
-          )}
-          {selectedVoice && (
-            <SelectionItem
-              onOpen={() => setVoiceOpen(true)}
-              onClear={() => setSelectedVoice(null)}
-              clearLabel="Sesi kaldır"
-              visual={
-                <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-mist text-slate">
-                  <Icon.voice width={13} height={13} />
-                </span>
-              }
-            >
-              {selectedVoice.label}
-            </SelectionItem>
-          )}
-          {selectedMusic && (
-            <SelectionItem
-              onOpen={() => setMusicOpen(true)}
-              onClear={() => setSelectedMusic(null)}
-              clearLabel="Müziği kaldır"
-              visual={
-                <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-mist text-slate">
-                  <Icon.musicNote width={13} height={13} />
-                </span>
-              }
-            >
-              {selectedMusic.name}
-            </SelectionItem>
-          )}
-          {selectedCaption && (
-            <SelectionItem
-              onOpen={() => setCaptionOpen(true)}
-              onClear={() => setCaptionId(null)}
-              clearLabel="Alt yazıyı kaldır"
-              visual={
-                <span className="grid h-6 w-9 flex-none place-items-center overflow-hidden rounded-full bg-black">
-                  <span
-                    style={{ color: selectedCaption.color, fontFamily: `"${selectedCaption.font}", sans-serif`, fontWeight: 800, fontSize: 11, lineHeight: 1 }}
-                  >
-                    Aa
-                  </span>
-                </span>
-              }
-            >
-              {selectedCaption.family}
-            </SelectionItem>
-          )}
-        </div>
-      )}
       {submitError && <p className="mt-2 px-1 text-[13px] text-red-500">{submitError}</p>}
 
       <EffectPicker
