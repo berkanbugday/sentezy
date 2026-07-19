@@ -21,12 +21,20 @@ export function DashboardHome() {
   // Music is stored as a bare track key, so resolve it against the catalog to get the
   // MusicTrack object the picker needs. A track removed since the video was made simply
   // does not resolve, and reuse continues without music.
-  const tracks = useMusic().data?.music ?? [];
+  const musicQuery = useMusic();
+  const tracks = musicQuery.data?.music ?? [];
 
   // No cast: the API returns `avatar`/`voice` already shaped as the composer's own types.
   const seed = useMemo<ComposerSeed | undefined>(() => {
     if (!reuseId || !source) return undefined;
     const { captionId, music } = optionsToComposerState(source.video);
+    // MediaComposer seeds only once per `seed.key` (the source video id), so if we emitted a
+    // seed here before the catalog resolved, `selectedMusic` would be locked in as `null`
+    // forever once the catalog arrives — the effect re-runs, sees the same key, and bails.
+    // Withholding the seed entirely while a video WITH stored music waits on the catalog
+    // avoids that; a video with no stored music never needs the catalog, so it isn't made
+    // to wait for no reason.
+    if (music && musicQuery.isPending) return undefined;
     return {
       key: reuseId,
       selectedAvatar: source.avatar ?? null,
@@ -35,11 +43,7 @@ export function DashboardHome() {
       musicVolume: music?.volume ?? 0.15,
       captionId,
     };
-    // `tracks` is a dep so a late-arriving music catalog can still resolve the track — this
-    // is safe from re-triggering seeding because MediaComposer's effect guards on `seed.key`
-    // (the source video id), not on this object's identity, so a new `tracks` array alone
-    // (e.g. a background refetch) never re-seeds an already-seeded composer.
-  }, [reuseId, source, tracks]);
+  }, [reuseId, source, tracks, musicQuery.isPending]);
 
   // Settings live here, so seed them here — once per source video, for the same reason
   // the composer guards its own seeding.
