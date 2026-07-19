@@ -21,9 +21,12 @@ const VALUE_KEYS: (keyof ComposerSeedValues)[] = [
 ];
 
 /** The value keys this seed actually carries — i.e. the ones the composer should write.
- *  Uses `in` rather than a truthiness check so a deliberate `null` still counts. */
+ *  A key counts only when present AND its value is not `undefined`. This matches TypeScript's
+ *  optional-property semantics: absent and present-but-undefined both mean "leave alone",
+ *  while present-and-`null` means "clear it". Uses `!== undefined` to distinguish `null`
+ *  (a real value that clears) from explicit absence. */
 export function seedKeys(seed: ComposerSeed): (keyof ComposerSeedValues)[] {
-  return VALUE_KEYS.filter((k) => k in seed);
+  return VALUE_KEYS.filter((k) => k in seed && seed[k] !== undefined);
 }
 
 /** The seed for `/dashboard?avatar=<id>`: sets the avatar and nothing else.

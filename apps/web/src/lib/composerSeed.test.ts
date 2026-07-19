@@ -38,6 +38,12 @@ assert.deepStrictEqual(
 // A field that is absent must NOT appear, even though a present `null` does.
 assert.deepStrictEqual(seedKeys({ key: "k", captionId: null }), ["captionId"]);
 assert.deepStrictEqual(seedKeys({ key: "k" }), []);
+// An explicitly-undefined field is treated as absent, not a real value that clears.
+assert.deepStrictEqual(seedKeys({ key: "k", selectedAvatar: undefined }), []);
+// A deliberate `null` still clears.
+assert.deepStrictEqual(seedKeys({ key: "k", captionId: null }), ["captionId"]);
+// Zero is a real value, not absence.
+assert.deepStrictEqual(seedKeys({ key: "k", musicVolume: 0 }), ["musicVolume"]);
 
 // ── pickSeed: reuse wins ────────────────────────────────────────────────────
 // A reuse carries a whole configuration; letting a lone avatar override part of it
