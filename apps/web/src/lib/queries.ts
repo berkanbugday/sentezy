@@ -98,7 +98,7 @@ export function useVideos() {
 }
 
 export function useVideo(id: string) {
-  return useQuery({ queryKey: qk.video(id), queryFn: () => apiFetch<VideoDetailData>(`/videos/${id}`) });
+  return useQuery({ queryKey: qk.video(id), queryFn: () => apiFetch<VideoDetailData>(`/videos/${id}`), enabled: Boolean(id) });
 }
 
 // ── Mutations ──────────────────────────────────────────────────────────────

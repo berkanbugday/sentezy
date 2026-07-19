@@ -32,15 +32,27 @@ function deriveVideoTitle(script: string, productTitle?: string): string {
   return cleanTitleText(script) || "Yeni video";
 }
 
+export type ComposerSeed = {
+  key: string; // the source video id — changing it re-seeds
+  selectedAvatar: Avatar | null;
+  selectedVoice: Voice | null;
+  selectedMusic: MusicTrack | null;
+  musicVolume: number;
+  captionId: string;
+};
+
 /** Upload-first hero composer: accepts multiple images + videos, uploads each to
  *  storage (with per-tile progress), then builds a draft and queues it for render. */
 export function MediaComposer({
   extraSettings,
   onMediaCountChange,
+  seed,
 }: {
   extraSettings?: ComposerSettings;
   /** Reports the uploaded-clip count so the settings drawer can gate clip-only options. */
   onMediaCountChange?: (n: number) => void;
+  /** "Yeniden kullan" seed: hydrates avatar/voice/music/caption once per source video. */
+  seed?: ComposerSeed;
 }) {
   const router = useRouter();
   const uploadImg = useUploadBackground();
@@ -73,6 +85,21 @@ export function MediaComposer({
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedCaption = presetById(captionId);
   const settings = extraSettings ?? DEFAULT_SETTINGS;
+
+  // "Yeniden kullan" seeding. Applied once per source video: the user may change any of
+  // these straight after, and a re-render must not undo that. Script and media stay empty
+  // by design — this reuses the look, not the content.
+  const seededRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!seed || seededRef.current === seed.key) return;
+    seededRef.current = seed.key;
+    setSelectedAvatar(seed.selectedAvatar);
+    setSelectedVoice(seed.selectedVoice);
+    setSelectedMusic(seed.selectedMusic);
+    setMusicVolume(seed.musicVolume);
+    setCaptionId(seed.captionId);
+    setMode("upload");
+  }, [seed]);
 
   // The transition effect only applies between 2+ media — close/hide otherwise.
   const multiple = items.length > 1;
