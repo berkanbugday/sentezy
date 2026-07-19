@@ -261,6 +261,32 @@ NOSES = ["a straight narrow nose", "a softly rounded nose", "a slightly aquiline
 LIPS = ["full lips", "a wide, expressive mouth", "a small, delicate mouth",
         "medium lips with a defined cupid's bow", "thin, neatly shaped lips",
         "a soft, slightly asymmetric smile"]
+# ── wardrobe palette — the axis that was missing ─────────────────────────────
+# Face, pose and framing already varied, but attire carried NO colour, so the image
+# model defaulted every persona in a sector to the same outfit: the two ecommerce
+# hijab personas came back as near-twins in identical black blazers. At thumbnail
+# size colour is what actually separates two people.
+# NOTHING green, teal, olive or mint: the background is a chroma-key green screen,
+# so a green-adjacent garment gets keyed away with it and punches a hole in the avatar.
+OUTFIT_COLORS = [
+    "deep navy", "charcoal grey", "classic black", "warm camel", "burgundy",
+    "rust orange", "cream ivory", "dusty rose", "slate blue", "deep plum",
+    "mustard ochre", "chocolate brown", "soft lilac", "powder blue", "brick red",
+    "stone grey",
+]
+# Kept separate from OUTFIT_COLORS so the headscarf never matches the jacket — the
+# prompt already asks for the two to be "colour-coordinated", not identical.
+SCARF_COLORS = [
+    "blush pink", "soft cream", "dusty blue", "deep plum", "warm terracotta",
+    "mocha brown", "pale lavender", "mustard yellow", "navy", "soft dove grey",
+    "burgundy", "peach",
+]
+
+# Sectors whose attire is white by definition — colouring "chef whites" or a "white
+# pharmacist coat" contradicts itself, so these keep their uniform and take their
+# variety from face, pose and (for hijab personas) the headscarf colour instead.
+UNIFORM_SECTORS: set[str] = {"restaurant", "health", "pharmacy"}
+
 DISTINGUISHING = ["light freckles across the cheeks", "gentle dimples", "prominent cheekbones",
                   "warm smile lines", "stylish eyeglasses", "a small beauty mark",
                   "expressive eyebrows", "a strong, defined jawline",
@@ -287,6 +313,7 @@ FEATURE_OVERRIDES: dict[str, dict] = {
 STRIDES: dict[str, int] = {
     "face": 1, "eyes": 3, "eyebrows": 2, "nose": 5, "lips": 5, "hair": 3, "color": 5,
     "complexion": 2, "build": 7, "distinguishing": 4, "facial_hair": 5, "scarf": 5,
+    "outfit": 5, "scarf_color": 5,
 }
 
 
@@ -295,10 +322,11 @@ def feature_pools(ethnicity: str, gender: str, hijab: bool) -> dict[str, list[st
     pools = {
         "face": FACE_SHAPES, "eyes": EYE_SHAPES, "eyebrows": EYEBROWS,
         "nose": NOSES, "lips": LIPS, "complexion": COMPLEXIONS[ethnicity],
-        "build": BUILDS, "distinguishing": DISTINGUISHING,
+        "build": BUILDS, "distinguishing": DISTINGUISHING, "outfit": OUTFIT_COLORS,
     }
     if hijab:
         pools["scarf"] = HIJAB_STYLES
+        pools["scarf_color"] = SCARF_COLORS
     else:
         pools["hair"] = HAIR_WOMEN if gender == "kadın" else HAIR_MEN
         pools["color"] = HAIR_COLORS[ethnicity]
@@ -345,17 +373,19 @@ def build_prompt(sector_slug: str, gender: str, age: str, ethnicity: str, featur
         mic_clause = ""  # the handheld mic is already described by pose_fragment
     else:
         mic_clause = ("A small black lavalier (lapel) microphone clipped visibly to the collar. ")
+    # Colour the outfit unless the sector's attire is white by definition.
+    outfit = attire if sector_slug in UNIFORM_SECTORS else f"{attire} in {features['outfit']}"
     if hijab:
         # Muslim woman in a headscarf — hair is covered, so the hair-specific cues
         # (rim light on hair, crisp hair edges) are swapped for the headscarf.
         wearing = (
-            f"{features['scarf']} that neatly covers the hair and frames the face, tastefully "
-            f"colour-coordinated with {attire}"
+            f"{features['scarf']} in {features['scarf_color']} that neatly covers the hair and "
+            f"frames the face, tastefully colour-coordinated with {outfit}"
         )
         rim = "gentle rim light to separate the head and shoulders from the background"
         edges = "crisp fabric edges on the headscarf"
     else:
-        wearing = attire
+        wearing = outfit
         rim = "gentle rim light to separate the hair from the background"
         edges = "crisp hair edges"
     if glam:

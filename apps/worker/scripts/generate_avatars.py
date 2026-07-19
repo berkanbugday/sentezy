@@ -44,14 +44,25 @@ CATALOG = os.path.normpath(
 
 
 # ── image providers → PNG bytes ──────────────────────────────────────────────
+# The single biggest lever on portrait quality is the MODEL, not the prompt. The same
+# prompt on gpt-image-1 renders a flat, plainly-lit snapshot; on gpt-image-2 it renders
+# a believable studio portrait with real fabric sheen and skin texture. gpt-image-2 also
+# honours the prompt's "visible pores / not airbrushed" clause instead of overriding it
+# with beauty-campaign retouching (gpt-image-1.5 is the glossier alternative).
+# Not yet listed in the images/generations docs enum, but live on the API — override
+# with AVATAR_IMAGE_MODEL if a newer one ships.
+OPENAI_IMAGE_MODEL = "gpt-image-2"
+
+
 def gen_openai(prompt: str) -> bytes:
     key = os.environ["OPENAI_API_KEY"]
+    model = os.environ.get("AVATAR_IMAGE_MODEL", OPENAI_IMAGE_MODEL)
     quality = os.environ.get("AVATAR_IMAGE_QUALITY", "high")  # high = premium faces; medium/low = cheaper
     r = httpx.post(
         "https://api.openai.com/v1/images/generations",
         headers={"Authorization": f"Bearer {key}"},
-        json={"model": "gpt-image-1", "prompt": prompt, "size": "1024x1536", "quality": quality, "n": 1},
-        timeout=300,
+        json={"model": model, "prompt": prompt, "size": "1024x1536", "quality": quality, "n": 1},
+        timeout=600,  # gpt-image-2 reasons about the scene before rendering — slower than v1
     )
     r.raise_for_status()
     return base64.b64decode(r.json()["data"][0]["b64_json"])

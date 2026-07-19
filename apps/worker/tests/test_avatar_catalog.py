@@ -1,8 +1,8 @@
 import re
 
 from scripts.build_avatar_catalog import (COMPLEXIONS, build_catalog, POSES, SECTOR_POSES, SECTORS, _sector,
-                                          HIJAB_STYLES, GLAM_SECTORS,
-                                          STRIDES, feature_pools, HANDHELD_SECTORS)
+                                          HIJAB_STYLES, GLAM_SECTORS, OUTFIT_COLORS, SCARF_COLORS,
+                                          STRIDES, feature_pools, HANDHELD_SECTORS, UNIFORM_SECTORS)
 
 PUBLIC_KEYS = {"slug", "name", "sector", "sectorLabel", "gender", "age",
                "ethnicity", "hijab", "imageId", "displayImageId", "prompt"}
@@ -198,6 +198,16 @@ def _generator_size():
     return int(m.group(1)), int(m.group(2))
 
 
+def test_generator_is_not_on_a_legacy_image_model():
+    """The prompt was never the reason portraits looked flat — the script sat on
+    gpt-image-1 for two model generations. Pin that it doesn't silently regress."""
+    import pathlib
+    src = (pathlib.Path(__file__).parents[1] / "scripts" / "generate_avatars.py").read_text()
+    m = re.search(r'OPENAI_IMAGE_MODEL = "([^"]+)"', src)
+    assert m, "could not find the configured image model"
+    assert m.group(1) not in ("gpt-image-1", "dall-e-2", "dall-e-3"), m.group(1)
+
+
 def _width_share(prompt):
     m = re.search(r"shoulders span ~(\d+)–(\d+)% of the frame width", prompt)
     assert m, prompt[-400:]
@@ -319,6 +329,68 @@ def test_strides_are_coprime_with_every_pool_they_index():
             assert gcd(STRIDES[name], len(pool)) == 1, (
                 f"stride {STRIDES[name]} over {name} pool of {len(pool)} "
                 f"reaches only {len(pool) // gcd(STRIDES[name], len(pool))} values")
+
+
+# ── wardrobe palette ─────────────────────────────────────────────────────────
+# Without a colour, the image model dressed a whole sector in the same black blazer
+# and two personas rendered as look-alikes despite distinct faces and poses.
+
+# Green-adjacent garments get keyed away with the chroma-key background.
+CHROMA_RISK = ["green", "teal", "olive", "mint", "emerald", "lime", "sage", "jade"]
+
+
+def test_palettes_avoid_chroma_key_greens():
+    for colour in OUTFIT_COLORS + SCARF_COLORS:
+        for risky in CHROMA_RISK:
+            assert risky not in colour.lower(), colour
+
+
+def test_every_non_uniform_persona_has_a_coloured_outfit():
+    for a in build_catalog():
+        if a["sector"] in UNIFORM_SECTORS:
+            continue
+        colour = a["_features"]["outfit"]
+        assert colour in OUTFIT_COLORS, (a["slug"], colour)
+        assert f"in {colour}" in a["prompt"], a["slug"]
+
+
+def test_uniform_sectors_keep_their_whites_uncoloured():
+    """'chef whites in burgundy' contradicts itself."""
+    for a in build_catalog():
+        if a["sector"] in UNIFORM_SECTORS:
+            attire = _sector(a["sector"])[3]
+            assert f"{attire} in " not in a["prompt"], a["slug"]
+
+
+def test_hijab_personas_have_a_scarf_colour_distinct_from_the_outfit():
+    for a in build_catalog():
+        if not a["hijab"]:
+            continue
+        f = a["_features"]
+        assert f["scarf_color"] in SCARF_COLORS, a["slug"]
+        assert f"{f['scarf']} in {f['scarf_color']}" in a["prompt"], a["slug"]
+        if a["sector"] not in UNIFORM_SECTORS:
+            assert f["scarf_color"] != f["outfit"], a["slug"]
+
+
+def test_outfit_colour_varies_within_every_sector():
+    from collections import defaultdict
+    by_sector = defaultdict(set)
+    for a in build_catalog():
+        if a["sector"] not in UNIFORM_SECTORS:
+            by_sector[a["sector"]].add(a["_features"]["outfit"])
+    for slug, colours in by_sector.items():
+        assert len(colours) >= 2, f"{slug} dresses everyone in {colours}"
+
+
+def test_kevser_and_beyza_are_visually_distinct():
+    """The pair Berkan flagged: same sector, same gender, both hijab — they must not
+    render as twins, so every at-a-glance cue has to differ."""
+    cat = _by_slug(build_catalog())
+    k, b = cat["kevser"]["_features"], cat["beyza"]["_features"]
+    for cue in ("outfit", "scarf_color", "scarf", "face", "complexion"):
+        assert k[cue] != b[cue], f"kevser and beyza share {cue}={k[cue]!r}"
+    assert cat["kevser"]["_pose"] != cat["beyza"]["_pose"]
 
 
 def test_prompt_asks_for_natural_unretouched_realism():
