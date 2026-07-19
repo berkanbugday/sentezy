@@ -267,12 +267,12 @@ export function MediaComposer({
         captions: preset ? { enabled: true, style: preset.base, font: preset.font, color: preset.color } : { enabled: false },
         background: media.length
           ? {
-              type: "image" as const,
-              value: media[0].ref,
-              images: media.filter((m) => m.kind === "image").map((m) => m.ref),
-              transitions: media.map((m) => m.transition),
-              media,
-            }
+            type: "image" as const,
+            value: media[0].ref,
+            images: media.filter((m) => m.kind === "image").map((m) => m.ref),
+            transitions: media.map((m) => m.transition),
+            media,
+          }
           : { type: "color" as const, value: "#0B0B0D" },
         ...(selectedMusic ? { music: { trackKey: selectedMusic.key, volume: musicVolume } } : {}),
         layout: { avatarPosition: settings.avatarPosition, captionPosition: settings.captionPosition },
@@ -369,27 +369,27 @@ export function MediaComposer({
                 disabled={!importUrl.trim() || importProduct.isPending}
                 className="btn btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {importProduct.isPending ? <Spinner size={16} /> : <Icon.arrowRight width={17} height={17} className="order-2" />}
-                <span className="order-1">{importProduct.isPending ? "Getiriliyor…" : "Getir"}</span>
+                {importProduct.isPending ? <Spinner size={16} /> : <Icon.search width={17} height={17} className="order-1" />}
+                <span className="order-2">{importProduct.isPending ? "Taranıyor" : "Tara"}</span>
               </button>
             </div>
             {importError && <p className="text-center text-[13px] text-red-500">{importError}</p>}
           </div>
         ) : (
-        <button
-          type="button"
-          onClick={pick}
-          className={`flex w-full flex-col items-center justify-center gap-4 rounded-[16px] border border-dashed px-6 py-16 text-center transition ${drag ? "border-ink bg-mist" : "border-hairline hover:bg-mist/60"
-            }`}
-        >
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-mist text-slate">
-            <Icon.plus width={24} height={24} />
-          </span>
-          <div>
-            <p className="text-[14.5px] font-medium text-ink">Videolarını ya da görsellerini sürükle</p>
-            <p className="mt-0.5 text-[12.5px] text-muted">(.mp4, .mov, .jpg, .png — birden fazla seçebilirsin)</p>
-          </div>
-        </button>
+          <button
+            type="button"
+            onClick={pick}
+            className={`flex w-full flex-col items-center justify-center gap-4 rounded-[16px] border border-dashed px-6 py-16 text-center transition ${drag ? "border-ink bg-mist" : "border-hairline hover:bg-mist/60"
+              }`}
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-mist text-slate">
+              <Icon.plus width={24} height={24} />
+            </span>
+            <div>
+              <p className="text-[14.5px] font-medium text-ink">Videolarını ya da görsellerini sürükle</p>
+              <p className="mt-0.5 text-[12.5px] text-muted">(.mp4, .mov, .jpg, .png — birden fazla seçebilirsin)</p>
+            </div>
+          </button>
         )
       ) : (
         <div className="no-scrollbar flex flex-nowrap items-center overflow-x-auto pb-1">
@@ -417,56 +417,56 @@ export function MediaComposer({
                 </button>
               )}
               <div className="group relative h-[68px] w-[68px] flex-none overflow-hidden rounded-xl border border-hairline bg-mist">
-              {m.kind === "image" ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={m.url} alt={m.name} className="h-full w-full object-cover" />
-              ) : (
-                <>
-                  {m.poster ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.poster} alt={m.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-mist text-muted">
-                      <Icon.video width={22} height={22} />
-                    </div>
-                  )}
-                  <span className="absolute left-1 top-1 flex items-center gap-0.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
-                    <Icon.video width={10} height={10} />
-                    video
+                {m.kind === "image" ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.url} alt={m.name} className="h-full w-full object-cover" />
+                ) : (
+                  <>
+                    {m.poster ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={m.poster} alt={m.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-mist text-muted">
+                        <Icon.video width={22} height={22} />
+                      </div>
+                    )}
+                    <span className="absolute left-1 top-1 flex items-center gap-0.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
+                      <Icon.video width={10} height={10} />
+                      video
+                    </span>
+                  </>
+                )}
+
+                {/* upload state overlays */}
+                {m.status === "uploading" && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-white">
+                    <Spinner />
+                  </div>
+                )}
+                {m.status === "error" && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/60 text-white">
+                    <span className="text-[9.5px] font-medium">Yüklenemedi</span>
+                    <button type="button" onClick={() => retry(m)} className="rounded-full bg-white/20 px-2 py-0.5 text-[9.5px] font-semibold hover:bg-white/30">
+                      Tekrar
+                    </button>
+                  </div>
+                )}
+                {m.status === "done" && (
+                  <span className="absolute bottom-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-paper shadow">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m5 12 5 5L20 7" />
+                    </svg>
                   </span>
-                </>
-              )}
+                )}
 
-              {/* upload state overlays */}
-              {m.status === "uploading" && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-white">
-                  <Spinner />
-                </div>
-              )}
-              {m.status === "error" && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/60 text-white">
-                  <span className="text-[9.5px] font-medium">Yüklenemedi</span>
-                  <button type="button" onClick={() => retry(m)} className="rounded-full bg-white/20 px-2 py-0.5 text-[9.5px] font-semibold hover:bg-white/30">
-                    Tekrar
-                  </button>
-                </div>
-              )}
-              {m.status === "done" && (
-                <span className="absolute bottom-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-paper shadow">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m5 12 5 5L20 7" />
-                  </svg>
-                </span>
-              )}
-
-              <button
-                type="button"
-                onClick={() => remove(m.url)}
-                aria-label={`${m.name} kaldır`}
-                className="absolute right-0.5 top-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white opacity-100 transition hover:bg-black/75 sm:opacity-0 sm:group-hover:opacity-100"
-              >
-                <Icon.close width={12} height={12} className="block" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => remove(m.url)}
+                  aria-label={`${m.name} kaldır`}
+                  className="absolute right-0.5 top-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white opacity-100 transition hover:bg-black/75 sm:opacity-0 sm:group-hover:opacity-100"
+                >
+                  <Icon.close width={12} height={12} className="block" />
+                </button>
               </div>
             </Fragment>
           ))}
