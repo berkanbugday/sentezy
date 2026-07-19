@@ -53,30 +53,57 @@ export function ActionMenu({
 }) {
   const [open, setOpenState] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const hasValues = items.some((it) => it.value !== undefined);
   const lg = size === "lg";
 
+  // A ref (not the raw prop) so the listeners below always call the LATEST onOpenChange,
+  // even though they're only re-registered when `open` changes, not on every render.
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+
   const setOpen = (next: boolean) => {
     setOpenState(next);
-    onOpenChange?.(next);
+    onOpenChangeRef.current?.(next);
   };
 
   useEffect(() => {
+    // Nothing to listen for while closed — also means these never fire a spurious
+    // setOpen(false) when the menu is already closed.
+    if (!open) return;
     const onDoc = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [open]);
+
+  // Return focus to the trigger whenever the menu transitions from open → closed (Escape,
+  // outside click, or an item's own onClick), mirroring the drawer it replaced.
+  const wasOpenRef = useRef(open);
+  useEffect(() => {
+    if (wasOpenRef.current && !open) triggerRef.current?.focus();
+    wasOpenRef.current = open;
+  }, [open]);
 
   return (
     <div ref={ref} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(!open)}
         disabled={disabled}
         aria-label={badge ? `${label} (${badge} seçili)` : label}
+        aria-haspopup="menu"
+        aria-expanded={open}
         title={title ?? label}
         className={`inline-flex shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45 ${
           lg ? "h-11 w-11" : "h-10 w-10"

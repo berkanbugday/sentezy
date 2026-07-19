@@ -66,27 +66,30 @@ export function VideoDetail({ id }: { id: string }) {
       <div className="mx-auto max-w-4xl">
         <Link href="/library" className="text-[13.5px] font-medium text-signal">← Videolarım</Link>
 
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="h-7 w-64 max-w-full animate-pulse rounded bg-black/5" />
-            <div className="mt-2 h-[22px] w-24 animate-pulse rounded-full bg-black/5" />
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-6 md:grid-cols-[340px_1fr]">
-          <div className="card relative mx-auto aspect-[9/16] w-full max-w-[340px] overflow-hidden">
-            <div className="ph-stripe h-full w-full" />
+        <div role="status" aria-live="polite">
+          <span className="sr-only">Yükleniyor…</span>
+          <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="h-7 w-64 max-w-full animate-pulse rounded bg-black/5" />
+              <div className="mt-2 h-[22px] w-24 animate-pulse rounded-full bg-black/5" />
+            </div>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="card p-5">
-              <div className="text-[14px]">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="flex justify-between gap-4 border-b border-hairline py-2 last:border-0">
-                    <div className="h-3 w-20 animate-pulse rounded bg-black/5" />
-                    <div className="h-3 w-28 animate-pulse rounded bg-black/5" />
-                  </div>
-                ))}
+          <div className="mt-5 grid gap-6 md:grid-cols-[340px_1fr]">
+            <div className="card relative mx-auto aspect-[9/16] w-full max-w-[340px] overflow-hidden">
+              <div className="ph-stripe h-full w-full" />
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <div className="card p-5">
+                <div className="text-[14px]">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="flex justify-between gap-4 border-b border-hairline py-2 last:border-0">
+                      <div className="h-3 w-20 animate-pulse rounded bg-black/5" />
+                      <div className="h-3 w-28 animate-pulse rounded bg-black/5" />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -104,7 +107,7 @@ export function VideoDetail({ id }: { id: string }) {
     v.aspectRatio === "16:9" ? "aspect-video" : v.aspectRatio === "1:1" ? "aspect-square" : "aspect-[9/16]";
 
   const opts = (v.options ?? {}) as {
-    captions?: { style?: string; font?: string; color?: string };
+    captions?: { enabled?: boolean; style?: string; font?: string; color?: string };
     layout?: { avatarPosition?: string; captionPosition?: string };
     music?: { trackKey?: string; volume?: number };
     voice?: { emotion?: string };
@@ -113,10 +116,17 @@ export function VideoDetail({ id }: { id: string }) {
   // reader maps those forward, so old and new videos both display correctly.
   const AVATAR_POS_LABEL: Record<string, string> = { left: "Sol", center: "Orta", right: "Sağ" };
   const avatarPos = AVATAR_POS_LABEL[readAvatarPosition(opts.layout)];
+  // Captions are opt-in: `enabled: false` means no captions, even though the persisted blob
+  // still carries zod-defaulted style/font/color fields (see reuse.ts's `optionsToComposerState`,
+  // which treats `enabled !== false` the same way). Only show a style when actually enabled.
+  const captionsEnabled = opts.captions?.enabled !== false;
   // The detail screen wants a human label, not a preset id — look the family up directly
   // and append the font, e.g. "Vurgu · Poppins".
-  const fam = CAPTION_FAMILIES.find((f) => f.key === opts.captions?.style);
+  const fam = captionsEnabled ? CAPTION_FAMILIES.find((f) => f.key === opts.captions?.style) : undefined;
   const captionName = fam ? [fam.label, opts.captions?.font].filter(Boolean).join(" · ") : null;
+  // No stored captionPosition means the video predates the setting, or never wrote one —
+  // either way, the real default is "top" everywhere else (zod, composer, worker).
+  const captionPosLabel = (opts.layout?.captionPosition ?? "top") === "top" ? "üstte" : "altta";
   const emotionLabel = opts.voice
     ? VOICE_EMOTIONS.find((e) => e.value === (opts.voice?.emotion ?? ""))?.label ?? null
     : null;
@@ -292,8 +302,8 @@ export function VideoDetail({ id }: { id: string }) {
                   [
                     "Yerleşim",
                     detail.avatar
-                      ? `Avatar ${avatarPos} · alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`
-                      : `Alt yazı ${opts.layout?.captionPosition === "top" ? "üstte" : "altta"}`,
+                      ? `Avatar ${avatarPos} · alt yazı ${captionPosLabel}`
+                      : `Alt yazı ${captionPosLabel}`,
                   ],
                   ["Müzik", musicTrackName ? `${musicTrackName} · %${Math.round((opts.music?.volume ?? 0) * 100)}` : null],
                   ["Kredi", v.status !== "draft" && v.creditsCost ? String(v.creditsCost) : null],

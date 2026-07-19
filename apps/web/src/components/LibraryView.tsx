@@ -22,15 +22,18 @@ export function LibraryView() {
       </div>
 
       {isLoading && (
-        <div className={GRID_CLS}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="card overflow-hidden">
-              <div className="ph-stripe aspect-[9/16]" />
-              <div className="p-3">
-                <div className="h-3.5 w-3/4 rounded bg-black/5" />
+        <div role="status" aria-live="polite">
+          <span className="sr-only">Yükleniyor…</span>
+          <div className={GRID_CLS}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="card overflow-hidden">
+                <div className="ph-stripe aspect-[9/16]" />
+                <div className="p-3">
+                  <div className="h-3.5 w-3/4 rounded bg-black/5" />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

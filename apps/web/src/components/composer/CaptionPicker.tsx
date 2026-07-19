@@ -44,7 +44,7 @@ export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: b
         <div className="flex-none px-5 pt-5">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
           <div className="mb-1 flex items-start justify-between gap-3">
-            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Altyazı stili</h3>
+            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Alt yazı stili</h3>
             <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
               <Icon.close width={18} height={18} className="block" />
             </button>

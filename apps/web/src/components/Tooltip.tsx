@@ -1,6 +1,6 @@
 "use client";
 
-import { cloneElement, isValidElement, type ReactElement, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { cloneElement, isValidElement, type ReactElement, type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type Side = "right" | "top" | "bottom" | "left";
@@ -25,6 +25,9 @@ export function Tooltip({
   const nodeRef = useRef<HTMLElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; transform: string } | null>(null);
+  // Stable id linking the trigger to the portalled tooltip, so screen readers announce the
+  // label too (a disabled button inside a wrapper span otherwise gets no accessible name).
+  const tooltipId = useId();
 
   const clear = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
@@ -71,6 +74,7 @@ export function Tooltip({
     ref: (n: HTMLElement | null) => {
       nodeRef.current = n;
     },
+    ...(disabled ? {} : { "aria-describedby": tooltipId }),
     onMouseEnter: (e: unknown) => {
       props.onMouseEnter?.(e);
       open();
@@ -95,7 +99,7 @@ export function Tooltip({
       {pos != null &&
         typeof document !== "undefined" &&
         createPortal(
-          <div role="tooltip" className="tooltip" style={{ left: pos.left, top: pos.top, transform: pos.transform }}>
+          <div id={tooltipId} role="tooltip" className="tooltip" style={{ left: pos.left, top: pos.top, transform: pos.transform }}>
             {label}
           </div>,
           document.body,

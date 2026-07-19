@@ -89,7 +89,7 @@ export function SettingsModal({
           <Field label="Avatar yerleşimi">
             <Pills options={AVATAR_POS_OPTS} value={settings.avatarPosition} onChange={(v) => set("avatarPosition", v)} />
           </Field>
-          <Field label="Altyazı konumu">
+          <Field label="Alt yazı konumu">
             <Pills options={CAPPOS_OPTS} value={settings.captionPosition} onChange={(v) => set("captionPosition", v)} />
           </Field>
           <Field label="Ses tonu">

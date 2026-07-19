@@ -128,17 +128,24 @@ button:disabled { cursor: not-allowed; }
 }
 /* hide scrollbars but keep scrolling */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* visually-hidden but still announced by assistive tech (e.g. a loading skeleton's label) */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Tailwind's animate-pulse has no built-in reduced-motion guard; disable it globally
+   to match every hand-authored keyframe below. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse { animation: none; }
+}
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
 /* mobile account sheet slide-up */
 @keyframes sheetIn { from { transform: translateY(100%) } to { transform: translateY(0) } }
 @media (prefers-reduced-motion: reduce) { @keyframes sheetIn { from { transform: none } to { transform: none } } }
 .sheet-in { animation: sheetIn 0.22s ease-out; }
-
-/* right-side drawer slide-in (additional-settings panel) */
-@keyframes drawerIn { from { transform: translateX(100%) } to { transform: translateX(0) } }
-@media (prefers-reduced-motion: reduce) { @keyframes drawerIn { from { transform: none } to { transform: none } } }
-.drawer-in { animation: drawerIn 0.24s ease-out; }
 
 /* slide-in (e.g. the transition-effect button appearing when 2+ media) */
 @keyframes slideInX { from { opacity: 0; transform: translateX(-6px) } to { opacity: 1; transform: none } }

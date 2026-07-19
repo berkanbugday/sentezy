@@ -31,7 +31,13 @@ export function DashboardHome() {
     // Withholding the seed entirely while a video WITH stored music waits on the catalog
     // avoids that; a video with no stored music never needs the catalog, so it isn't made
     // to wait for no reason.
-    if (music && musicQuery.isPending) return undefined;
+    // Gated on `isFetching`, not `isPending`/`isSuccess`: it stays true through React
+    // Query's automatic retries (so a retry in flight still gets its chance), but — unlike
+    // `isSuccess` — it does NOT withhold forever on a permanent failure. Once the query
+    // settles either way (retries exhausted), `isFetching` goes false and the seed proceeds;
+    // on a real failure `tracks` stays empty and `selectedMusic` below resolves to `null`,
+    // silently degrading only the music — avatar/voice/captions/layout still seed correctly.
+    if (music && musicQuery.isFetching) return undefined;
     return {
       key: reuseId,
       selectedAvatar: source.avatar ?? null,
@@ -40,7 +46,7 @@ export function DashboardHome() {
       musicVolume: music?.volume ?? 0.15,
       captionId,
     };
-  }, [reuseId, source, tracks, musicQuery.isPending]);
+  }, [reuseId, source, tracks, musicQuery.isFetching]);
 
   // Settings live here, so seed them here — once per source video, for the same reason
   // the composer guards its own seeding.

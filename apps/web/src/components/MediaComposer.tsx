@@ -503,45 +503,50 @@ export function MediaComposer({
          flex line even when the row wraps on narrow screens. */}
       <div className="mt-2.5 flex flex-wrap items-center gap-2.5 px-1">
         <div className="flex flex-wrap items-center gap-2">
-          {/* avatar / voice / music / caption pickers, grouped behind one menu */}
-          <ActionMenu
-            label="Video seçenekleri"
-            disabled={!hasScript}
-            title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
-            icon={Icon.plus}
-            size="lg"
-            badge={selectedCount}
-            items={[
-              {
-                key: "avatar",
-                label: "Avatar",
-                icon: Icon.users,
-                value: selectedAvatar ? selectedAvatar.name : "isteğe bağlı",
-                onClick: () => setAvatarOpen(true),
-              },
-              {
-                key: "voice",
-                label: "Ses",
-                icon: Icon.voice,
-                value: selectedVoice ? selectedVoice.label : "seçilmedi",
-                onClick: () => setVoiceOpen(true),
-              },
-              {
-                key: "music",
-                label: "Müzik",
-                icon: Icon.musicNote,
-                value: selectedMusic ? selectedMusic.name : "seçilmedi",
-                onClick: () => setMusicOpen(true),
-              },
-              {
-                key: "caption",
-                label: "Alt yazı",
-                icon: Icon.captions,
-                value: selectedCaption ? selectedCaption.family : "seçilmedi",
-                onClick: () => setCaptionOpen(true),
-              },
-            ]}
-          />
+          {/* avatar / voice / music / caption pickers, grouped behind one menu. Disabled
+             elements don't reliably fire hover/focus, so — same pattern as the primary CTA
+             below — the Tooltip wraps a focusable span around the (possibly disabled)
+             trigger rather than relying on the trigger's own native title. */}
+          <Tooltip label={!hasScript ? "Önce konuşma metnini yaz" : undefined} disabled={hasScript} side="top">
+            <span className="inline-flex" tabIndex={!hasScript ? 0 : -1}>
+              <ActionMenu
+                label="Video seçenekleri"
+                disabled={!hasScript}
+                size="lg"
+                badge={selectedCount}
+                items={[
+                  {
+                    key: "avatar",
+                    label: "Avatar",
+                    icon: Icon.users,
+                    value: selectedAvatar ? selectedAvatar.name : "isteğe bağlı",
+                    onClick: () => setAvatarOpen(true),
+                  },
+                  {
+                    key: "voice",
+                    label: "Ses",
+                    icon: Icon.voice,
+                    value: selectedVoice ? selectedVoice.label : "seçilmedi",
+                    onClick: () => setVoiceOpen(true),
+                  },
+                  {
+                    key: "music",
+                    label: "Müzik",
+                    icon: Icon.musicNote,
+                    value: selectedMusic ? selectedMusic.name : "seçilmedi",
+                    onClick: () => setMusicOpen(true),
+                  },
+                  {
+                    key: "caption",
+                    label: "Alt yazı",
+                    icon: Icon.captions,
+                    value: selectedCaption ? selectedCaption.family : "seçilmedi",
+                    onClick: () => setCaptionOpen(true),
+                  },
+                ]}
+              />
+            </span>
+          </Tooltip>
           {/* extra settings (avatar/caption position, voice tone, transition SFX) */}
           <button
             type="button"
@@ -552,17 +557,20 @@ export function MediaComposer({
           >
             <Icon.settings width={21} height={21} />
           </button>
-          {/* live preview */}
-          <button
-            type="button"
-            onClick={openPreview}
-            disabled={!hasScript}
-            title={!hasScript ? "Önce konuşma metnini yaz" : "Reklamı önizle"}
-            className="flex h-11 items-center gap-2 rounded-full border border-hairline bg-paper pl-3.5 pr-4 text-[14.5px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            <Icon.play width={16} height={16} className="text-slate" />
-            Önizle
-          </button>
+          {/* live preview — same disabled/tooltip pattern as above */}
+          <Tooltip label={!hasScript ? "Önce konuşma metnini yaz" : undefined} disabled={hasScript} side="top">
+            <span className="inline-flex" tabIndex={!hasScript ? 0 : -1}>
+              <button
+                type="button"
+                onClick={openPreview}
+                disabled={!hasScript}
+                className="flex h-11 items-center gap-2 rounded-full border border-hairline bg-paper pl-3.5 pr-4 text-[14.5px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <Icon.play width={16} height={16} className="text-slate" />
+                Önizle
+              </button>
+            </span>
+          </Tooltip>
           {items.length > 0 && (
             <span className="flex items-center gap-1.5 whitespace-nowrap text-[12px] text-muted">
               {uploading && <Spinner size={13} />}
@@ -577,7 +585,7 @@ export function MediaComposer({
            around it rather than the button itself, which is what actually receives the
            hover/focus that shows the reason. */}
         <Tooltip label={createHint} disabled={!createHint} side="top">
-          <span className="ml-auto inline-flex shrink-0" tabIndex={createHint ? 0 : -1}>
+          <span className="ml-auto inline-flex shrink-0" tabIndex={createHint ? 0 : -1} aria-label="Video oluştur">
             <button
               type="button"
               onClick={create}
