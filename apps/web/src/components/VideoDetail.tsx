@@ -61,7 +61,39 @@ export function VideoDetail({ id }: { id: string }) {
   }, [id, queryClient]);
 
   if (isError) return <p className="text-[14px] text-muted">Video bulunamadı.</p>;
-  if (!detail) return <p className="text-[14px] text-muted">Yükleniyor…</p>;
+  if (!detail) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <Link href="/library" className="text-[13.5px] font-medium text-signal">← Videolarım</Link>
+
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="h-7 w-64 max-w-full animate-pulse rounded bg-black/5" />
+            <div className="mt-2 h-[22px] w-24 animate-pulse rounded-full bg-black/5" />
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-6 md:grid-cols-[340px_1fr]">
+          <div className="card relative mx-auto aspect-[9/16] w-full max-w-[340px] overflow-hidden">
+            <div className="ph-stripe h-full w-full" />
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="card p-5">
+              <div className="text-[14px]">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex justify-between gap-4 border-b border-hairline py-2 last:border-0">
+                    <div className="h-3 w-20 animate-pulse rounded bg-black/5" />
+                    <div className="h-3 w-28 animate-pulse rounded bg-black/5" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const v = detail.video;
   const title = videoDisplayTitle(v);

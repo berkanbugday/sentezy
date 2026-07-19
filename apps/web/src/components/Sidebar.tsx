@@ -13,7 +13,6 @@ const NAV = [
   { href: "/dashboard", label: "Ana sayfa", icon: Icon.home, ready: true },
   { href: "/library", label: "Videolarım", icon: Icon.video, ready: true },
   { href: "/avatars", label: "Avatarlar", icon: Icon.users, ready: false },
-  { href: "/search", label: "Ara", icon: Icon.search, ready: false },
 ];
 
 const STORAGE_KEY = "sentezy:sidebar-collapsed";

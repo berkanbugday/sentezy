@@ -53,7 +53,14 @@ export function AvatarPicker({ open, onClose, selectedId, onSelect }: { open: bo
 
         <div className="no-scrollbar overflow-y-auto px-5 py-4">
           {avatarsQ.isLoading ? (
-            <div className="py-10 text-center text-[14px] text-muted">Yükleniyor…</div>
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i}>
+                  <div className="ph-stripe aspect-[3/4] rounded-xl border border-hairline" />
+                  <div className="mt-1.5 h-3 w-3/4 rounded bg-black/5" />
+                </div>
+              ))}
+            </div>
           ) : filteredAvatars.length === 0 ? (
             <div className="py-10 text-center text-[14px] text-muted">Avatar bulunamadı</div>
           ) : (

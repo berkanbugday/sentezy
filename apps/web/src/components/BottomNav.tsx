@@ -78,11 +78,6 @@ export function BottomNav({ user }: { user: UserInfo }) {
               </span>
             </div>
             <div className="flex flex-col gap-0.5 border-t border-hairline pt-2">
-              <span className="nav-item cursor-default opacity-60">
-                <Icon.search width={18} height={18} />
-                Ara
-                <span className="ml-auto rounded-full bg-mist px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted">yakında</span>
-              </span>
               <button className="nav-item">
                 <Icon.settings width={18} height={18} />
                 Ayarlar

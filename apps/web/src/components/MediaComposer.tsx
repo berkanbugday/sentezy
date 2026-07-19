@@ -22,6 +22,7 @@ import { SettingsModal } from "./composer/SettingsModal";
 import { Spinner } from "./composer/Spinner";
 import { VoicePicker } from "./composer/VoicePicker";
 import { Icon } from "./icons";
+import { Tooltip } from "./Tooltip";
 
 /**
  * The title stored for a new video. Prefers the imported product's NAME; otherwise the
@@ -217,13 +218,13 @@ export function MediaComposer({
   // Generation needs voice + script and SOMETHING to show: either an avatar (talking head) OR
   // B-roll media (a faceless video). Avatar is optional — gate the button and point at what's missing.
   const canCreate = hasScript && !!selectedVoice && (!!selectedAvatar || hasMedia);
-  const createHint = !hasScript
-    ? "Önce konuşma metnini yaz"
-    : !selectedVoice
-      ? "Bir ses seç"
-      : !selectedAvatar && !hasMedia
-        ? "Avatar seç ya da görsel yükle (yüzsüz video)"
-        : undefined;
+  // Every unmet requirement, not just the first — so fixing one still shows what's left.
+  const createHints = [
+    !hasScript && "Önce konuşma metnini yaz",
+    !selectedVoice && "Bir ses seç",
+    !selectedAvatar && !hasMedia && "Avatar seç ya da görsel yükle (yüzsüz video)",
+  ].filter((h): h is string => Boolean(h));
+  const createHint = createHints.length > 0 ? createHints.join(" · ") : undefined;
   const selectedCount = [selectedAvatar, selectedVoice, selectedMusic, captionId].filter(Boolean).length;
   const pick = () => inputRef.current?.click();
 
@@ -570,17 +571,24 @@ export function MediaComposer({
           )}
         </div>
         {/* primary action — visibly larger than the other controls, and always right-aligned on
-           its own flex line (never full-width), on mobile included. */}
-        <button
-          type="button"
-          onClick={create}
-          disabled={uploading || submitting || !canCreate}
-          title={createHint}
-          className="btn btn-primary btn-lg ml-auto shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {uploading || submitting ? <Spinner size={16} /> : <Icon.arrowRight width={19} height={19} className="order-2" />}
-          <span className="order-1">{submitting ? "Oluşturuluyor…" : "Video oluştur"}</span>
-        </button>
+           its own flex line (never full-width), on mobile included.
+           The button is disabled while a hint applies, and disabled elements don't reliably
+           fire hover/focus events — so the Tooltip wraps a plain (always-interactive) span
+           around it rather than the button itself, which is what actually receives the
+           hover/focus that shows the reason. */}
+        <Tooltip label={createHint} disabled={!createHint} side="top">
+          <span className="ml-auto inline-flex shrink-0" tabIndex={createHint ? 0 : -1}>
+            <button
+              type="button"
+              onClick={create}
+              disabled={uploading || submitting || !canCreate}
+              className="btn btn-primary btn-lg shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {uploading || submitting ? <Spinner size={16} /> : <Icon.arrowRight width={19} height={19} className="order-2" />}
+              <span className="order-1">{submitting ? "Oluşturuluyor…" : "Video oluştur"}</span>
+            </button>
+          </span>
+        </Tooltip>
       </div>
       {submitError && <p className="mt-2 px-1 text-[13px] text-red-500">{submitError}</p>}
 

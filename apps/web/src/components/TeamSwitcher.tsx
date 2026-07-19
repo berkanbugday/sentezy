@@ -54,15 +54,15 @@ export function TeamSwitcher({ user, collapsed }: { user: UserInfo; collapsed?: 
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-hairline bg-paper py-1 shadow-lg">
-          <div className="truncate px-3 py-1.5 text-[11px] text-muted">{user.email}</div>
-          <button className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-slate hover:bg-mist">
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-white/10 bg-[#14141a] py-1 shadow-2xl">
+          <div className="truncate px-3 py-1.5 text-[11px] text-white/50">{user.email}</div>
+          <button className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-white/85 hover:bg-white/10">
             <Icon.settings width={16} height={16} />
             Ayarlar
           </button>
           <button
             onClick={signOut}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-slate hover:bg-mist"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-white/85 hover:bg-white/10"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
