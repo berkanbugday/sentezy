@@ -12,6 +12,7 @@ import { type ImportProductResult, type MusicTrack, useCreateAvatar, useGenerate
 import { videoPoster } from "@/lib/videoPoster";
 import { cleanTitleText } from "@/lib/videoTitle";
 import { DEFAULT_TRANSITION } from "./WizardSteps";
+import { ActionMenu } from "./composer/ActionMenu";
 import { AvatarPicker } from "./composer/AvatarPicker";
 import { CaptionPicker } from "./composer/CaptionPicker";
 import { EffectPicker } from "./composer/EffectPicker";
@@ -222,6 +223,11 @@ export function MediaComposer({
       : !selectedAvatar && !hasMedia
         ? "Avatar seç ya da görsel yükle (yüzsüz video)"
         : undefined;
+  // Compact summary of what's currently picked, e.g. "Beyza · Damla - Energetic Content creator ·
+  // Fırtınadan Sonra · Vurgu" — only selected pickers contribute (caption always has a default).
+  const selectionSummary = [selectedAvatar?.name, selectedVoice?.label, selectedMusic?.name, selectedCaption.family]
+    .filter((v): v is string => !!v)
+    .join(" · ");
   const pick = () => inputRef.current?.click();
 
   function openPreview() {
@@ -496,63 +502,42 @@ export function MediaComposer({
       {/* controls always visible, disabled until there's speech text to work with */}
       <div className="mt-3 flex flex-col gap-2.5 px-1 sm:flex-row sm:items-center">
         <div className="flex flex-wrap items-center gap-2">
-          {/* avatar mini-preview chip */}
-          <button
-            type="button"
-            onClick={() => setAvatarOpen(true)}
+          {/* avatar / voice / music / caption pickers, grouped behind one menu */}
+          <ActionMenu
+            label="Video seçenekleri"
             disabled={!hasScript}
             title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
-            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            <span className="flex h-7 w-7 flex-none items-center justify-center overflow-hidden rounded-full bg-mist text-muted">
-              {selectedAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={selectedAvatar.imageUrl} alt={selectedAvatar.name} className="h-full w-full object-cover" />
-              ) : (
-                <Icon.users width={15} height={15} />
-              )}
-            </span>
-            {selectedAvatar ? selectedAvatar.name : "Avatar (isteğe bağlı)"}
-            <Icon.chevronDown width={14} height={14} className="text-muted" />
-          </button>
-          {/* voice mini chip */}
-          <button
-            type="button"
-            onClick={() => setVoiceOpen(true)}
-            disabled={!hasScript}
-            title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
-            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-mist text-slate">
-              <Icon.voice width={15} height={15} />
-            </span>
-            {selectedVoice ? selectedVoice.label : "Ses seç"}
-            <Icon.chevronDown width={14} height={14} className="text-muted" />
-          </button>
-          {/* music chip */}
-          <button
-            type="button"
-            onClick={() => setMusicOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-2.5 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist"
-          >
-            <Icon.play width={14} height={14} className="text-slate" />
-            {selectedMusic ? selectedMusic.name : "Müzik seç"}
-            <Icon.chevronDown width={14} height={14} className="text-muted" />
-          </button>
-          {/* caption style chip */}
-          <button
-            type="button"
-            onClick={() => setCaptionOpen(true)}
-            disabled={!hasScript}
-            title={!hasScript ? "Önce konuşma metnini yaz" : undefined}
-            className="flex items-center gap-2 rounded-full border border-hairline bg-paper py-1 pl-1 pr-3 text-[13px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            <span className="grid h-7 w-11 flex-none place-items-center overflow-hidden rounded-full bg-black">
-              <span style={{ color: selectedCaption.color, fontFamily: `"${selectedCaption.font}", sans-serif`, fontWeight: 800, fontSize: 12, lineHeight: 1 }}>Aa</span>
-            </span>
-            {selectedCaption.family}
-            <Icon.chevronDown width={14} height={14} className="text-muted" />
-          </button>
+            items={[
+              {
+                key: "avatar",
+                label: "Avatar",
+                icon: Icon.users,
+                value: selectedAvatar ? selectedAvatar.name : "isteğe bağlı",
+                onClick: () => setAvatarOpen(true),
+              },
+              {
+                key: "voice",
+                label: "Ses",
+                icon: Icon.voice,
+                value: selectedVoice ? selectedVoice.label : "seçilmedi",
+                onClick: () => setVoiceOpen(true),
+              },
+              {
+                key: "music",
+                label: "Müzik",
+                icon: Icon.musicNote,
+                value: selectedMusic ? selectedMusic.name : "seçilmedi",
+                onClick: () => setMusicOpen(true),
+              },
+              {
+                key: "caption",
+                label: "Alt yazı",
+                icon: Icon.captions,
+                value: selectedCaption.family,
+                onClick: () => setCaptionOpen(true),
+              },
+            ]}
+          />
           {/* live preview */}
           <button
             type="button"
@@ -582,6 +567,7 @@ export function MediaComposer({
           <span className="order-1">{submitting ? "Oluşturuluyor…" : "Video oluştur"}</span>
         </button>
       </div>
+      {selectionSummary && <p className="mt-1 truncate px-1 text-[12px] text-muted">{selectionSummary}</p>}
       {submitError && <p className="mt-2 px-1 text-[13px] text-red-500">{submitError}</p>}
 
       <EffectPicker

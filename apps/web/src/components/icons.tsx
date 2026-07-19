@@ -108,4 +108,10 @@ export const Icon = {
   repeat: (p: SVGProps<SVGSVGElement>) => (
     <svg {...base} {...p}><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg>
   ),
+  musicNote: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg>
+  ),
+  captions: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="M6.5 15h5M6.5 11.5h11M13.5 15h5" /></svg>
+  ),
 };
