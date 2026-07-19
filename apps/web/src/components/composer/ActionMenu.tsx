@@ -31,7 +31,7 @@ export function ActionMenu({
   label = "Diğer işlemler",
   disabled,
   title,
-  icon: TriggerIcon = Icon.more,
+  icon: TriggerIcon = Icon.plus,
   size = "sm",
   badge,
 }: {
@@ -105,9 +105,8 @@ export function ActionMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         title={title ?? label}
-        className={`inline-flex shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45 ${
-          lg ? "h-11 w-11" : "h-10 w-10"
-        }`}
+        className={`inline-flex shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45 ${lg ? "h-11 w-11" : "h-10 w-10"
+          }`}
       >
         <TriggerIcon width={lg ? 21 : 18} height={lg ? 21 : 18} />
         {!!badge && (
@@ -130,15 +129,14 @@ export function ActionMenu({
             className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm sm:hidden"
           />
           <div
-            className={`fixed inset-x-0 bottom-0 z-50 max-h-[75vh] overflow-y-auto rounded-t-3xl border-t border-hairline bg-paper py-1 pb-[max(10px,env(safe-area-inset-bottom))] shadow-2xl sm:absolute sm:inset-x-auto sm:inset-y-auto sm:bottom-auto sm:right-0 sm:top-full sm:z-30 sm:mt-1 sm:max-h-none sm:overflow-hidden sm:rounded-xl sm:border sm:pb-1 sm:shadow-lg ${
-              lg
+            className={`fixed inset-x-0 bottom-0 z-50 max-h-[75vh] overflow-y-auto rounded-t-3xl border-t border-hairline bg-paper py-1 pb-[max(10px,env(safe-area-inset-bottom))] shadow-2xl sm:absolute sm:inset-x-auto sm:inset-y-auto sm:bottom-auto sm:right-0 sm:top-full sm:z-30 sm:mt-1 sm:max-h-none sm:overflow-hidden sm:rounded-xl sm:border sm:pb-1 sm:shadow-lg ${lg
                 ? hasValues
                   ? "sm:min-w-[300px]"
                   : "sm:min-w-[230px]"
                 : hasValues
                   ? "sm:min-w-[260px]"
                   : "sm:min-w-[190px]"
-            }`}
+              }`}
           >
             <div className="mx-auto mb-1 mt-2 h-1 w-10 rounded-full bg-hairline sm:hidden" />
             {items.map((it) => (
@@ -150,9 +148,8 @@ export function ActionMenu({
                   it.onClick();
                   if (!it.keepOpen) setOpen(false);
                 }}
-                className={`flex w-full items-center text-left font-medium transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-40 ${
-                  lg ? "gap-3 px-4 py-3 text-[15px]" : "gap-2.5 px-3.5 py-2.5 text-[13.5px]"
-                } ${it.danger ? "text-red-600" : "text-ink"}`}
+                className={`flex w-full items-center text-left font-medium transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-40 ${lg ? "gap-3 px-4 py-3 text-[15px]" : "gap-2.5 px-3.5 py-2.5 text-[13.5px]"
+                  } ${it.danger ? "text-red-600" : "text-ink"}`}
               >
                 <it.icon width={lg ? 18 : 15} height={lg ? 18 : 15} className="shrink-0" />
                 <span className="flex-1 truncate">{it.label}</span>

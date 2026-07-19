@@ -114,4 +114,10 @@ export const Icon = {
   captions: (p: SVGProps<SVGSVGElement>) => (
     <svg {...base} {...p}><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="M6.5 15h5M6.5 11.5h11M13.5 15h5" /></svg>
   ),
+  layers: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><path d="M12 3 21 8.5 12 14 3 8.5Z" /><path d="m3 13 9 5.5 9-5.5" /><path d="m3 17.5 9 5.5 9-5.5" /></svg>
+  ),
+  media: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...base} {...p}><rect x="2.5" y="4" width="19" height="16" rx="2.5" /><circle cx="8.5" cy="9" r="1.6" /><path d="M2.5 15.5 8 10l4 4 3-3 5.5 5.5" /><path d="M14 12.3v5.4l4.7-2.7Z" fill="currentColor" stroke="none" /></svg>
+  ),
 };

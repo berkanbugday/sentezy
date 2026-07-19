@@ -387,7 +387,7 @@ export function MediaComposer({
               }`}
           >
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-mist text-slate">
-              <Icon.plus width={24} height={24} />
+              <Icon.media width={24} height={24} />
             </span>
             <div>
               <p className="text-[14.5px] font-medium text-ink">Videolarını ya da görsellerini sürükle</p>
