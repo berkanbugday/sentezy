@@ -5,6 +5,7 @@
 // this one pulls in the real component, which is aliased throughout.)
 import assert from "node:assert";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 
@@ -14,6 +15,11 @@ import React from "react";
 const { SettingsView } = await import("./SettingsView");
 const { qk } = await import("@/lib/queries");
 
+// The danger-zone card calls useRouter, which needs the app-router context to exist. A stub
+// is enough — nothing in a static render actually navigates.
+const noop = () => {};
+const stubRouter = { push: noop, replace: noop, refresh: noop, back: noop, forward: noop, prefetch: noop } as never;
+
 /** Render SettingsView with the profile query pre-seeded, so useQuery resolves without a
  *  network call. Exercises the real card layout, plan label and credit display — the parts
  *  a typecheck cannot see. */
@@ -21,7 +27,11 @@ function render(profile: Record<string, unknown>): string {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   qc.setQueryData(qk.profile, profile);
   return renderToStaticMarkup(
-    React.createElement(QueryClientProvider, { client: qc }, React.createElement(SettingsView)),
+    React.createElement(
+      AppRouterContext.Provider,
+      { value: stubRouter },
+      React.createElement(QueryClientProvider, { client: qc }, React.createElement(SettingsView)),
+    ),
   );
 }
 
@@ -36,6 +46,8 @@ assert.ok(free.includes("MAX"), "a free user is offered the upgrade");
 // Initials come from the display name, not the email.
 assert.ok(free.includes(">BB<"), "avatar shows initials of the name");
 assert.ok(free.includes("Güvenlik") && free.includes("Yeni şifre"), "the security card renders");
+assert.ok(free.includes("Mevcut şifre"), "password change requires the current password (step-up)");
+assert.ok(free.includes("Tehlikeli bölge") && free.includes("Hesabı sil"), "the danger zone renders");
 
 // ── A user with no name falls back to the email ────────────────────────────────
 const noName = render({ displayName: null, email: "ada@x.co", plan: "free", credits: 3 });

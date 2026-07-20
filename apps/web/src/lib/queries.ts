@@ -63,6 +63,14 @@ export function useUpdateProfile() {
   });
 }
 
+/** Permanently delete the account (R2 + DB + auth). Irreversible — the caller confirms and
+ *  then signs the user out; there is no cache to update because there is no account left. */
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: () => apiFetch<{ ok: true }>("/profile", { method: "DELETE" }),
+  });
+}
+
 /** The user's brand kit. `*Key` fields are what gets stored on a video; the `*Url` fields
  *  are freshly-signed previews and must never be persisted — they expire. */
 export type BrandKit = {

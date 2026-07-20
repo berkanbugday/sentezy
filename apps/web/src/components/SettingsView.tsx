@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
 import { SecurityCard } from "@/components/settings/SecurityCard";
 import { SettingsCard } from "@/components/settings/SettingsCard";
 import { toInitials } from "@/lib/user";
@@ -131,7 +132,10 @@ export function SettingsView() {
           </SettingsCard>
 
           {/* ── Güvenlik ── */}
-          <SecurityCard />
+          <SecurityCard email={p.email} />
+
+          {/* ── Tehlikeli bölge ── */}
+          <DangerZoneCard email={p.email} />
         </div>
       ) : null}
     </div>

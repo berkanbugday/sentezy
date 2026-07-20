@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "../env";
 import { safeFetch } from "./ssrf";
@@ -39,6 +39,27 @@ export async function signedUploadUrl(key: string, contentType: string, expiresI
 
 export function publicUrl(key: string): string | null {
   return env.R2_PUBLIC_URL ? `${env.R2_PUBLIC_URL.replace(/\/$/, "")}/${key}` : null;
+}
+
+/** Best-effort batch delete. Used when purging an account — a storage object that fails to
+ *  delete must not block the account deletion, so this never throws: it returns the keys it
+ *  could not remove for the caller to log. S3 caps DeleteObjects at 1000 keys per call, so
+ *  batch. Empty input is a no-op. */
+export async function deleteObjects(keys: string[]): Promise<{ failed: string[] }> {
+  const unique = [...new Set(keys.filter(Boolean))];
+  const failed: string[] = [];
+  for (let i = 0; i < unique.length; i += 1000) {
+    const batch = unique.slice(i, i + 1000);
+    try {
+      const res = await r2.send(
+        new DeleteObjectsCommand({ Bucket: env.R2_BUCKET, Delete: { Objects: batch.map((Key) => ({ Key })) } }),
+      );
+      for (const e of res.Errors ?? []) if (e.Key) failed.push(e.Key);
+    } catch {
+      failed.push(...batch);
+    }
+  }
+  return { failed };
 }
 
 /** Server-side upload of raw bytes to R2 (e.g. an image scraped from a product page). */
