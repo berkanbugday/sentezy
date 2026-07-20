@@ -2,6 +2,7 @@ import cors from "@fastify/cors";
 import Fastify from "fastify";
 import authPlugin from "./plugins/auth";
 import { backgroundRoutes } from "./routes/backgrounds";
+import { brandKitRoutes } from "./routes/brandKit";
 import { healthRoutes } from "./routes/health";
 import { importRoutes } from "./routes/import";
 import { musicRoutes } from "./routes/music";
@@ -18,6 +19,7 @@ export function buildServer() {
   app.register(healthRoutes);
   app.register(voiceRoutes);
   app.register(backgroundRoutes);
+  app.register(brandKitRoutes);
   app.register(musicRoutes);
   app.register(avatarRoutes);
   app.register(videoRoutes);
