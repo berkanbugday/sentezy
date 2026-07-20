@@ -156,6 +156,51 @@ export function readAvatarPosition(layout: unknown): AvatarPosition {
   return "left";
 }
 
+// ── Brand kit ───────────────────────────────────────────────────────────────
+/** An uploaded intro/outro clip: the R2 key plus its measured duration. */
+export const BrandClip = z.object({
+  ref: z.string().min(1),
+  ms: z.number().int().positive(),
+});
+export type BrandClip = z.infer<typeof BrandClip>;
+
+
+/** A FROZEN copy of the user's BrandKit row, taken when branding is switched on for a
+ *  video. The video deliberately does not reference the live kit: re-rendering a reel
+ *  from six months ago must reproduce the branding it shipped with, not whatever the
+ *  user's logo happens to be today. */
+export const BrandSnapshot = z.object({
+  brandName: z.string().nullable().default(null),
+  handle: z.string().nullable().default(null),
+  logoImageId: z.string().nullable().default(null), // R2 object key
+  // Rendered as the intro/outro card background, so it must be a real 6-digit hex —
+  // this string goes straight into a CSS colour.
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .default("#0A0A0B"),
+  font: z.string().default("General Sans"),
+  outroCta: z.string().nullable().default(null),
+  // An uploaded clip overriding the generated card. `ms` is measured in the browser at
+  // upload time and must be a positive integer: it shifts the voiceover for the entire
+  // reel, so a zero, negative or fractional value would desynchronise the audio.
+  introClip: BrandClip.nullable().default(null),
+  outroClip: BrandClip.nullable().default(null),
+});
+export type BrandSnapshot = z.infer<typeof BrandSnapshot>;
+
+export const BrandingOptions = z.object({
+  intro: z.boolean().default(false),
+  outro: z.boolean().default(false),
+  watermark: z.boolean().default(false),
+  /** null = branding was never applied to this video. */
+  kit: BrandSnapshot.nullable().default(null),
+  /** BACK-COMPAT: `branding` shipped as a placeholder carrying only this key, and no code
+   *  ever read or wrote it. Preserved so an old draft still parses; superseded by `kit`. */
+  logoImageId: z.string().nullable().default(null),
+});
+export type BrandingOptions = z.infer<typeof BrandingOptions>;
+
 // ── Reel composition options (stored on videos.options jsonb) ──────────────
 export const ReelOptions = z.object({
   background: z
@@ -182,13 +227,13 @@ export const ReelOptions = z.object({
     })
     .default({ type: "color", value: "#0B0B0D" }),
   captions: CaptionsOptions.default(true), // boolean default runs through the preprocess
-  branding: z
-    .object({
-      logoImageId: z.string().nullable().default(null), // R2 image key
-      intro: z.boolean().default(false),
-      outro: z.boolean().default(false),
-    })
-    .default({ logoImageId: null, intro: false, outro: false }),
+  branding: BrandingOptions.default({
+    intro: false,
+    outro: false,
+    watermark: false,
+    kit: null,
+    logoImageId: null,
+  }),
   music: z
     .object({
       trackKey: z.string().nullable().default(null), // R2 key (audio)
