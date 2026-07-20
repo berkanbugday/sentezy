@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { brandingOption } from "./branding";
+import { brandingOption, kitHasContent, previewBrand } from "./branding";
 import type { BrandKit } from "./queries";
 
 const OFF = { brandIntro: false, brandOutro: false, brandWatermark: false };
@@ -34,9 +34,49 @@ assert.deepStrictEqual(brandingOption(OFF, null), {});
 // empty coloured screen; better to ship no branding than a blank intro.
 assert.deepStrictEqual(brandingOption(ALL, null), {});
 assert.deepStrictEqual(brandingOption(ALL, undefined), {});
-assert.deepStrictEqual(brandingOption(ALL, { ...KIT, logoKey: null, brandName: null }), {});
+// No logo, no name AND no uploads — nothing renderable at all.
+assert.deepStrictEqual(
+  brandingOption(ALL, { ...KIT, logoKey: null, brandName: null, outroClipKey: null, outroClipMs: null }),
+  {},
+);
 // A name alone is enough — the card renders as name-only.
 assert.ok(brandingOption(ALL, { ...KIT, logoKey: null }).branding);
+
+// ── Per-end usability ───────────────────────────────────────────────────────
+// REGRESSION: a kit that is ONLY an uploaded intro video — no logo, no name — is
+// perfectly usable, because that upload replaces the card entirely. An earlier
+// whole-kit check rejected it and silently produced no branding at all.
+const clipOnly = {
+  ...KIT, logoKey: null, brandName: null, handle: null, outroCta: null,
+  introClipKey: "brand/intro.mp4", introClipMs: 1500, introClipCrop: null,
+  outroClipKey: null, outroClipMs: null, outroClipCrop: null,
+  logoUrl: null, introClipUrl: "https://signed/intro.mp4", outroClipUrl: null,
+};
+const clipOnlyOut = brandingOption(ALL, clipOnly).branding as Record<string, unknown>;
+assert.ok(clipOnlyOut, "an intro-only kit must still brand the video");
+assert.strictEqual(clipOnlyOut.intro, true);
+// ...but the OUTRO has no upload and no card content, so it stays off rather than
+// opening on a blank coloured screen.
+assert.strictEqual(clipOnlyOut.outro, false);
+// ...and the watermark has no logo to stamp.
+assert.strictEqual(clipOnlyOut.watermark, false);
+
+// The preview agrees with the render on all of that, or it stops predicting it.
+const clipOnlyPreview = previewBrand(ALL, clipOnly, 30);
+assert.ok(clipOnlyPreview);
+assert.strictEqual(clipOnlyPreview.intro?.kind, "clip");
+assert.strictEqual(clipOnlyPreview.outro, null);
+assert.strictEqual(clipOnlyPreview.watermark, false);
+
+// ── kitHasContent ───────────────────────────────────────────────────────────
+assert.strictEqual(kitHasContent(null), false);
+assert.strictEqual(kitHasContent(undefined), false);
+assert.strictEqual(kitHasContent(clipOnly), true, "an upload alone is a usable kit");
+assert.strictEqual(kitHasContent({ ...KIT, logoKey: null, brandName: "X" }), true);
+assert.strictEqual(
+  kitHasContent({ ...KIT, logoKey: null, brandName: null, introClipKey: null, outroClipKey: null }),
+  false,
+);
 
 // ── The snapshot ────────────────────────────────────────────────────────────
 const out = brandingOption(ALL, KIT).branding as Record<string, unknown>;

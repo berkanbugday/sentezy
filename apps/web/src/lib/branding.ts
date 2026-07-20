@@ -4,6 +4,33 @@ import type { BrandKit } from "@/lib/queries";
 
 type BrandToggles = Pick<ComposerSettings, "brandIntro" | "brandOutro" | "brandWatermark">;
 
+/** True when the kit holds anything that could be rendered. Used to decide whether the
+ *  brand toggles are offered at all — a kit consisting only of an uploaded intro video is
+ *  perfectly usable, even with no logo and no brand name. */
+export function kitHasContent(kit: BrandKit | undefined | null): boolean {
+  return Boolean(kit && (kit.logoKey || kit.brandName || kit.introClipKey || kit.outroClipKey));
+}
+
+/** Which ends this video can actually render, given what the kit holds.
+ *
+ *  Decided PER END rather than for the kit as a whole, because the requirements differ: an
+ *  end backed by an upload needs nothing else, an end falling back to the generated card
+ *  needs a logo or a name to put on it, and a watermark needs a logo to stamp. Getting this
+ *  wrong in either direction is bad — too strict and a user with only an intro video gets
+ *  no branding at all, too loose and the reel opens on an empty coloured screen. */
+function usableEnds(settings: BrandToggles, kit: BrandKit) {
+  // The generated card renders from a logo, a name, or both; with neither it is a blank
+  // coloured screen and is not worth showing.
+  const card = Boolean(kit.logoKey || kit.brandName);
+  const introClip = Boolean(kit.introClipKey && kit.introClipMs);
+  const outroClip = Boolean(kit.outroClipKey && kit.outroClipMs);
+  return {
+    intro: Boolean(settings.brandIntro) && (introClip || card),
+    outro: Boolean(settings.brandOutro) && (outroClip || card),
+    watermark: Boolean(settings.brandWatermark) && Boolean(kit.logoKey),
+  };
+}
+
 /** The `branding` blob written onto a video's options, or `{}` when the video is unbranded.
  *
  *  The kit is SNAPSHOTTED here, at apply time — the video stores a frozen copy rather than
@@ -16,21 +43,17 @@ export function brandingOption(
   settings: BrandToggles,
   kit: BrandKit | undefined | null,
 ): { branding?: Record<string, unknown> } {
-  const intro = Boolean(settings.brandIntro);
-  const outro = Boolean(settings.brandOutro);
-  const watermark = Boolean(settings.brandWatermark);
+  if (!kit) return {};
+  const { intro, outro, watermark } = usableEnds(settings, kit);
+  // Nothing this kit can actually render — drop the branding rather than shipping a blank
+  // intro. The UI blocks most of this, but a stale toggle can still reach here.
   if (!intro && !outro && !watermark) return {};
-
-  // Nothing worth rendering: a card with no logo and no name is an empty coloured screen,
-  // and a watermark needs a logo. The UI blocks this, but a stale toggle could still reach
-  // here, so drop the branding rather than shipping a blank intro.
-  if (!kit || (!kit.logoKey && !kit.brandName)) return {};
 
   return {
     branding: {
       intro,
       outro,
-      watermark: watermark && Boolean(kit.logoKey), // no logo → nothing to stamp
+      watermark,
       kit: {
         brandName: kit.brandName,
         handle: kit.handle,
@@ -63,11 +86,11 @@ export function previewBrand(
   kit: BrandKit | undefined | null,
   fps: number,
 ): ReelBrand | null {
-  const intro = Boolean(settings.brandIntro);
-  const outro = Boolean(settings.brandOutro);
-  const watermark = Boolean(settings.brandWatermark);
+  if (!kit) return null;
+  // Same per-end rules as brandingOption, so the preview shows exactly the ends the
+  // generated video will have — including "only an intro clip and nothing else".
+  const { intro, outro, watermark } = usableEnds(settings, kit);
   if (!intro && !outro && !watermark) return null;
-  if (!kit || (!kit.logoKey && !kit.brandName)) return null;
 
   const end = (
     enabled: boolean,
@@ -90,7 +113,7 @@ export function previewBrand(
   return {
     intro: end(intro, kit.introClipUrl, kit.introClipMs, kit.introClipCrop),
     outro: end(outro, kit.outroClipUrl, kit.outroClipMs, kit.outroClipCrop),
-    watermark: watermark && Boolean(kit.logoUrl),
+    watermark,
     logoUrl: kit.logoUrl,
     brandName: kit.brandName,
     handle: kit.handle,

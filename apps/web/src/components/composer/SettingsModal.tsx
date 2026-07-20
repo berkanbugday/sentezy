@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { VOICE_EMOTIONS } from "@/components/wizard/constants";
 import { Icon } from "@/components/icons";
 import { type ComposerSettings } from "@/lib/composerSettings";
+import { kitHasContent } from "@/lib/branding";
 import { useBrandKit } from "@/lib/queries";
 
 type Opt<T> = { value: T; label: string };
@@ -110,9 +111,10 @@ export function SettingsModal({
   const transitionSfxAvailable = mediaCount >= 2;
 
   // GET /brand-kit returns defaults rather than 404ing, so "has a kit" means the user has
-  // actually put something on it — a logo or a name. Anything less renders an empty card.
+  // actually put something on it. A kit that is ONLY an uploaded intro video counts —
+  // it needs no logo and no name to render.
   const kit = useBrandKit(open).data;
-  const hasBrandKit = Boolean(kit?.logoKey || kit?.brandName);
+  const hasBrandKit = kitHasContent(kit);
 
   if (!open) return null;
   return (
