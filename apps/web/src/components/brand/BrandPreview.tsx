@@ -1,6 +1,6 @@
 "use client";
 
-import { readableInk } from "@sentezy/remotion";
+import { isImageSrc, readableInk } from "@sentezy/remotion";
 
 export type PreviewMode = "intro" | "outro" | "watermark";
 
@@ -40,12 +40,19 @@ export function BrandPreview({
       style={{ backgroundColor: mode === "watermark" || showClip ? "#0b0b0d" : color }}
     >
       {showClip ? (
-        /* The uploaded clip replaces the card outright, so the preview shows the clip and
-           nothing else — overlaying the brand name here would promise something the render
-           does not produce. Muted and looping: the render is silent, and an autoplaying
-           soundtrack in a settings screen is hostile. */
-        // eslint-disable-next-line jsx-a11y/media-has-caption
-        <video src={clipUrl} muted loop autoPlay playsInline className="h-full w-full object-cover" />
+        /* The upload replaces the card outright, so the preview shows only it — overlaying
+           the brand name here would promise something the render does not produce.
+           Image vs video is decided by the URL extension, the same rule the composition
+           uses (isImageSrc), so the two can never disagree about what a file is. */
+        isImageSrc(clipUrl) ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={clipUrl} alt="" className="h-full w-full object-contain" />
+        ) : (
+          /* Muted: the render is silent, and an autoplaying soundtrack in a settings
+             screen is hostile. */
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video src={clipUrl} muted loop autoPlay playsInline className="h-full w-full object-cover" />
+        )
       ) : mode === "watermark" ? (
         <>
           {/* Stand-in for the reel: a dim subject and caption band, so the watermark is

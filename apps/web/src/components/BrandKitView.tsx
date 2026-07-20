@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CARD_INTRO_SECONDS, CARD_OUTRO_SECONDS } from "@sentezy/remotion";
 import { BrandPreview, type PreviewMode } from "@/components/brand/BrandPreview";
 import { FontSelect } from "@/components/brand/FontSelect";
 import { Icon } from "@/components/icons";
 import { Spinner } from "@/components/composer/Spinner";
 import { CAPTION_FONTS } from "@/lib/captionStyles";
-import { clipErrorMessage, readClipDuration } from "@/lib/videoDuration";
+import { clipErrorMessage, readMediaDuration } from "@/lib/videoDuration";
 import { type BrandKit, useBrandKit, useUpdateBrandKit, useUploadBrandAsset } from "@/lib/queries";
 
 /** Six visibly distinct starting points — two neutrals and four hues. Deliberately not a
@@ -103,12 +104,14 @@ export function BrandKitView() {
     }
   };
 
-  /** Measure the clip BEFORE uploading: a file whose length we cannot read is unusable, and
-   *  rejecting it here avoids putting an orphan object in storage. */
+  /** Measure BEFORE uploading: a file whose length we cannot read is unusable, and
+   *  rejecting it here avoids putting an orphan object in storage. An image has no
+   *  intrinsic length, so it holds for exactly as long as the generated card would have. */
   const pickClip = async (end: "introClip" | "outroClip", file: File | undefined) => {
     if (!file) return;
     setClipError(null);
-    const measured = await readClipDuration(file);
+    const imageMs = (end === "introClip" ? CARD_INTRO_SECONDS : CARD_OUTRO_SECONDS) * 1000;
+    const measured = await readMediaDuration(file, imageMs);
     if (!measured.ok) {
       setClipError(clipErrorMessage(measured.reason));
       return;
@@ -321,16 +324,16 @@ export function BrandKitView() {
 
             <section className="card px-5 py-1">
               <div className="border-b border-hairline pb-3 pt-4">
-                <div className="text-[13.5px] font-medium text-ink">Kendi videon</div>
+                <div className="text-[13.5px] font-medium text-ink">Kendi görselin ya da videon</div>
                 <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
-                  Hazır kart yerine kendi giriş ya da kapanış videonu kullan. Yüklediğin video o
-                  bölümün yerini tamamen alır.
+                  Hazır kart yerine kendi görselini ya da videonu kullan; yüklediğin dosya o
+                  bölümün yerini tamamen alır. Görseller kart süresi kadar ekranda kalır.
                 </p>
               </div>
               {(
                 [
-                  { end: "introClip", label: "Giriş videosu", ref: introRef },
-                  { end: "outroClip", label: "Kapanış videosu", ref: outroRef },
+                  { end: "introClip", label: "Giriş", ref: introRef },
+                  { end: "outroClip", label: "Kapanış", ref: outroRef },
                 ] as const
               ).map(({ end, label, ref }) => {
                 const clip = draft[end];
@@ -339,7 +342,7 @@ export function BrandKitView() {
                     <input
                       ref={ref}
                       type="file"
-                      accept="video/mp4,video/quicktime,video/webm"
+                      accept="image/png,image/jpeg,image/webp,video/mp4,video/quicktime,video/webm"
                       className="hidden"
                       onChange={(e) => pickClip(end, e.target.files?.[0])}
                     />
@@ -382,7 +385,7 @@ export function BrandKitView() {
                           </>
                         ) : (
                           <>
-                            <Icon.plus width={14} height={14} /> Video yükle
+                            <Icon.plus width={14} height={14} /> Görsel ya da video yükle
                           </>
                         )}
                       </button>

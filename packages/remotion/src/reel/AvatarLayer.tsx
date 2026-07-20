@@ -8,7 +8,7 @@ export function isImageSrc(src: string): boolean {
   const s = src.split("?")[0]!.toLowerCase();
   if (s.startsWith("data:image") || s.startsWith("blob:")) return true;
   if (/\.(mov|webm|mp4|m4v)$/.test(s)) return false;
-  return /\.(png|jpe?g|webp|gif|avif)$/.test(s) || s.startsWith("data:");
+  return /\.(png|jpe?g|webp|gif|avif|svg)$/.test(s) || s.startsWith("data:");
 }
 
 /**

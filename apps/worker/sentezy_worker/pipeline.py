@@ -118,10 +118,18 @@ def _has_audio_stream(path: str) -> bool:
         return False
 
 
+def _is_image_url(url: str) -> bool:
+    """Mirror of isImageSrc (packages/remotion/src/reel/AvatarLayer.tsx) — a brand end can be
+    an image or a video and nothing stores which, so both sides read the extension. Split on
+    '?' first: these are signed R2 URLs and the extension is never at the end of the string."""
+    s = url.split("?")[0].lower()
+    return s.endswith((".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif", ".svg"))
+
+
 def _resolve_clip_audio(brand: dict | None, reel_seg: dict, storage: Storage, workdir: str, fps: int) -> list[dict]:
     """Download uploaded brand intro/outro clips and return [{path, at}] for the ones that
     actually have sound. The Remotion render is silent, so without this an uploaded intro
-    plays in dead silence."""
+    plays in dead silence. Images are skipped outright — they have no audio to recover."""
     if not brand:
         return []
     out: list[dict] = []
@@ -133,6 +141,8 @@ def _resolve_clip_audio(brand: dict | None, reel_seg: dict, storage: Storage, wo
     for name, end, at in ends:
         if not end or end.get("kind") != "clip":
             continue
+        if _is_image_url(end.get("url", "")):
+            continue  # a still has no soundtrack — don't download it just to probe it
         path = f"{workdir}/brand_{name}.mp4"
         try:
             storage.download(end["url"], path)

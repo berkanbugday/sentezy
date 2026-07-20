@@ -22,6 +22,7 @@ export { brollTransition, BrollEntrance, isEntrance } from "./broll/effects";
 // The Reel composition — rendered by the web <Player> (preview) AND renderMedia (the actual video).
 export { Reel } from "./reel/Reel";
 export { brollSegments } from "./reel/timing";
+export { isImageSrc } from "./reel/AvatarLayer";
 export { SfxTrack, type ResolvedSfxCue } from "./reel/SfxTrack";
 export type { ReelProps } from "./reel/types";
 export type { ReelBrollItem } from "./reel/BrollLayer";

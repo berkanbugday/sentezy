@@ -244,3 +244,39 @@ def test_no_clip_audio_leaves_the_command_untouched():
     )
     assert without == explicit_empty
     assert "-filter_complex" not in without
+
+
+# ── Image ends ─────────────────────────────────────────────────────────────────────
+
+
+def test_is_image_url_mirrors_the_typescript_rule():
+    from sentezy_worker.pipeline import _is_image_url
+
+    for ext in ("png", "jpg", "jpeg", "webp", "gif", "avif", "svg"):
+        assert _is_image_url(f"https://r2/brand/a.{ext}") is True
+    for ext in ("mp4", "mov", "webm"):
+        assert _is_image_url(f"https://r2/brand/a.{ext}") is False
+    # Signed URLs carry a query string, so the extension is never at the end.
+    assert _is_image_url("https://r2/brand/a.png?X-Amz-Signature=abc") is True
+    assert _is_image_url("https://r2/brand/a.mp4?X-Amz-Signature=abc") is False
+    assert _is_image_url("https://r2/brand/A.PNG") is True
+
+
+def test_image_ends_are_skipped_for_audio_and_never_downloaded():
+    from sentezy_worker.pipeline import _resolve_clip_audio
+
+    class _Storage:
+        def __init__(self):
+            self.downloads = []
+
+        def download(self, url, dest):
+            self.downloads.append(url)
+
+    st = _Storage()
+    brand = {
+        "intro": {"kind": "clip", "url": "https://r2/brand/a.png?sig=1", "durationInFrames": 45},
+        "outro": {"kind": "card"},
+    }
+    seg = {"introFrames": 45, "bodyFrames": 100, "outroFrames": 60, "totalFrames": 205}
+    assert _resolve_clip_audio(brand, seg, st, "/tmp", 30) == []
+    assert st.downloads == [], "an image must not be downloaded just to probe for audio"

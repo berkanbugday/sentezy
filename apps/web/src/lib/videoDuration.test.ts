@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { MAX_CLIP_MS, MIN_CLIP_MS, clipErrorMessage, validateClipDuration } from "./videoDuration";
+import { MAX_CLIP_MS, MIN_CLIP_MS, clipErrorMessage, readMediaDuration, validateClipDuration } from "./videoDuration";
 
 // Normal clips round to whole milliseconds.
 assert.deepStrictEqual(validateClipDuration(2.4), { ok: true, ms: 2400 });
@@ -28,5 +28,17 @@ for (const r of ["unreadable", "too_short", "too_long"] as const) {
   assert.ok(msg.length > 10 && /[.!]$/.test(msg), `${r} needs a real sentence`);
 }
 assert.notStrictEqual(clipErrorMessage("too_short"), clipErrorMessage("too_long"));
+
+// ── Images ──────────────────────────────────────────────────────────────────
+// An image has no intrinsic duration, so it takes the card's — no DOM needed, which is
+// also why this path must not fall through to the <video> measurement.
+const png = { type: "image/png" } as File;
+assert.deepStrictEqual(await readMediaDuration(png, 1500), { ok: true, ms: 1500 });
+assert.deepStrictEqual(await readMediaDuration(png, 2000), { ok: true, ms: 2000 });
+
+// The supplied image duration is still validated — a caller passing nonsense must not
+// slip an unusable length into the reel's timing.
+assert.deepStrictEqual(await readMediaDuration(png, 0), { ok: false, reason: "unreadable" });
+assert.deepStrictEqual(await readMediaDuration(png, 99_000), { ok: false, reason: "too_long" });
 
 console.log("apps/web/src/lib/videoDuration.test.ts ok");

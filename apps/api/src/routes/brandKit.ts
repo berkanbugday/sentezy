@@ -76,7 +76,34 @@ async function present(kit: KitRow) {
   };
 }
 
+/** MIME → file extension. Explicit rather than derived from the subtype, because the
+ *  obvious `ct.split("/")[1]` mangles the two that matter: `image/svg+xml` becomes
+ *  "svgxml" and `video/quicktime` becomes "quicktime", neither of which is the real
+ *  extension. The stored key's extension is load-bearing — the composition decides whether
+ *  to draw an end as a still or play it as video by looking at it (isImageSrc). */
+const EXT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/avif": "avif",
+  "image/svg+xml": "svg",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+  "video/webm": "webm",
+};
+
+function pickContentType(requested: string | undefined, fallback: string, allow: RegExp): string {
+  return requested && allow.test(requested) && requested in EXT ? requested : fallback;
+}
+
 export async function brandKitRoutes(app: FastifyInstance) {
+  const presign = async (contentType: string) => {
+    const key = `brand/${randomUUID()}.${EXT[contentType] ?? "bin"}`;
+    return { key, uploadURL: await signedUploadUrl(key, contentType), url: await signedDownloadUrl(key, 86400) };
+  };
+
   // Never 404: a user who has never opened the screen still needs it to render, so an
   // absent row is returned as the defaults rather than an error.
   app.get("/brand-kit", { preHandler: app.authenticate }, async (req) => {
@@ -112,19 +139,14 @@ export async function brandKitRoutes(app: FastifyInstance) {
   // Presigned R2 PUT for the logo. Same two-step shape as /backgrounds/upload: the client
   // PUTs the raw file, then saves the returned key through PUT /brand-kit.
   app.post("/brand-kit/logo", { preHandler: app.authenticate }, async (req) => {
-    const body = (req.body ?? {}) as { contentType?: string };
-    const ct = body.contentType && /^image\//.test(body.contentType) ? body.contentType : "image/png";
-    const ext = (ct.split("/")[1] || "png").replace(/[^a-z0-9]/gi, "").slice(0, 5) || "png";
-    const key = `brand/${randomUUID()}.${ext}`;
-    return { key, uploadURL: await signedUploadUrl(key, ct), url: await signedDownloadUrl(key, 86400) };
+    const ct = pickContentType((req.body as { contentType?: string })?.contentType, "image/png", /^image\//);
+    return presign(ct);
   });
 
-  // Presigned R2 PUT for an uploaded intro/outro clip.
+  // Presigned R2 PUT for an uploaded intro/outro end — an image OR a video. Both are
+  // allowed: an end card is often a designed still, not footage.
   app.post("/brand-kit/clip", { preHandler: app.authenticate }, async (req) => {
-    const body = (req.body ?? {}) as { contentType?: string };
-    const ct = body.contentType && /^video\//.test(body.contentType) ? body.contentType : "video/mp4";
-    const ext = (ct.split("/")[1] || "mp4").replace(/[^a-z0-9]/gi, "").slice(0, 5) || "mp4";
-    const key = `brand/${randomUUID()}.${ext}`;
-    return { key, uploadURL: await signedUploadUrl(key, ct), url: await signedDownloadUrl(key, 86400) };
+    const ct = pickContentType((req.body as { contentType?: string })?.contentType, "video/mp4", /^(image|video)\//);
+    return presign(ct);
   });
 }

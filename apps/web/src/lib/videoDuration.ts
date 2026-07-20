@@ -21,6 +21,16 @@ export function validateClipDuration(seconds: number): ClipDurationResult {
   return { ok: true, ms };
 }
 
+/** Measure an uploaded end's duration.
+ *
+ *  An image has no intrinsic length, so it takes `imageMs` — the same time the generated
+ *  card would have held. It still gets a stored duration so everything downstream (the
+ *  Sequence, the voice offset, the audio padding) treats images and videos identically. */
+export function readMediaDuration(file: File, imageMs: number): Promise<ClipDurationResult> {
+  if (file.type.startsWith("image/")) return Promise.resolve(validateClipDuration(imageMs / 1000));
+  return readClipDuration(file);
+}
+
 /** Measure a video file's duration in the browser. The result is stored with the clip so
  *  the preview and the renderer agree on its length without probing the file server-side. */
 export function readClipDuration(file: File): Promise<ClipDurationResult> {
@@ -43,5 +53,5 @@ export function readClipDuration(file: File): Promise<ClipDurationResult> {
 export function clipErrorMessage(reason: ClipRejectReason): string {
   if (reason === "too_short") return "Video çok kısa — en az 0,3 saniye olmalı.";
   if (reason === "too_long") return "Video çok uzun — en fazla 15 saniye olabilir.";
-  return "Video okunamadı. Başka bir dosya dene (.mp4 ya da .mov).";
+  return "Dosya okunamadı. Başka bir görsel ya da video dene.";
 }
