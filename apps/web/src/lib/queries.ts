@@ -36,7 +36,62 @@ export const qk = {
   music: (mood = "") => ["music", mood] as const,
   videos: ["videos"] as const,
   video: (id: string) => ["video", id] as const,
+  brandKit: ["brand-kit"] as const,
 };
+
+/** The user's brand kit. `*Key` fields are what gets stored on a video; the `*Url` fields
+ *  are freshly-signed previews and must never be persisted — they expire. */
+export type BrandKit = {
+  brandName: string | null;
+  handle: string | null;
+  logoKey: string | null;
+  color: string;
+  font: string;
+  outroCta: string | null;
+  introClipKey: string | null;
+  introClipMs: number | null;
+  outroClipKey: string | null;
+  outroClipMs: number | null;
+  logoUrl: string | null;
+  introClipUrl: string | null;
+  outroClipUrl: string | null;
+};
+
+/** GET /brand-kit never 404s — a user with no saved kit gets the defaults. */
+export function useBrandKit(enabled = true) {
+  return useQuery({
+    queryKey: qk.brandKit,
+    queryFn: () => apiFetch<BrandKit>("/brand-kit"),
+    enabled,
+  });
+}
+
+export function useUpdateBrandKit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<Omit<BrandKit, "logoUrl" | "introClipUrl" | "outroClipUrl">>) =>
+      apiFetch<BrandKit>("/brand-kit", { method: "PUT", body: JSON.stringify(input) }),
+    // The response is the saved kit with fresh signed URLs, so seed the cache with it
+    // rather than invalidating — avoids a redundant refetch right after saving.
+    onSuccess: (kit) => qc.setQueryData(qk.brandKit, kit),
+  });
+}
+
+/** Upload a brand asset (logo image or intro/outro clip): presigned R2 PUT, then the key
+ *  is saved separately through useUpdateBrandKit. */
+export function useUploadBrandAsset() {
+  return useMutation({
+    mutationFn: async ({ file, kind }: { file: File; kind: "logo" | "clip" }): Promise<{ key: string; url: string }> => {
+      const contentType = file.type || (kind === "logo" ? "image/png" : "video/mp4");
+      const { key, uploadURL, url } = await apiFetch<{ key: string; uploadURL: string; url: string }>(
+        `/brand-kit/${kind}`,
+        { method: "POST", body: JSON.stringify({ contentType }) },
+      );
+      await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": contentType }, body: file });
+      return { key, url };
+    },
+  });
+}
 
 /** The background-music catalog, optionally narrowed to one mood (filtered server-side). */
 export function useMusic(mood = "", enabled = true) {

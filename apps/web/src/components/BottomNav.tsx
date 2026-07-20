@@ -11,6 +11,9 @@ const DOCK = [
   { href: "/dashboard", label: "Ana sayfa", icon: Icon.home, ready: true },
   { href: "/library", label: "Videolar", icon: Icon.video, ready: true },
   { href: "/avatars", label: "Avatar", icon: Icon.users, ready: true },
+  // Short label deliberately: five slots plus "Daha" is the most this dock fits at
+  // 360px, and "Marka Kiti" would wrap.
+  { href: "/brand-kit", label: "Marka", icon: Icon.box, ready: true },
 ];
 
 /** Mobile bottom dock. Primary nav with a Material-style oval highlight behind the
