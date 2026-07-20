@@ -35,6 +35,7 @@ assert.ok(free.includes("25"), "real credit count");
 assert.ok(free.includes("MAX"), "a free user is offered the upgrade");
 // Initials come from the display name, not the email.
 assert.ok(free.includes(">BB<"), "avatar shows initials of the name");
+assert.ok(free.includes("Güvenlik") && free.includes("Yeni şifre"), "the security card renders");
 
 // ── A user with no name falls back to the email ────────────────────────────────
 const noName = render({ displayName: null, email: "ada@x.co", plan: "free", credits: 3 });

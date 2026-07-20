@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SecurityCard } from "@/components/settings/SecurityCard";
 import { SettingsCard } from "@/components/settings/SettingsCard";
 import { toInitials } from "@/lib/user";
 import { useProfile, useUpdateProfile } from "@/lib/queries";
@@ -128,6 +129,9 @@ export function SettingsView() {
               )}
             </div>
           </SettingsCard>
+
+          {/* ── Güvenlik ── */}
+          <SecurityCard />
         </div>
       ) : null}
     </div>
