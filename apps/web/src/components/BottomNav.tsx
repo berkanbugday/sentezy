@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useProfile } from "@/lib/queries";
+import { useIdentity, useProfile } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/client";
 import type { UserInfo } from "@/lib/user";
 import { Icon } from "./icons";
@@ -19,11 +19,13 @@ const DOCK = [
 
 /** Mobile bottom dock. Primary nav with a Material-style oval highlight behind the
  *  active icon; the "…" item opens a slide-up sheet (search + account + sign out). */
-export function BottomNav({ user }: { user: UserInfo }) {
+export function BottomNav({ user: authUser }: { user: UserInfo }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sheet, setSheet] = useState(false);
   const credits = useProfile().data?.credits;
+  // Same synced identity as the sidebar, so the account sheet shows the saved name.
+  const user = useIdentity(authUser);
 
   async function signOut() {
     await createClient().auth.signOut();

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useIdentity } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/client";
 import type { UserInfo } from "@/lib/user";
 import { Icon } from "./icons";
@@ -10,10 +11,13 @@ import { Tooltip } from "./Tooltip";
 
 /** Workspace switcher (mirrors the reference's "Berkan's Team ⌄"). Holds the
  *  account menu — settings + sign out — so nothing is lost from the old footer. */
-export function TeamSwitcher({ user, collapsed }: { user: UserInfo; collapsed?: boolean }) {
+export function TeamSwitcher({ user: authUser, collapsed }: { user: UserInfo; collapsed?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  // Prefer the profile's saved name over the auth-derived one, so the sidebar matches the
+  // settings screen and reflects a rename immediately.
+  const user = useIdentity(authUser);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
