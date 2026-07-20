@@ -1,4 +1,4 @@
-import type { ReelBrand, ReelBrandEnd } from "@sentezy/remotion";
+import { normalizeCrop, type ReelBrand, type ReelBrandEnd } from "@sentezy/remotion";
 import type { ComposerSettings } from "@/lib/composerSettings";
 import type { BrandKit } from "@/lib/queries";
 
@@ -38,8 +38,12 @@ export function brandingOption(
         color: kit.color,
         font: kit.font,
         outroCta: kit.outroCta,
-        introClip: kit.introClipKey && kit.introClipMs ? { ref: kit.introClipKey, ms: kit.introClipMs } : null,
-        outroClip: kit.outroClipKey && kit.outroClipMs ? { ref: kit.outroClipKey, ms: kit.outroClipMs } : null,
+        introClip: kit.introClipKey && kit.introClipMs
+          ? { ref: kit.introClipKey, ms: kit.introClipMs, crop: normalizeCrop(kit.introClipCrop) }
+          : null,
+        outroClip: kit.outroClipKey && kit.outroClipMs
+          ? { ref: kit.outroClipKey, ms: kit.outroClipMs, crop: normalizeCrop(kit.outroClipCrop) }
+          : null,
       },
     },
   };
@@ -65,15 +69,27 @@ export function previewBrand(
   if (!intro && !outro && !watermark) return null;
   if (!kit || (!kit.logoKey && !kit.brandName)) return null;
 
-  const end = (enabled: boolean, url: string | null, ms: number | null): ReelBrandEnd | null => {
+  const end = (
+    enabled: boolean,
+    url: string | null,
+    ms: number | null,
+    crop: unknown,
+  ): ReelBrandEnd | null => {
     if (!enabled) return null;
-    if (url && ms) return { kind: "clip", url, durationInFrames: Math.max(1, Math.round((ms / 1000) * fps)) };
+    if (url && ms) {
+      return {
+        kind: "clip",
+        url,
+        durationInFrames: Math.max(1, Math.round((ms / 1000) * fps)),
+        crop: normalizeCrop(crop as never),
+      };
+    }
     return { kind: "card" };
   };
 
   return {
-    intro: end(intro, kit.introClipUrl, kit.introClipMs),
-    outro: end(outro, kit.outroClipUrl, kit.outroClipMs),
+    intro: end(intro, kit.introClipUrl, kit.introClipMs, kit.introClipCrop),
+    outro: end(outro, kit.outroClipUrl, kit.outroClipMs, kit.outroClipCrop),
     watermark: watermark && Boolean(kit.logoUrl),
     logoUrl: kit.logoUrl,
     brandName: kit.brandName,

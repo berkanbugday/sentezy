@@ -50,8 +50,11 @@ export type BrandKit = {
   outroCta: string | null;
   introClipKey: string | null;
   introClipMs: number | null;
+  /** {x, y, scale} framing for the upload — null until the user drags it. */
+  introClipCrop: { x: number; y: number; scale: number } | null;
   outroClipKey: string | null;
   outroClipMs: number | null;
+  outroClipCrop: { x: number; y: number; scale: number } | null;
   logoUrl: string | null;
   introClipUrl: string | null;
   outroClipUrl: string | null;

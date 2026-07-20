@@ -157,10 +157,28 @@ export function readAvatarPosition(layout: unknown): AvatarPosition {
 }
 
 // ── Brand kit ───────────────────────────────────────────────────────────────
-/** An uploaded intro/outro clip: the R2 key plus its measured duration. */
+/** How an upload is framed inside the 9:16 reel.
+ *
+ *  `x`/`y` are a 0..1 focal point applied as CSS `object-position`, which is what makes
+ *  this work without knowing the media's pixel dimensions: the browser clamps panning to
+ *  whatever overflow the source actually has. `scale` is zoom, >= 1 — below 1 would expose
+ *  bars at the edges, which is the letterboxing this framing exists to avoid. */
+export const BrandCrop = z.object({
+  x: z.number().min(0).max(1).default(0.5),
+  y: z.number().min(0).max(1).default(0.5),
+  scale: z.number().min(1).max(4).default(1),
+});
+export type BrandCrop = z.infer<typeof BrandCrop>;
+
+/** Centred, unzoomed — what an upload gets until the user drags it. */
+export const DEFAULT_BRAND_CROP: BrandCrop = { x: 0.5, y: 0.5, scale: 1 };
+
+/** An uploaded intro/outro clip: the R2 key, its measured duration, and its framing. */
 export const BrandClip = z.object({
   ref: z.string().min(1),
   ms: z.number().int().positive(),
+  // Absent on clips saved before cropping existed — they were centred and unzoomed.
+  crop: BrandCrop.default(DEFAULT_BRAND_CROP),
 });
 export type BrandClip = z.infer<typeof BrandClip>;
 

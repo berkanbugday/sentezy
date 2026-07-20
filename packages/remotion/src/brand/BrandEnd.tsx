@@ -3,16 +3,10 @@ import React from "react";
 import { AbsoluteFill, Img, OffthreadVideo } from "remotion";
 import { isImageSrc } from "../reel/AvatarLayer";
 import { BrandCard } from "./BrandCard";
+import { cropStyle } from "./crop";
 import type { ReelBrand, ReelBrandEnd } from "./types";
 
-/** Fill the 9:16 frame, cropping the overflow and centring what remains. Shared by both
- *  kinds so an image and a video of the same source ratio are framed identically. */
-const FILL: React.CSSProperties = {
-  width: "100%",
-  height: "100%",
-  objectFit: "cover",
-  objectPosition: "center",
-};
+
 
 /**
  * One end of the reel — the generated card, or the user's own media in its place.
@@ -26,10 +20,10 @@ const FILL: React.CSSProperties = {
  * `isImageSrc` ignores the query string, which matters because these are signed R2 URLs.
  * An image needs no separate stored kind: it simply holds the frame for its duration.
  *
- * Both kinds are scaled to FILL the 9:16 frame (`cover`), centred. Uploads arrive in every
- * aspect ratio and a reel has exactly one; letterbox bands around a 16:9 upload read as a
- * broken video rather than a deliberate frame. The trade is that a much wider or taller
- * source is cropped at the edges, so anything critical should sit near the centre.
+ * Both kinds FILL the 9:16 frame — uploads arrive in every aspect ratio and a reel has
+ * exactly one, and letterbox bands read as a broken video rather than a deliberate frame.
+ * Which part survives the crop is the user's choice, carried on `end.crop` and applied by
+ * the shared `cropStyle` so the editor and the render frame it identically.
  *
  * `muted`: the render is opaque and silent by design — the worker attaches all audio
  * afterwards with ffmpeg. Leaving a clip audible here would play it in the preview and
@@ -42,12 +36,13 @@ export const BrandEnd: React.FC<{
   durationInFrames: number;
 }> = ({ end, brand, variant, durationInFrames }) => {
   if (end.kind === "clip") {
+    const style = cropStyle(end.crop);
     return (
-      <AbsoluteFill style={{ backgroundColor: brand.color }}>
+      <AbsoluteFill style={{ backgroundColor: brand.color, overflow: "hidden" }}>
         {isImageSrc(end.url) ? (
-          <Img src={end.url} style={FILL} />
+          <Img src={end.url} style={style} />
         ) : (
-          <OffthreadVideo src={end.url} muted style={FILL} />
+          <OffthreadVideo src={end.url} muted style={style} />
         )}
       </AbsoluteFill>
     );

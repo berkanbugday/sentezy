@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { BrandSnapshot, ReelOptions } from "./index";
+import { BrandCrop, BrandSnapshot, ReelOptions } from "./index";
 
 // ── Defaults ────────────────────────────────────────────────────────────────
 // A video with no branding at all must come out with everything off and no kit.
@@ -34,7 +34,7 @@ const snap = {
   font: "General Sans",
   outroCta: "Hemen dene",
   introClip: null,
-  outroClip: { ref: "brand/outro.mp4", ms: 2400 },
+  outroClip: { ref: "brand/outro.mp4", ms: 2400, crop: { x: 0.5, y: 0.3, scale: 1.4 } },
 };
 const applied = ReelOptions.parse({
   branding: { intro: true, outro: true, watermark: true, kit: snap },
@@ -73,5 +73,20 @@ assert.throws(() => BrandSnapshot.parse({ introClip: { ref: "brand/i.mp4", ms: -
 assert.throws(() => BrandSnapshot.parse({ introClip: { ref: "brand/i.mp4", ms: 1.5 } }));
 // A clip without a duration is likewise unusable.
 assert.throws(() => BrandSnapshot.parse({ introClip: { ref: "brand/i.mp4" } }));
+
+// ── Crop ────────────────────────────────────────────────────────────────────
+// A clip saved before cropping existed has no `crop` — it must default to centred and
+// unzoomed rather than failing to parse, or every existing kit breaks.
+const legacyClip = BrandSnapshot.parse({ introClip: { ref: "brand/i.mp4", ms: 1500 } });
+assert.deepStrictEqual(legacyClip.introClip?.crop, { x: 0.5, y: 0.5, scale: 1 });
+
+// The focal point is a 0..1 fraction and zoom never goes below 1 — under 1 would expose
+// bars at the edges, which is exactly the letterboxing this framing avoids.
+assert.throws(() => BrandCrop.parse({ x: -0.1, y: 0.5, scale: 1 }));
+assert.throws(() => BrandCrop.parse({ x: 1.5, y: 0.5, scale: 1 }));
+assert.throws(() => BrandCrop.parse({ x: 0.5, y: 0.5, scale: 0.9 }));
+assert.throws(() => BrandCrop.parse({ x: 0.5, y: 0.5, scale: 9 }));
+assert.deepStrictEqual(BrandCrop.parse({}), { x: 0.5, y: 0.5, scale: 1 });
+assert.deepStrictEqual(BrandCrop.parse({ x: 0, y: 1, scale: 4 }), { x: 0, y: 1, scale: 4 });
 
 console.log("packages/types/src/branding.test.ts ok");

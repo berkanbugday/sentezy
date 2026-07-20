@@ -1,13 +1,23 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { prisma } from "@sentezy/db";
+import { Prisma, prisma } from "@sentezy/db";
+
 import { signedDownloadUrl, signedUploadUrl } from "../lib/r2";
 
 // The user's brand kit: logo, name, colour, and optional uploaded intro/outro clips.
 // One row per user. A video never references this row — switching branding on snapshots
 // it into videos.options.branding, so editing the kit does not retroactively change
 // videos that have already been made.
+
+/** Mirrors BrandCrop in @sentezy/types, redeclared with THIS package's zod: nesting a
+ *  schema built by another copy of zod inside one of ours is a type error, since the two
+ *  resolve to different instances. Parsing across the boundary is fine — nesting is not. */
+const Crop = z.object({
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  scale: z.number().min(1).max(4),
+});
 
 const UpdateBrandKit = z.object({
   brandName: z.string().max(60).nullable().optional(),
@@ -23,8 +33,10 @@ const UpdateBrandKit = z.object({
   // reel, so key and length must be set (or cleared) together. Enforced below.
   introClipKey: z.string().max(200).nullable().optional(),
   introClipMs: z.number().int().positive().nullable().optional(),
+  introClipCrop: Crop.nullable().optional(),
   outroClipKey: z.string().max(200).nullable().optional(),
   outroClipMs: z.number().int().positive().nullable().optional(),
+  outroClipCrop: Crop.nullable().optional(),
 });
 
 const DEFAULTS = {
@@ -36,8 +48,10 @@ const DEFAULTS = {
   outroCta: null,
   introClipKey: null,
   introClipMs: null,
+  introClipCrop: null,
   outroClipKey: null,
   outroClipMs: null,
+  outroClipCrop: null,
 };
 
 type KitRow = {
@@ -49,8 +63,10 @@ type KitRow = {
   outroCta: string | null;
   introClipKey: string | null;
   introClipMs: number | null;
+  introClipCrop: unknown;
   outroClipKey: string | null;
   outroClipMs: number | null;
+  outroClipCrop: unknown;
 };
 
 /** Shape returned to the client: the stored keys plus freshly signed URLs to preview them.
@@ -68,8 +84,10 @@ async function present(kit: KitRow) {
     outroCta: kit.outroCta,
     introClipKey: kit.introClipKey,
     introClipMs: kit.introClipMs,
+    introClipCrop: kit.introClipCrop ?? null,
     outroClipKey: kit.outroClipKey,
     outroClipMs: kit.outroClipMs,
+    outroClipCrop: kit.outroClipCrop ?? null,
     logoUrl: kit.logoKey ? await signedDownloadUrl(kit.logoKey, 86400) : null,
     introClipUrl: kit.introClipKey ? await signedDownloadUrl(kit.introClipKey, 86400) : null,
     outroClipUrl: kit.outroClipKey ? await signedDownloadUrl(kit.outroClipKey, 86400) : null,
@@ -128,10 +146,19 @@ export async function brandKitRoutes(app: FastifyInstance) {
       if (ms && !key) return reply.code(400).send({ error: `${end}_clip_key_required` });
     }
 
+    // Prisma will not take a bare `null` for a nullable Json column — clearing one needs
+    // the DbNull sentinel, which is how it distinguishes SQL NULL from the JSON value null.
+    const { introClipCrop, outroClipCrop, ...rest } = data;
+    const write = {
+      ...rest,
+      ...(introClipCrop !== undefined ? { introClipCrop: introClipCrop ?? Prisma.DbNull } : {}),
+      ...(outroClipCrop !== undefined ? { outroClipCrop: outroClipCrop ?? Prisma.DbNull } : {}),
+    };
+
     const kit = await prisma.brandKit.upsert({
       where: { userId: req.user!.id },
-      create: { userId: req.user!.id, ...data },
-      update: data,
+      create: { userId: req.user!.id, ...write },
+      update: write,
     });
     return present(kit);
   });

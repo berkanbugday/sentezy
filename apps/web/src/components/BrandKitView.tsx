@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CARD_INTRO_SECONDS, CARD_OUTRO_SECONDS } from "@sentezy/remotion";
+import { type BrandCrop, CARD_INTRO_SECONDS, CARD_OUTRO_SECONDS, DEFAULT_CROP, normalizeCrop } from "@sentezy/remotion";
 import { BrandPreview, type PreviewMode } from "@/components/brand/BrandPreview";
 import { FontSelect } from "@/components/brand/FontSelect";
 import { Icon } from "@/components/icons";
@@ -21,7 +21,7 @@ const MODES: { v: PreviewMode; label: string }[] = [
   { v: "watermark", label: "Filigran" },
 ];
 
-type Clip = { key: string; ms: number; url: string | null } | null;
+type Clip = { key: string; ms: number; url: string | null; crop: BrandCrop } | null;
 
 type Draft = {
   brandName: string;
@@ -43,8 +43,12 @@ const toDraft = (k: BrandKit): Draft => ({
   font: k.font,
   logoKey: k.logoKey,
   logoUrl: k.logoUrl,
-  introClip: k.introClipKey && k.introClipMs ? { key: k.introClipKey, ms: k.introClipMs, url: k.introClipUrl } : null,
-  outroClip: k.outroClipKey && k.outroClipMs ? { key: k.outroClipKey, ms: k.outroClipMs, url: k.outroClipUrl } : null,
+  introClip: k.introClipKey && k.introClipMs
+    ? { key: k.introClipKey, ms: k.introClipMs, url: k.introClipUrl, crop: normalizeCrop(k.introClipCrop) }
+    : null,
+  outroClip: k.outroClipKey && k.outroClipMs
+    ? { key: k.outroClipKey, ms: k.outroClipMs, url: k.outroClipUrl, crop: normalizeCrop(k.outroClipCrop) }
+    : null,
 });
 
 const INPUT =
@@ -120,7 +124,7 @@ export function BrandKitView() {
     try {
       const { key, url } = await upload.mutateAsync({ file, kind: "clip" });
       setSaved(false);
-      setDraft((d) => (d ? { ...d, [end]: { key, ms: measured.ms, url } } : d));
+      setDraft((d) => (d ? { ...d, [end]: { key, ms: measured.ms, url, crop: DEFAULT_CROP } } : d));
     } catch {
       setClipError("Video yüklenemedi. Tekrar dene.");
     } finally {
@@ -142,10 +146,22 @@ export function BrandKitView() {
       // clip without its length would desynchronise the reel's audio.
       introClipKey: draft.introClip?.key ?? null,
       introClipMs: draft.introClip?.ms ?? null,
+      introClipCrop: draft.introClip?.crop ?? null,
       outroClipKey: draft.outroClip?.key ?? null,
       outroClipMs: draft.outroClip?.ms ?? null,
+      outroClipCrop: draft.outroClip?.crop ?? null,
     });
     setSaved(true);
+  };
+
+  // The upload the preview is currently showing, if any. Cropping applies to THAT end —
+  // the watermark mode has no upload, so it is never croppable.
+  const activeEnd = mode === "intro" ? "introClip" : mode === "outro" ? "outroClip" : null;
+  const activeClip = activeEnd ? draft?.[activeEnd] ?? null : null;
+  const setCrop = (crop: BrandCrop) => {
+    if (!activeEnd) return;
+    setSaved(false);
+    setDraft((d) => (d && d[activeEnd] ? { ...d, [activeEnd]: { ...d[activeEnd]!, crop } } : d));
   };
 
   const dirty = Boolean(draft && kitQ.data && JSON.stringify(draft) !== JSON.stringify(toDraft(kitQ.data)));
@@ -428,11 +444,48 @@ export function BrandKitView() {
               handle={draft.handle}
               outroCta={draft.outroCta}
               logoUrl={draft.logoUrl}
-              clipUrl={mode === "intro" ? draft.introClip?.url ?? null : mode === "outro" ? draft.outroClip?.url ?? null : null}
+              clipUrl={activeClip?.url ?? null}
+              crop={activeClip?.crop ?? null}
+              onCropChange={activeClip ? setCrop : undefined}
             />
-            <p className="mt-2.5 text-[12px] leading-relaxed text-muted">
-              Yazı rengi marka rengine göre seçilir, her zaman okunur kalır.
-            </p>
+            {activeClip ? (
+              /* Cropping lives on the preview itself rather than in a modal — the frame is
+                 already the exact 9:16 the reel uses, so dragging here IS the edit. */
+              <div className="mt-2.5">
+                <div className="flex items-center gap-2.5">
+                  <Icon.search width={13} height={13} className="flex-none text-muted" />
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    step={0.01}
+                    value={activeClip.crop.scale}
+                    onChange={(e) => setCrop({ ...activeClip.crop, scale: Number(e.target.value) })}
+                    aria-label="Yakınlaştır"
+                    className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-hairline accent-ink"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCrop(DEFAULT_CROP)}
+                    disabled={
+                      activeClip.crop.x === DEFAULT_CROP.x &&
+                      activeClip.crop.y === DEFAULT_CROP.y &&
+                      activeClip.crop.scale === DEFAULT_CROP.scale
+                    }
+                    className="flex-none text-[12px] font-medium text-muted transition hover:text-ink disabled:opacity-35"
+                  >
+                    Sıfırla
+                  </button>
+                </div>
+                <p className="mt-2 text-[12px] leading-relaxed text-muted">
+                  Görüntüyü sürükleyerek 9:16 kadrajda ne görüneceğini seç.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-2.5 text-[12px] leading-relaxed text-muted">
+                Yazı rengi marka rengine göre seçilir, her zaman okunur kalır.
+              </p>
+            )}
           </aside>
         </div>
       ) : null}

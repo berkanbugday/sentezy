@@ -14,8 +14,10 @@ const KIT: BrandKit = {
   outroCta: "Hemen dene",
   introClipKey: null,
   introClipMs: null,
+  introClipCrop: null,
   outroClipKey: "brand/outro.mp4",
   outroClipMs: 2400,
+  outroClipCrop: { x: 0.5, y: 0.25, scale: 1.6 },
   // Signed previews — must never be persisted onto a video.
   logoUrl: "https://signed/logo.png?exp=1",
   introClipUrl: null,
@@ -48,8 +50,25 @@ assert.deepStrictEqual(out.kit, {
   font: "Poppins",
   outroCta: "Hemen dene",
   introClip: null,
-  outroClip: { ref: "brand/outro.mp4", ms: 2400 },
+  outroClip: { ref: "brand/outro.mp4", ms: 2400, crop: { x: 0.5, y: 0.25, scale: 1.6 } },
 });
+
+// The framing is snapshotted with everything else: re-cropping the kit later must not
+// silently re-frame a video that has already been made.
+const reCropped = brandingOption(ALL, { ...KIT, outroClipCrop: { x: 0.1, y: 0.9, scale: 2 } })
+  .branding as Record<string, unknown>;
+assert.deepStrictEqual(
+  ((reCropped.kit as Record<string, unknown>).outroClip as Record<string, unknown>).crop,
+  { x: 0.1, y: 0.9, scale: 2 },
+);
+
+// A clip stored before cropping existed snapshots as centred and unzoomed rather than
+// undefined, so the renderer never has to guess.
+const noCrop = brandingOption(ALL, { ...KIT, outroClipCrop: null }).branding as Record<string, unknown>;
+assert.deepStrictEqual(
+  ((noCrop.kit as Record<string, unknown>).outroClip as Record<string, unknown>).crop,
+  { x: 0.5, y: 0.5, scale: 1 },
+);
 
 // Signed URLs expire within a day — persisting one would store a dead link on the video.
 const serialised = JSON.stringify(out);

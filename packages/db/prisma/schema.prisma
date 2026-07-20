@@ -103,6 +103,11 @@ model BrandKit {
   introClipMs  Int?     @map("intro_clip_ms")
   outroClipKey String?  @map("outro_clip_key")
   outroClipMs  Int?     @map("outro_clip_ms")
+  // How the upload is framed inside the 9:16 reel: {x, y, scale}. x/y are a 0..1 focal
+  // point (CSS object-position) and scale is zoom >= 1. Stored as JSON rather than three
+  // columns each because it is written and read only as a whole.
+  introClipCrop Json?   @map("intro_clip_crop")
+  outroClipCrop Json?   @map("outro_clip_crop")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   // Prisma-maintained, unlike the other tables. The header note above prescribes a DB
   // trigger so the Python worker's writes bump it too — but the worker never touches a

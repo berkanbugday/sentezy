@@ -1,11 +1,12 @@
 // packages/remotion/src/brand/types.ts
+import type { BrandCrop } from "./crop";
 
 /** How one end of the reel is filled: the generated card, or an uploaded clip that
  *  replaces it. `durationInFrames` for a clip is resolved by the caller (from the ms
  *  measured at upload) so the preview and the render never disagree about its length. */
 export type ReelBrandEnd =
   | { kind: "card" }
-  | { kind: "clip"; url: string; durationInFrames: number };
+  | { kind: "clip"; url: string; durationInFrames: number; crop?: BrandCrop | null };
 
 /** The brand kit as the composition consumes it — URLs already signed, durations already
  *  in frames. Built from `options.branding.kit` by the web composer (preview) and by the

@@ -83,6 +83,10 @@ def brand_props(options: dict, storage, fps: int) -> dict | None:
                 "kind": "clip",
                 "url": storage.signed_get_url(clip["ref"], 86400),
                 "durationInFrames": max(1, round(clip["ms"] / 1000 * fps)),
+                # How the user framed it in the 9:16 crop. Passed through verbatim; the
+                # composition clamps it (normalizeCrop), so a bad value frames the media
+                # oddly rather than failing the render.
+                "crop": clip.get("crop"),
             }
         return {"kind": "card"}
 

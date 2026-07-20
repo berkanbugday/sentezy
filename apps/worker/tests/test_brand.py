@@ -128,13 +128,24 @@ def test_a_disabled_end_is_none_even_when_the_kit_has_a_clip():
         "branding": {
             "intro": False,
             "outro": True,
-            "kit": {"outroClip": {"ref": "brand/o.mp4", "ms": 2400}},
+            "kit": {"outroClip": {"ref": "brand/o.mp4", "ms": 2400, "crop": {"x": 0.5, "y": 0.2, "scale": 1.5}}},
         }
     }
     b = brand_props(opts, _FakeStorage(), FPS)
     assert b["intro"] is None
     # 2400ms @30fps = 72 frames
-    assert b["outro"] == {"kind": "clip", "url": "https://signed/brand/o.mp4", "durationInFrames": 72}
+    assert b["outro"] == {
+        "kind": "clip",
+        "url": "https://signed/brand/o.mp4",
+        "durationInFrames": 72,
+        "crop": {"x": 0.5, "y": 0.2, "scale": 1.5},
+    }
+
+
+def test_a_clip_saved_before_cropping_passes_crop_as_none():
+    # Older kits have no crop; the composition defaults it to centred and unzoomed.
+    opts = {"branding": {"outro": True, "kit": {"outroClip": {"ref": "brand/o.mp4", "ms": 2400}}}}
+    assert brand_props(opts, _FakeStorage(), FPS)["outro"]["crop"] is None
 
 
 # ── audio: the offset that keeps the voiceover aligned ─────────────────────────────

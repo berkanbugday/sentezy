@@ -1,6 +1,7 @@
 "use client";
 
-import { isImageSrc, readableInk } from "@sentezy/remotion";
+import { type BrandCrop, cropStyle, isImageSrc, normalizeCrop, readableInk } from "@sentezy/remotion";
+import { useRef } from "react";
 
 export type PreviewMode = "intro" | "outro" | "watermark";
 
@@ -18,6 +19,8 @@ export function BrandPreview({
   outroCta,
   logoUrl,
   clipUrl = null,
+  crop = null,
+  onCropChange,
 }: {
   mode: PreviewMode;
   color: string;
@@ -28,15 +31,49 @@ export function BrandPreview({
   logoUrl: string | null;
   /** An uploaded clip for THIS end, which replaces the generated card entirely. */
   clipUrl?: string | null;
+  /** How that upload is framed. Omit `onCropChange` to render it read-only. */
+  crop?: BrandCrop | null;
+  onCropChange?: (c: BrandCrop) => void;
 }) {
   const ink = readableInk(color);
   const face = `"${font}", sans-serif`;
   const empty = !brandName && !logoUrl;
   const showClip = clipUrl && mode !== "watermark";
+  const draggable = Boolean(showClip && onCropChange);
+  const frameRef = useRef<HTMLDivElement>(null);
+
+  /** Drag the media to choose which part survives the 9:16 crop. Pointer deltas are
+   *  divided by the frame's own size, so a drag across the whole frame sweeps the focal
+   *  point end to end regardless of how large the panel is rendered.
+   *
+   *  The sign is inverted on purpose: dragging the media left should reveal what is on its
+   *  right, which means increasing object-position. That matches how dragging a photo in
+   *  any map or crop tool behaves. */
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (!draggable || !frameRef.current) return;
+    const box = frameRef.current.getBoundingClientRect();
+    const start = { px: e.clientX, py: e.clientY, ...normalizeCrop(crop) };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const move = (ev: PointerEvent) => {
+      const nx = start.x - (ev.clientX - start.px) / box.width;
+      const ny = start.y - (ev.clientY - start.py) / box.height;
+      onCropChange?.(normalizeCrop({ x: nx, y: ny, scale: start.scale }));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
 
   return (
     <div
-      className="relative aspect-[9/16] w-full overflow-hidden rounded-[26px] border border-hairline"
+      ref={frameRef}
+      onPointerDown={onPointerDown}
+      className={`relative aspect-[9/16] w-full overflow-hidden rounded-[26px] border border-hairline ${
+        draggable ? "cursor-grab touch-none active:cursor-grabbing" : ""
+      }`}
       style={{ backgroundColor: mode === "watermark" || showClip ? "#0b0b0d" : color }}
     >
       {showClip ? (
@@ -44,16 +81,17 @@ export function BrandPreview({
            the brand name here would promise something the render does not produce.
            Image vs video is decided by the URL extension, the same rule the composition
            uses (isImageSrc), so the two can never disagree about what a file is. */
+        /* The framing comes from the SAME cropStyle the composition uses, so what is
+           dragged here is exactly what renders. `draggable` is not set on the media
+           itself — the browser's native image drag would fight the pointer handler. */
         isImageSrc(clipUrl) ? (
-          /* object-cover on BOTH kinds, matching BrandEnd exactly — the whole point of this
-             panel is to show the crop the render will apply. */
           /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={clipUrl} alt="" className="h-full w-full object-cover object-center" />
+          <img src={clipUrl} alt="" draggable={false} style={cropStyle(crop)} />
         ) : (
           /* Muted: the render is silent, and an autoplaying soundtrack in a settings
              screen is hostile. */
           // eslint-disable-next-line jsx-a11y/media-has-caption
-          <video src={clipUrl} muted loop autoPlay playsInline className="h-full w-full object-cover object-center" />
+          <video src={clipUrl} muted loop autoPlay playsInline style={cropStyle(crop)} />
         )
       ) : mode === "watermark" ? (
         <>

@@ -42,3 +42,4 @@ export {
   type ReelSegments,
 } from "./brand/timing";
 export type { ReelBrand, ReelBrandEnd } from "./brand/types";
+export { DEFAULT_CROP, cropStyle, normalizeCrop, type BrandCrop } from "./brand/crop";
