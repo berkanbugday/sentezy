@@ -59,25 +59,47 @@ def _append_audio_bed(
     sfx_input_idxs: list[int],
     sfx_times: list[float],
     sfx_gains: list[float] | None = None,
+    voice_offset: float = 0.0,
+    total_duration: float | None = None,
 ) -> list[str]:
     """Append the reel audio bed to `fc` and return the ffmpeg audio `-map` args:
     the avatar voice, optionally sidechain-ducked under a music bed, plus a transition
     whoosh mixed in at each cutaway. Shared by both render engines so they sound identical.
-    `voice_idx`/`music_idx`/`sfx_input_idxs` are input indices already added to the command."""
+    `voice_idx`/`music_idx`/`sfx_input_idxs` are input indices already added to the command.
+
+    `voice_offset`/`total_duration` carry the brand kit's intro and full reel length. The
+    voice is delayed past the intro card and padded out to the full length; because the
+    mix uses `duration=first` (keyed on the voice) and the command ends in `-shortest`,
+    that padded voice is what lets the music bed play under the outro instead of the whole
+    file being truncated back to where the speech stops."""
+    # A shifted or padded voice has to go through the filter graph, even when there is no
+    # music or SFX — otherwise the raw input would map straight through, undelayed.
+    shift = voice_offset > 0 or total_duration is not None
+    voice_src = f"[{voice_idx}:a]"
+    if shift:
+        parts = ["aformat=sample_rates=44100:channel_layouts=stereo"]
+        if voice_offset > 0:
+            ms = int(round(voice_offset * 1000))
+            parts.append(f"adelay={ms}|{ms}")
+        if total_duration is not None:
+            parts.append(f"apad=whole_dur={total_duration}")
+        fc.append(f"[{voice_idx}:a]{','.join(parts)}[vsrc]")
+        voice_src = "[vsrc]"
+
     need_bed = music_idx is not None or bool(sfx_input_idxs)
     if not need_bed:
-        return ["-map", f"{voice_idx}:a?"]
+        return ["-map", voice_src] if shift else ["-map", f"{voice_idx}:a?"]
     if music_idx is not None:
         # Voice is consumed twice (mix + sidechain key) → split it. aformat on both
         # branches: sidechaincompress errors on mismatched rates/layouts.
-        fc.append(f"[{voice_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,asplit=2[vox][sck]")
+        fc.append(f"{voice_src}aformat=sample_rates=44100:channel_layouts=stereo,asplit=2[vox][sck]")
         fc.append(f"[{music_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume={music_volume}[mus]")
         # The voice keys a compressor on the music, so the bed dips while speaking.
         fc.append("[mus][sck]sidechaincompress=threshold=0.04:ratio=10:attack=8:release=350:makeup=1[duck]")
         # normalize=0: keep the voice at full level (default amix would halve it).
         fc.append("[vox][duck]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[abed]")
     else:
-        fc.append(f"[{voice_idx}:a]aformat=sample_rates=44100:channel_layouts=stereo[abed]")
+        fc.append(f"{voice_src}aformat=sample_rates=44100:channel_layouts=stereo[abed]")
     if sfx_input_idxs:
         # Each SFX file → level + delay to its slide start, then mix all into the bed.
         delayed = []
@@ -101,9 +123,14 @@ def _ffmpeg_audio_cmd(
     music_volume: float,
     broll: list[dict],
     transition_sfx: bool,
+    voice_offset: float = 0.0,
+    total_duration: float | None = None,
 ) -> list[str]:
     """Build the ffmpeg argv that stream-copies the opaque render's video and attaches the
-    reel audio bed (voice + ducked music + transition SFX). Pure — no process spawned."""
+    reel audio bed (voice + ducked music + transition SFX). Pure — no process spawned.
+
+    `voice_offset` is the brand intro's length: everything on the word clock (the voice and
+    the B-roll whooshes) sits that much later in the finished file."""
     # [0] opaque video (video copied), [1] avatar voice.
     inputs: list[str] = ["-i", video_path, "-i", voice_path]
     voice_idx = 1
@@ -131,7 +158,12 @@ def _ffmpeg_audio_cmd(
             _p = _transition_sfx_path(broll[k].get("transition"))
             if _p:
                 sfx_files.append(_p)
-                sfx_times.append(max(0.0, float(broll[k]["start"]) - _transition_lead(broll[k].get("transition"))))
+                # Clamp to 0 on the word clock BEFORE the offset, then shift: the whoosh
+                # belongs to the body, so an intro moves it later by exactly the intro.
+                sfx_times.append(
+                    max(0.0, float(broll[k]["start"]) - _transition_lead(broll[k].get("transition")))
+                    + voice_offset
+                )
 
     sfx_input_idxs: list[int] = []
     for f in sfx_files:
@@ -150,6 +182,8 @@ def _ffmpeg_audio_cmd(
         sfx_input_idxs=sfx_input_idxs,
         sfx_times=sfx_times,
         sfx_gains=sfx_gains,
+        voice_offset=voice_offset,
+        total_duration=total_duration,
     )
 
     cmd = ["ffmpeg", "-y", *inputs]
@@ -175,10 +209,13 @@ def mux_audio(
     music_volume: float = 0.15,
     broll: list[dict] | None = None,
     transition_sfx: bool = True,
+    voice_offset: float = 0.0,
+    total_duration: float | None = None,
 ) -> None:
     """Attach the reel's audio bed to the opaque Remotion render (video stream-copied)."""
     _run(_ffmpeg_audio_cmd(
         video_path=video_path, voice_path=voice_path, out_path=out_path,
         music_path=music_path, music_volume=music_volume,
         broll=broll or [], transition_sfx=transition_sfx,
+        voice_offset=voice_offset, total_duration=total_duration,
     ))

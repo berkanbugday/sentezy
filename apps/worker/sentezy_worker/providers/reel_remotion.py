@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import pathlib
 import subprocess
@@ -14,6 +15,89 @@ from ..models import Word
 # composition (avatar + B-roll + transitions + captions):
 #   • render_reel        — POST to the renderer service (prod; needs REEL_RENDERER_URL)
 #   • render_reel_local  — shell to the Remotion CLI (dev; Node on the host)
+
+
+# ── Brand kit ────────────────────────────────────────────────────────────────────────
+# MIRROR OF packages/remotion/src/brand/timing.ts. These two must return the same numbers
+# for the same input: the composition uses the TS version to lay out its <Sequence>s, and
+# this one decides how far to delay the voiceover and how long to pad it. If they drift,
+# the audio slides out of sync with the picture. tests/test_brand.py pins them together.
+
+CARD_INTRO_SECONDS = 1.5
+CARD_OUTRO_SECONDS = 2.0
+
+
+def _body_frames(words: list, fps: int) -> int:
+    """Last word's end + a 0.3s tail — unchanged from before branding existed."""
+    if words:
+        last = words[-1]
+        last_end = last["end"] if isinstance(last, dict) else last.end
+    else:
+        last_end = 5
+    return max(1, math.ceil((last_end + 0.3) * fps))
+
+
+def _end_frames(end: dict | None, card_seconds: float, fps: int) -> int:
+    if not end:
+        return 0
+    if end.get("kind") == "clip":
+        return max(1, round(end.get("durationInFrames", 0)))
+    return round(card_seconds * fps)
+
+
+def reel_segments(words: list, brand: dict | None, fps: int) -> dict:
+    """Where the reel's parts sit, in frames. See the mirror note above."""
+    intro = _end_frames((brand or {}).get("intro"), CARD_INTRO_SECONDS, fps)
+    outro = _end_frames((brand or {}).get("outro"), CARD_OUTRO_SECONDS, fps)
+    body = _body_frames(words, fps)
+    return {
+        "introFrames": intro,
+        "bodyFrames": body,
+        "outroFrames": outro,
+        "totalFrames": intro + body + outro,
+    }
+
+
+def brand_props(options: dict, storage, fps: int) -> dict | None:
+    """`options.branding` → the composition's ReelBrand, with R2 keys signed and clip
+    durations converted to frames. Returns None when there is nothing to render, so an
+    unbranded video takes exactly the code path it did before this feature."""
+    branding = options.get("branding") or {}
+    kit = branding.get("kit")
+    if not kit:
+        # Toggles with no snapshot mean branding was never applied (or this is an old
+        # draft carrying the vestigial placeholder). Nothing to draw.
+        return None
+
+    want_intro = bool(branding.get("intro"))
+    want_outro = bool(branding.get("outro"))
+    watermark = bool(branding.get("watermark"))
+    if not (want_intro or want_outro or watermark):
+        return None
+
+    def end(enabled: bool, clip: dict | None) -> dict | None:
+        if not enabled:
+            return None
+        if clip and clip.get("ref") and clip.get("ms"):
+            return {
+                "kind": "clip",
+                "url": storage.signed_get_url(clip["ref"], 86400),
+                "durationInFrames": max(1, round(clip["ms"] / 1000 * fps)),
+            }
+        return {"kind": "card"}
+
+    logo_key = kit.get("logoImageId")
+    return {
+        "intro": end(want_intro, kit.get("introClip")),
+        "outro": end(want_outro, kit.get("outroClip")),
+        "watermark": watermark,
+        "logoUrl": storage.signed_get_url(logo_key, 86400) if logo_key else None,
+        "brandName": kit.get("brandName"),
+        "handle": kit.get("handle"),
+        "cta": kit.get("outroCta"),
+        "color": kit.get("color") or "#0A0A0B",
+        "font": kit.get("font") or "General Sans",
+    }
 
 
 def build_reel_props(
@@ -30,6 +114,7 @@ def build_reel_props(
     width: int,
     height: int,
     fps: int,
+    brand: dict | None = None,
 ) -> dict:
     """The Reel composition inputProps (JSON-safe). broll items: {url, kind, transition}."""
     return {
@@ -44,6 +129,7 @@ def build_reel_props(
         "sfxCues": [],
         "musicUrl": None,   # the bed is muxed by ffmpeg after the render, not baked in
         "musicVolume": 0,
+        "brand": brand,
         "width": width,
         "height": height,
         "fps": fps,

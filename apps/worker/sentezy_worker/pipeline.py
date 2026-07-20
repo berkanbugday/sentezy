@@ -10,7 +10,13 @@ from .db import Db
 from .matte import matte_video
 from .providers.elevenlabs import ElevenLabs
 from .providers.heygen import HeyGen
-from .providers.reel_remotion import build_reel_props, render_reel, render_reel_local
+from .providers.reel_remotion import (
+    brand_props,
+    build_reel_props,
+    reel_segments,
+    render_reel,
+    render_reel_local,
+)
 from .storage import Storage
 from .thumbnail import make_thumbnail
 
@@ -256,11 +262,18 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
         for b in broll_media if b.get("ref")
     ]
 
+    # Brand kit (intro/outro cards or clips + watermark), from the snapshot frozen onto the
+    # video when branding was switched on. None when the video is unbranded.
+    brand = brand_props(options, storage, 30)
+    # NB: `segments` above is the B-roll layout — this is the reel's intro/body/outro split.
+    reel_seg = reel_segments(words, brand, 30)
+
     props = build_reel_props(
         words, avatar_url=avatar_signed, broll=broll_props,
         style=cap_style, font=cap_font, color=cap_color,
         avatar_position=avatar_position, position=cap_position,
         captions=captions_on, width=width, height=height, fps=30,
+        brand=brand,
     )
     reel_video = f"{workdir}/reel_video.mp4"
     if cfg.reel_renderer_url:
@@ -275,10 +288,15 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
     music_volume = float((options.get("music") or {}).get("volume", 0.15))
 
     reel_path = f"{workdir}/reel.mp4"
+    # With a brand intro the picture is longer than the speech, so the voice is delayed past
+    # the intro and padded to the full length — otherwise `-shortest` would cut the outro off.
+    # Both are 0/None for an unbranded video, leaving the command byte-identical to before.
     mux_audio(
         reel_video, audio_path, reel_path,
         music_path=music_path, music_volume=music_volume,
         broll=segments, transition_sfx=transition_sfx,
+        voice_offset=reel_seg["introFrames"] / 30,
+        total_duration=(reel_seg["totalFrames"] / 30) if brand else None,
     )
 
     # 4) Thumbnail + upload
