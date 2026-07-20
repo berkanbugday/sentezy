@@ -84,6 +84,35 @@ model CatalogMusic {
   @@map("music_catalog")
 }
 
+/// The user's reusable brand identity — logo, name, colour, optional intro/outro clips.
+/// One kit per user (hence the unique userId), edited on /brand-kit. A video does NOT
+/// reference this row: enabling branding SNAPSHOTS the kit into videos.options.branding
+/// so re-rendering an old video keeps the branding it was made with, even after the kit
+/// changes. Clip durations are measured in the browser at upload and stored here, so the
+/// preview and the render agree on reel length without probing the file.
+model BrandKit {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @unique @map("user_id") @db.Uuid
+  brandName    String?  @map("brand_name")
+  handle       String?
+  logoKey      String?  @map("logo_key")
+  color        String   @default("#0A0A0B")
+  font         String   @default("General Sans")
+  outroCta     String?  @map("outro_cta")
+  introClipKey String?  @map("intro_clip_key")
+  introClipMs  Int?     @map("intro_clip_ms")
+  outroClipKey String?  @map("outro_clip_key")
+  outroClipMs  Int?     @map("outro_clip_ms")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Prisma-maintained, unlike the other tables. The header note above prescribes a DB
+  // trigger so the Python worker's writes bump it too — but the worker never touches a
+  // brand kit (only the API does, through Prisma), and that trigger does not actually
+  // exist on the database. @updatedAt is the option that works here.
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("brand_kits")
+}
+
 model Voice {
   id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   elevenlabsVoiceId String   @map("elevenlabs_voice_id")
