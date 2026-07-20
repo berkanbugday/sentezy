@@ -327,7 +327,9 @@ export function BrandKitView() {
                 <div className="text-[13.5px] font-medium text-ink">Kendi görselin ya da videon</div>
                 <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
                   Hazır kart yerine kendi görselini ya da videonu kullan; yüklediğin dosya o
-                  bölümün yerini tamamen alır. Görseller kart süresi kadar ekranda kalır.
+                  bölümün yerini tamamen alır. Dosya 9:16 dikey formata göre ölçeklenir,
+                  taşan kenarlar kırpılır — önemli kısımları ortada tut. Görseller kart
+                  süresi kadar ekranda kalır.
                 </p>
               </div>
               {(

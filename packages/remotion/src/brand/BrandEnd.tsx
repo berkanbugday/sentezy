@@ -5,6 +5,15 @@ import { isImageSrc } from "../reel/AvatarLayer";
 import { BrandCard } from "./BrandCard";
 import type { ReelBrand, ReelBrandEnd } from "./types";
 
+/** Fill the 9:16 frame, cropping the overflow and centring what remains. Shared by both
+ *  kinds so an image and a video of the same source ratio are framed identically. */
+const FILL: React.CSSProperties = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  objectPosition: "center",
+};
+
 /**
  * One end of the reel — the generated card, or the user's own media in its place.
  *
@@ -16,6 +25,11 @@ import type { ReelBrand, ReelBrandEnd } from "./types";
  * Image vs video is decided by the source extension, exactly as AvatarLayer does it —
  * `isImageSrc` ignores the query string, which matters because these are signed R2 URLs.
  * An image needs no separate stored kind: it simply holds the frame for its duration.
+ *
+ * Both kinds are scaled to FILL the 9:16 frame (`cover`), centred. Uploads arrive in every
+ * aspect ratio and a reel has exactly one; letterbox bands around a 16:9 upload read as a
+ * broken video rather than a deliberate frame. The trade is that a much wider or taller
+ * source is cropped at the edges, so anything critical should sit near the centre.
  *
  * `muted`: the render is opaque and silent by design — the worker attaches all audio
  * afterwards with ffmpeg. Leaving a clip audible here would play it in the preview and
@@ -31,11 +45,9 @@ export const BrandEnd: React.FC<{
     return (
       <AbsoluteFill style={{ backgroundColor: brand.color }}>
         {isImageSrc(end.url) ? (
-          // contain, not cover: an end-card is usually designed to be seen whole, and the
-          // brand colour behind it fills whatever the aspect ratio leaves over.
-          <Img src={end.url} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          <Img src={end.url} style={FILL} />
         ) : (
-          <OffthreadVideo src={end.url} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <OffthreadVideo src={end.url} muted style={FILL} />
         )}
       </AbsoluteFill>
     );

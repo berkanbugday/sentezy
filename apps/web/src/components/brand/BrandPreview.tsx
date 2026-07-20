@@ -45,13 +45,15 @@ export function BrandPreview({
            Image vs video is decided by the URL extension, the same rule the composition
            uses (isImageSrc), so the two can never disagree about what a file is. */
         isImageSrc(clipUrl) ? (
+          /* object-cover on BOTH kinds, matching BrandEnd exactly — the whole point of this
+             panel is to show the crop the render will apply. */
           /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={clipUrl} alt="" className="h-full w-full object-contain" />
+          <img src={clipUrl} alt="" className="h-full w-full object-cover object-center" />
         ) : (
           /* Muted: the render is silent, and an autoplaying soundtrack in a settings
              screen is hostile. */
           // eslint-disable-next-line jsx-a11y/media-has-caption
-          <video src={clipUrl} muted loop autoPlay playsInline className="h-full w-full object-cover" />
+          <video src={clipUrl} muted loop autoPlay playsInline className="h-full w-full object-cover object-center" />
         )
       ) : mode === "watermark" ? (
         <>
