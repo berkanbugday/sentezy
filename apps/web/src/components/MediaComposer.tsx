@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { type Avatar, type Voice } from "@/components/wizard/types";
 import { apiFetch } from "@/lib/api";
+import { brandingOption, previewBrand } from "@/lib/branding";
 import { presetById } from "@/lib/captionStyles";
 import { type ComposerSettings, DEFAULT_SETTINGS } from "@/lib/composerSettings";
 import { type Media } from "@/lib/composer/media";
 import { seedKeys, type ComposerSeed } from "@/lib/composerSeed";
 import { TR_GRADIENT, TR_GRADIENT_SOFT, TRANSITION_LABELS } from "@/lib/composer/transitions";
-import { type ImportProductResult, type MusicTrack, useCreateAvatar, useGenerateVideo, useImportProduct, useMyAvatars, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
+import { type ImportProductResult, type MusicTrack, useBrandKit, useCreateAvatar, useGenerateVideo, useImportProduct, useMyAvatars, useUploadBackground, useUploadBackgroundVideo } from "@/lib/queries";
 import { videoPoster } from "@/lib/videoPoster";
 import { cleanTitleText } from "@/lib/videoTitle";
 import { DEFAULT_TRANSITION } from "./WizardSteps";
@@ -85,6 +86,9 @@ export function MediaComposer({
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedCaption = captionId ? presetById(captionId) : null;
   const settings = extraSettings ?? DEFAULT_SETTINGS;
+  // The kit is snapshotted onto the video at generate time (see brandingOption) and also
+  // drives the preview, so it is fetched here rather than only inside the settings modal.
+  const brandKit = useBrandKit().data;
 
   // "Yeniden kullan" / avatar seeding. Applied once per seed key: the user may change any
   // of these straight after, and a re-render must not undo that. Script and media stay
@@ -282,6 +286,7 @@ export function MediaComposer({
         layout: { avatarPosition: settings.avatarPosition, captionPosition: settings.captionPosition },
         voice: { emotion: settings.voiceEmotion ?? "" },
         effects: { transitionSfx: settings.transitionSfx ?? true },
+        ...brandingOption(settings, brandKit),
         ...(product ? { product } : {}), // provenance when seeded from a product link
       };
 
@@ -641,6 +646,7 @@ export function MediaComposer({
         transitionSfx={settings.transitionSfx}
         musicUrl={selectedMusic?.previewUrl ?? null}
         musicVolume={musicVolume}
+        brand={previewBrand(settings, brandKit, 30)}
       />
     </div>
   );

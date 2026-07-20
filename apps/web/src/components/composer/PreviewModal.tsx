@@ -1,7 +1,7 @@
 "use client";
 
 import { Player } from "@remotion/player";
-import { type ReelBrollItem, Reel } from "@sentezy/remotion";
+import { type ReelBrand, type ReelBrollItem, Reel, reelSegments } from "@sentezy/remotion";
 import type { CaptionStyleId } from "@sentezy/types";
 import { useMemo } from "react";
 import { Icon } from "@/components/icons";
@@ -28,6 +28,7 @@ export function PreviewModal({
   transitionSfx,
   musicUrl = null,
   musicVolume = 0.15,
+  brand = null,
 }: {
   open: boolean;
   onClose: () => void;
@@ -41,12 +42,14 @@ export function PreviewModal({
   transitionSfx: boolean;
   musicUrl?: string | null;
   musicVolume?: number;
+  /** Brand kit for this video — null when unbranded. */
+  brand?: ReelBrand | null;
 }) {
   const words = useMemo(() => previewWords(script), [script]);
-  const durationInFrames = useMemo(() => {
-    const last = words.length > 0 ? words[words.length - 1]!.end : 5;
-    return Math.max(1, Math.ceil((last + 0.3) * FPS));
-  }, [words]);
+  // reelSegments is the shared source of truth for reel length (packages/remotion/src/
+  // brand/timing.ts) — the composition, the renderer and this player must agree, or the
+  // preview's scrubber ends before the outro does.
+  const durationInFrames = useMemo(() => reelSegments(words, brand, FPS).totalFrames, [words, brand]);
   // Slide-synced whooshes, audible during real playback (the render muxes them with ffmpeg).
   const sfxCues = useMemo(() => slideSfxCues(broll, script, transitionSfx), [script, broll, transitionSfx]);
 
@@ -79,6 +82,7 @@ export function PreviewModal({
     sfxCues,
     musicUrl,
     musicVolume,
+    brand,
     width: W,
     height: H,
     fps: FPS,

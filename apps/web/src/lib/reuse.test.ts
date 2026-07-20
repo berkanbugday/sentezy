@@ -45,7 +45,7 @@ assert.strictEqual(
   null,
 );
 
-// New-shape options round-trip into the four-field settings object.
+// New-shape options round-trip into the settings object.
 const fresh = optionsToComposerState(video({
   layout: { avatarPosition: "left", captionPosition: "top" },
   music: { trackKey: "upbeat", volume: 0.2 },
@@ -54,7 +54,25 @@ const fresh = optionsToComposerState(video({
 }));
 assert.deepStrictEqual(fresh.settings, {
   avatarPosition: "left", captionPosition: "top", voiceEmotion: "excited", transitionSfx: false,
+  brandIntro: false, brandOutro: false, brandWatermark: false,
 });
+// Branding: which parts of the kit the video used come back, so "Yeniden kullan" keeps
+// the same branding. The SNAPSHOT deliberately does not — the new video re-snapshots the
+// current kit at generate time, so reuse follows the user's latest logo, not an old one.
+const branded = optionsToComposerState(video({
+  branding: { intro: true, outro: false, watermark: true, kit: { brandName: "Eski Marka" } },
+}));
+assert.strictEqual(branded.settings.brandIntro, true);
+assert.strictEqual(branded.settings.brandOutro, false);
+assert.strictEqual(branded.settings.brandWatermark, true);
+assert.ok(!("kit" in branded.settings), "the frozen snapshot must not leak into settings");
+
+// A video from before branding existed reuses with everything off, not undefined.
+const preBranding = optionsToComposerState(video({ voice: { emotion: "" } })).settings;
+assert.strictEqual(preBranding.brandIntro, false);
+assert.strictEqual(preBranding.brandOutro, false);
+assert.strictEqual(preBranding.brandWatermark, false);
+
 // Music is returned separately — it is MediaComposer state, not a setting.
 assert.deepStrictEqual(fresh.music, { trackKey: "upbeat", volume: 0.2 });
 
@@ -78,6 +96,6 @@ assert.strictEqual(empty.music, null);
 // A video from before the SFX feature was deleted must not resurrect any of it.
 const legacySfx = optionsToComposerState(video({ sfx: { enabled: true, cues: [{ wordIndex: 3, sfxId: "pop" }] } }));
 assert.deepStrictEqual(Object.keys(legacySfx.settings).sort(),
-  ["avatarPosition", "captionPosition", "transitionSfx", "voiceEmotion"]);
+  ["avatarPosition", "brandIntro", "brandOutro", "brandWatermark", "captionPosition", "transitionSfx", "voiceEmotion"]);
 
 console.log("apps/web/src/lib/reuse.test.ts ok");

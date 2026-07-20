@@ -11,6 +11,11 @@ export type ComposerSettings = {
   voiceEmotion: string;
   /** Whoosh on each B-roll transition — only audible with 2+ clips. */
   transitionSfx: boolean;
+  /** Brand kit, per video. The kit itself is edited once on /brand-kit; these only say
+   *  which parts of it this video uses. All default off — branding is opt-in. */
+  brandIntro: boolean;
+  brandOutro: boolean;
+  brandWatermark: boolean;
 };
 
 export const DEFAULT_SETTINGS: ComposerSettings = {
@@ -18,4 +23,7 @@ export const DEFAULT_SETTINGS: ComposerSettings = {
   captionPosition: "top",
   voiceEmotion: "",
   transitionSfx: true,
+  brandIntro: false,
+  brandOutro: false,
+  brandWatermark: false,
 };

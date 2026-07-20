@@ -9,6 +9,7 @@ type StoredOptions = {
   music?: { trackKey?: string; volume?: number };
   voice?: { emotion?: string };
   effects?: { transitionSfx?: boolean };
+  branding?: { intro?: boolean; outro?: boolean; watermark?: boolean };
 };
 
 /** Map a stored video back to composer state for "Yeniden kullan".
@@ -36,6 +37,12 @@ export function optionsToComposerState(video: ApiVideo): {
     captionPosition: (layout.captionPosition as ComposerSettings["captionPosition"]) ?? DEFAULT_SETTINGS.captionPosition,
     voiceEmotion: o.voice?.emotion ?? DEFAULT_SETTINGS.voiceEmotion,
     transitionSfx: o.effects?.transitionSfx ?? DEFAULT_SETTINGS.transitionSfx,
+    // Only which parts of the kit were used comes back, not the snapshot itself: the new
+    // video re-snapshots the CURRENT kit at generate time, so reuse follows the user's
+    // latest branding rather than resurrecting an old logo.
+    brandIntro: o.branding?.intro ?? DEFAULT_SETTINGS.brandIntro,
+    brandOutro: o.branding?.outro ?? DEFAULT_SETTINGS.brandOutro,
+    brandWatermark: o.branding?.watermark ?? DEFAULT_SETTINGS.brandWatermark,
   };
 
   const music = o.music?.trackKey

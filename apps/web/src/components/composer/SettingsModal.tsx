@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 import { VOICE_EMOTIONS } from "@/components/wizard/constants";
 import { Icon } from "@/components/icons";
 import { type ComposerSettings } from "@/lib/composerSettings";
+import { useBrandKit } from "@/lib/queries";
 
 type Opt<T> = { value: T; label: string };
 
@@ -24,6 +26,37 @@ function Pills<T extends string>({ options, value, onChange }: { options: readon
   );
 }
 
+/** The house on/off switch. Extracted when the brand toggles arrived — the same markup
+ *  was about to be copied four times. */
+function Toggle({
+  checked,
+  onChange,
+  disabled = false,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className="flex items-center gap-2.5 text-[12.5px] font-medium text-ink transition disabled:cursor-not-allowed disabled:opacity-45"
+    >
+      <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${checked ? "bg-ink" : "bg-hairline"}`}>
+        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? "left-[18px]" : "left-0.5"}`} />
+      </span>
+      {checked ? "Açık" : "Kapalı"}
+    </button>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -41,6 +74,12 @@ const AVATAR_POS_OPTS: Opt<ComposerSettings["avatarPosition"]>[] = [
 const CAPPOS_OPTS: Opt<ComposerSettings["captionPosition"]>[] = [
   { value: "top", label: "Üst" },
   { value: "bottom", label: "Alt" },
+];
+
+const BRAND_TOGGLES: { key: "brandIntro" | "brandOutro" | "brandWatermark"; label: string }[] = [
+  { key: "brandIntro", label: "Giriş" },
+  { key: "brandOutro", label: "Kapanış" },
+  { key: "brandWatermark", label: "Filigran" },
 ];
 
 /** Modal of extra video settings, opened from the composer's control row. */
@@ -70,6 +109,11 @@ export function SettingsModal({
   // A transition sound plays AT a cut, so it needs at least two clips to sit between.
   const transitionSfxAvailable = mediaCount >= 2;
 
+  // GET /brand-kit returns defaults rather than 404ing, so "has a kit" means the user has
+  // actually put something on it — a logo or a name. Anything less renders an empty card.
+  const kit = useBrandKit(open).data;
+  const hasBrandKit = Boolean(kit?.logoKey || kit?.brandName);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
@@ -96,23 +140,46 @@ export function SettingsModal({
             <Pills options={VOICE_EMOTIONS} value={settings.voiceEmotion} onChange={(v) => set("voiceEmotion", v)} />
           </Field>
           <Field label="Geçiş efekti sesi">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={settings.transitionSfx}
+            <Toggle
+              checked={settings.transitionSfx}
+              onChange={(v) => set("transitionSfx", v)}
               disabled={!transitionSfxAvailable}
-              onClick={() => set("transitionSfx", !settings.transitionSfx)}
-              className="flex items-center gap-2.5 text-[12.5px] font-medium text-ink transition disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${settings.transitionSfx ? "bg-ink" : "bg-hairline"}`}>
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${settings.transitionSfx ? "left-[18px]" : "left-0.5"}`} />
-              </span>
-              {settings.transitionSfx ? "Açık" : "Kapalı"}
-            </button>
+              label="Geçiş efekti sesi"
+            />
             {!transitionSfxAvailable && (
               <p className="mt-1.5 text-[11.5px] text-muted">Geçiş sesi klipler arasında çalar — en az 2 medya yükle.</p>
             )}
           </Field>
+
+          <div className="border-t border-hairline pt-5">
+            <div className="mb-2 flex items-baseline justify-between gap-3">
+              <div className="text-[13px] font-semibold text-ink">Marka</div>
+              <Link href="/brand-kit" className="text-[12.5px] font-medium text-signal">
+                Marka kitini düzenle
+              </Link>
+            </div>
+            {hasBrandKit ? (
+              <div className="flex flex-col gap-3">
+                {BRAND_TOGGLES.map((b) => (
+                  <div key={b.key} className="flex items-center justify-between gap-4">
+                    <span className="text-[12.5px] text-slate">{b.label}</span>
+                    <Toggle checked={settings[b.key]} onChange={(v) => set(b.key, v)} label={b.label} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Toggling branding on with no kit would produce a card with nothing on it,
+                 so send the user to build one first rather than letting them arm an
+                 empty intro. */
+              <p className="text-[11.5px] text-muted">
+                Henüz bir marka kitin yok.{" "}
+                <Link href="/brand-kit" className="font-medium text-signal">
+                  Marka kitini oluştur
+                </Link>{" "}
+                — sonra girişi, kapanışı ve filigranı buradan açabilirsin.
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-none items-center justify-end gap-3 px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
