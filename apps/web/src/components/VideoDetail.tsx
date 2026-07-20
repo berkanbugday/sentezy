@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { readAvatarPosition } from "@sentezy/types";
+import { RenderStage } from "@/components/RenderStage";
 import { ActionMenu } from "@/components/composer/ActionMenu";
 import { CollapsibleCard } from "@/components/composer/CollapsibleCard";
 import { Icon } from "@/components/icons";
@@ -252,11 +253,12 @@ export function VideoDetail({ id }: { id: string }) {
           {detail.downloadUrl ? (
             <video src={detail.downloadUrl} controls poster={detail.thumbnailUrl ?? undefined} className="h-full w-full object-cover" />
           ) : (
-            <div className="ph-stripe flex h-full w-full items-center justify-center p-6 text-center">
+            /* Failed is terminal — it gets a still message, never the working animation. */
+            <div className="flex h-full w-full items-center justify-center bg-mist">
               {live.status === "failed" ? (
-                <span className="text-[13px] text-red-600">Üretim başarısız oldu.</span>
+                <span className="p-6 text-center text-[13px] text-red-600">Üretim başarısız oldu.</span>
               ) : (
-                <span className="text-[13px] text-muted">{STAGE_LABEL[live.stage ?? ""] ?? "Sıraya alındı"}</span>
+                <RenderStage stage={live.stage} progress={live.progress} />
               )}
             </div>
           )}

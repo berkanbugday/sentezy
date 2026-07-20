@@ -172,3 +172,32 @@ button:disabled { cursor: not-allowed; }
 .ph-stripe {
   background: repeating-linear-gradient(135deg, var(--color-mist), var(--color-mist) 10px, var(--wash) 10px, var(--wash) 20px);
 }
+/* Render-stage glyphs (RenderStage.tsx). SVG parts need `transform-box: fill-box` or the
+ * transform origin resolves against the viewport, not the shape — the usual cause of a glyph
+ * flying off its own canvas. Each animation moves only the part that carries meaning. */
+.rs-bar, .rs-sonar, .rs-layer, .rs-iris, .rs-dot { transform-box: fill-box; transform-origin: center; }
+.rs-bar { animation: rsBar 1.05s ease-in-out infinite; }
+.rs-sonar { animation: rsSonar 2s ease-out infinite; }
+.rs-layer { animation: rsLayer 1.9s ease-in-out infinite; }
+.rs-iris { animation: rsIris 1.8s ease-in-out infinite; }
+.rs-dot { animation: rsDot 1.4s ease-in-out infinite; }
+/* The live segment of the stage rail breathes so it reads as the current step, not a filled one. */
+.rs-seg { animation: rsSeg 1.6s ease-in-out infinite; }
+
+@keyframes rsBar { 0%, 100% { transform: scaleY(0.32) } 50% { transform: scaleY(1) } }
+@keyframes rsSonar { 0% { transform: scale(0.45); opacity: 0.5 } 70%, 100% { transform: scale(1); opacity: 0 } }
+@keyframes rsLayer { 0%, 100% { transform: translateX(-2.5px); opacity: 0.45 } 50% { transform: translateX(2.5px); opacity: 1 } }
+@keyframes rsIris { 0%, 100% { transform: scale(0.55); opacity: 0.35 } 50% { transform: scale(1); opacity: 1 } }
+@keyframes rsDot { 0%, 100% { opacity: 0.2 } 50% { opacity: 1 } }
+@keyframes rsSeg { 0%, 100% { opacity: 0.4 } 50% { opacity: 1 } }
+
+/* Reduced motion: hold every glyph at its legible resting state rather than mid-collapse, so the
+ * mark still reads as itself. Matches how brollIn neutralises its keyframes above. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes rsBar { 0%, 100% { transform: scaleY(0.7) } }
+  @keyframes rsSonar { 0%, 100% { transform: scale(1); opacity: 0.25 } }
+  @keyframes rsLayer { 0%, 100% { transform: translateX(0); opacity: 1 } }
+  @keyframes rsIris { 0%, 100% { transform: scale(1); opacity: 1 } }
+  @keyframes rsDot { 0%, 100% { opacity: 0.6 } }
+  @keyframes rsSeg { 0%, 100% { opacity: 0.7 } }
+}
