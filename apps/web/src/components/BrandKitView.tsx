@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { type BrandCrop, CARD_INTRO_SECONDS, CARD_OUTRO_SECONDS, DEFAULT_CROP, normalizeCrop } from "@sentezy/remotion";
+import { type BrandCrop, CARD_INTRO_SECONDS, CARD_OUTRO_SECONDS, DEFAULT_CROP } from "@sentezy/remotion";
 import { BrandPreview, type PreviewMode } from "@/components/brand/BrandPreview";
 import { FontSelect } from "@/components/brand/FontSelect";
 import { Icon } from "@/components/icons";
 import { Spinner } from "@/components/composer/Spinner";
 import { CAPTION_FONTS } from "@/lib/captionStyles";
 import { clipErrorMessage, readMediaDuration } from "@/lib/videoDuration";
-import { type BrandKit, useBrandKit, useUpdateBrandKit, useUploadBrandAsset } from "@/lib/queries";
+import { type BrandDraft as Draft, brandFingerprint, toBrandDraft } from "@/lib/brandDraft";
+import { useBrandKit, useUpdateBrandKit, useUploadBrandAsset } from "@/lib/queries";
 
 /** Six visibly distinct starting points — two neutrals and four hues. Deliberately not a
  *  full spectrum: near-identical darks read as a rendering fault, and the custom picker
@@ -20,36 +21,6 @@ const MODES: { v: PreviewMode; label: string }[] = [
   { v: "outro", label: "Kapanış" },
   { v: "watermark", label: "Filigran" },
 ];
-
-type Clip = { key: string; ms: number; url: string | null; crop: BrandCrop } | null;
-
-type Draft = {
-  brandName: string;
-  handle: string;
-  outroCta: string;
-  color: string;
-  font: string;
-  logoKey: string | null;
-  logoUrl: string | null;
-  introClip: Clip;
-  outroClip: Clip;
-};
-
-const toDraft = (k: BrandKit): Draft => ({
-  brandName: k.brandName ?? "",
-  handle: k.handle ?? "",
-  outroCta: k.outroCta ?? "",
-  color: k.color,
-  font: k.font,
-  logoKey: k.logoKey,
-  logoUrl: k.logoUrl,
-  introClip: k.introClipKey && k.introClipMs
-    ? { key: k.introClipKey, ms: k.introClipMs, url: k.introClipUrl, crop: normalizeCrop(k.introClipCrop) }
-    : null,
-  outroClip: k.outroClipKey && k.outroClipMs
-    ? { key: k.outroClipKey, ms: k.outroClipMs, url: k.outroClipUrl, crop: normalizeCrop(k.outroClipCrop) }
-    : null,
-});
 
 const INPUT =
   "w-full rounded-xl border border-hairline bg-mist px-3.5 py-2.5 text-[14px] text-ink outline-none transition placeholder:text-muted focus:border-signal";
@@ -88,7 +59,7 @@ export function BrandKitView() {
   useEffect(() => {
     if (seeded.current || !kitQ.data) return;
     seeded.current = true;
-    setDraft(toDraft(kitQ.data));
+    setDraft(toBrandDraft(kitQ.data));
   }, [kitQ.data]);
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
@@ -164,7 +135,7 @@ export function BrandKitView() {
     setDraft((d) => (d && d[activeEnd] ? { ...d, [activeEnd]: { ...d[activeEnd]!, crop } } : d));
   };
 
-  const dirty = Boolean(draft && kitQ.data && JSON.stringify(draft) !== JSON.stringify(toDraft(kitQ.data)));
+  const dirty = Boolean(draft && kitQ.data && brandFingerprint(draft) !== brandFingerprint(toBrandDraft(kitQ.data)));
 
   return (
     <div className="mx-auto max-w-5xl pb-16">
