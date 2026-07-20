@@ -9,11 +9,12 @@ import React from "react";
 (globalThis as { React?: typeof React }).React = React;
 const { BrandPreview } = await import("./BrandPreview");
 
-/** Server-render the preview and inspect the markup. Catches the failures a typecheck
- *  cannot: a bad import, a crash on empty state, or the contrast rule not being applied. */
+/** Server-render the preview and inspect the markup. Catches what a typecheck cannot:
+ *  a crash on empty state, or the contrast rule silently not being applied. */
 const render = (p: Partial<React.ComponentProps<typeof BrandPreview>> = {}) =>
   renderToStaticMarkup(
     React.createElement(BrandPreview, {
+      mode: "intro" as const,
       color: "#0A0A0B",
       font: "General Sans",
       brandName: "Sentezy",
@@ -24,37 +25,34 @@ const render = (p: Partial<React.ComponentProps<typeof BrandPreview>> = {}) =>
     }),
   );
 
-// Content shows up.
-const dark = render();
-assert.ok(dark.includes("Sentezy"), "brand name renders");
-assert.ok(dark.includes("@sentezy"), "handle renders");
-assert.ok(dark.includes("Hemen dene"), "CTA renders");
-assert.ok(dark.includes("background-color:#0A0A0B"), "brand colour is applied");
+// ── The card ────────────────────────────────────────────────────────────────
+const intro = render();
+assert.ok(intro.includes("Sentezy"), "brand name renders");
+assert.ok(intro.includes("@sentezy"), "handle renders");
+assert.ok(intro.includes("background-color:#0A0A0B"), "brand colour is the card background");
+// The CTA belongs to the outro only — it is the closing action, not an opener.
+assert.ok(!intro.includes("Hemen dene"), "intro shows no CTA");
+assert.ok(render({ mode: "outro" }).includes("Hemen dene"), "outro shows the CTA");
 
-// Contrast: white text on a dark brand, ink text on a light one. This is the rule that
-// silently ruins a card if it regresses — the text simply becomes invisible.
-assert.ok(dark.includes("color:#ffffff"), "dark brand gets white text");
-const light = render({ color: "#FFFF00" });
-assert.ok(light.includes("color:#0a0a0b"), "light brand gets ink text");
+// Contrast: the rule that silently ruins a card if it regresses — the text just vanishes.
+assert.ok(intro.includes("color:#ffffff"), "dark brand gets white text");
+assert.ok(render({ color: "#FFFF00" }).includes("color:#0a0a0b"), "light brand gets ink text");
 
-// Empty state: a brand-new kit has nothing filled in and must still render a prompt
-// rather than an empty box or a crash.
+// Empty state: a brand-new kit must prompt rather than render an empty coloured box.
 const empty = render({ brandName: "", handle: "", outroCta: "", logoUrl: null });
-assert.ok(empty.includes("Marka adı ekle"), "empty kit shows the prompt");
+assert.ok(empty.includes("Logo ya da marka adı ekle"));
 assert.ok(!empty.includes("@sentezy"));
+// ...and the prompt disappears as soon as there is anything to show.
+assert.ok(!render({ brandName: "", logoUrl: "https://r2/l.png" }).includes("Logo ya da marka adı ekle"));
 
-// With a logo, the image appears in both the card and the watermark mock. Counted as
-// `src="…"` rather than bare occurrences: React 19 also emits a <link rel="preload"> for
-// the image, so a naive substring count sees three.
-const withLogo = render({ logoUrl: "https://r2.example/logo.png" });
-assert.strictEqual(
-  withLogo.split('src="https://r2.example/logo.png"').length - 1,
-  2,
-  "logo in card + watermark",
-);
-
-// The watermark placeholder only shows when there is no logo.
-assert.ok(render({ logoUrl: null }).includes("border-dashed"));
-assert.ok(!withLogo.includes("border-dashed"));
+// ── Watermark ───────────────────────────────────────────────────────────────
+// The watermark sits over the reel, so its frame is the reel's dark backdrop, NOT the
+// brand colour — showing it on the brand colour would misrepresent where the logo lands.
+const wm = render({ mode: "watermark", color: "#FF5A1F", logoUrl: "https://r2/l.png" });
+assert.ok(wm.includes("background-color:#0b0b0d"), "watermark previews over the reel backdrop");
+assert.ok(!wm.includes("background-color:#FF5A1F"));
+assert.strictEqual(wm.split('src="https://r2/l.png"').length - 1, 1, "one logo, in the corner");
+// With no logo there is nothing to stamp, so the slot is shown as an outline.
+assert.ok(render({ mode: "watermark", logoUrl: null }).includes("border-dashed"));
 
 console.log("apps/web/src/components/brand/BrandPreview.test.tsx ok");

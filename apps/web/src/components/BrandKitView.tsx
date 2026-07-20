@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BrandPreview } from "@/components/brand/BrandPreview";
+import { BrandPreview, type PreviewMode } from "@/components/brand/BrandPreview";
+import { FontSelect } from "@/components/brand/FontSelect";
 import { Icon } from "@/components/icons";
 import { Spinner } from "@/components/composer/Spinner";
 import { CAPTION_FONTS } from "@/lib/captionStyles";
 import { type BrandKit, useBrandKit, useUpdateBrandKit, useUploadBrandAsset } from "@/lib/queries";
 
-/** Monochrome-first swatches plus a few brand hues. The app chrome stays grayscale; these
- *  chips and the preview are the only coloured pixels, because the colour IS the content. */
-const SWATCHES = ["#0A0A0B", "#18181B", "#52525B", "#FF5A1F", "#2563EB", "#059669", "#DC2626", "#7C3AED"];
+/** Six visibly distinct starting points — two neutrals and four hues. Deliberately not a
+ *  full spectrum: near-identical darks read as a rendering fault, and the custom picker
+ *  covers everything else. */
+const SWATCHES = ["#0A0A0B", "#52525B", "#FF5A1F", "#2563EB", "#059669", "#7C3AED"];
+
+const MODES: { v: PreviewMode; label: string }[] = [
+  { v: "intro", label: "Giriş" },
+  { v: "outro", label: "Kapanış" },
+  { v: "watermark", label: "Filigran" },
+];
 
 type Draft = {
   brandName: string;
@@ -31,8 +39,22 @@ const toDraft = (k: BrandKit): Draft => ({
   logoUrl: k.logoUrl,
 });
 
-const FIELD =
-  "w-full rounded-xl border border-hairline bg-mist px-3.5 py-2.5 text-[14px] text-ink outline-none placeholder:text-muted focus:border-signal";
+const INPUT =
+  "w-full rounded-xl border border-hairline bg-mist px-3.5 py-2.5 text-[14px] text-ink outline-none transition placeholder:text-muted focus:border-signal";
+
+/** One setting per line: name on the left, control on the right. Matches the read-only
+ *  detail rows in VideoDetail, and keeps a 40-character field from stretching to 800px. */
+function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-2 border-b border-hairline py-3.5 last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <div className="sm:pt-0.5">
+        <div className="text-[13.5px] font-medium text-ink">{label}</div>
+        {hint && <div className="mt-0.5 text-[12px] text-muted">{hint}</div>}
+      </div>
+      <div className="w-full sm:w-[260px] sm:flex-none">{children}</div>
+    </div>
+  );
+}
 
 export function BrandKitView() {
   const kitQ = useBrandKit();
@@ -42,10 +64,10 @@ export function BrandKitView() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [mode, setMode] = useState<PreviewMode>("intro");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Seed the form once the kit lands. Keyed on nothing but arrival: re-seeding on every
-  // refetch would wipe edits in progress.
+  // Seed the form once the kit arrives. Re-seeding on every refetch would wipe edits.
   const seeded = useRef(false);
   useEffect(() => {
     if (seeded.current || !kitQ.data) return;
@@ -66,14 +88,13 @@ export function BrandKitView() {
       setSaved(false);
       setDraft((d) => (d ? { ...d, logoKey: key, logoUrl: url } : d));
     } catch {
-      setUploadError("Logo yüklenemedi, tekrar dene.");
+      setUploadError("Logo yüklenemedi. Tekrar dene.");
     }
   };
 
   const onSave = async () => {
     if (!draft) return;
-    // Empty text fields are stored as null, not "" — null is what "not set" means to the
-    // renderer, and an empty string would render an empty line on the card.
+    // Empty fields are stored as null: "" would render an empty line on the card.
     await save.mutateAsync({
       brandName: draft.brandName.trim() || null,
       handle: draft.handle.trim() || null,
@@ -88,29 +109,46 @@ export function BrandKitView() {
   const dirty = Boolean(draft && kitQ.data && JSON.stringify(draft) !== JSON.stringify(toDraft(kitQ.data)));
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-6">
-        <h1 className="disp text-[28px] font-semibold text-ink">Marka Kiti</h1>
-        <p className="mt-1 text-[14.5px] text-slate">
-          Logonu ve marka bilgilerini bir kez ayarla, tüm videolarında kullan.
-        </p>
+    <div className="mx-auto max-w-5xl pb-16">
+      <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="disp text-[28px] font-semibold text-ink">Marka Kiti</h1>
+          <p className="mt-1 text-[14.5px] text-slate">
+            Bir kez ayarla, videolarında giriş, kapanış ve filigran olarak kullan.
+          </p>
+        </div>
+        {draft && (
+          <div className="flex items-center gap-3">
+            {saved && !dirty && <span role="status" className="text-[13px] text-muted">Kaydedildi</span>}
+            {save.isError && <span className="text-[13px] text-red-600">Kaydedilemedi</span>}
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={!dirty || save.isPending}
+              className="btn btn-primary min-w-28 disabled:opacity-35"
+            >
+              {save.isPending ? "Kaydediliyor…" : "Kaydet"}
+            </button>
+          </div>
+        )}
       </div>
 
       {kitQ.isLoading ? (
-        <div role="status" aria-live="polite">
+        <div role="status" aria-live="polite" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
           <span className="sr-only">Yükleniyor…</span>
-          <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="space-y-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-11 rounded-xl bg-black/5" />
-              ))}
-            </div>
-            <div className="ph-stripe aspect-[9/16] max-h-72 rounded-[18px] border border-hairline" />
+          <div className="card p-5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between gap-6 border-b border-hairline py-4 last:border-0">
+                <div className="h-3 w-24 rounded bg-black/5" />
+                <div className="h-9 w-[260px] rounded-xl bg-black/5" />
+              </div>
+            ))}
           </div>
+          <div className="ph-stripe aspect-[9/16] rounded-[26px] border border-hairline" />
         </div>
       ) : kitQ.isError ? (
-        /* A failed request is not an empty kit — never show blank defaults as if they were
-           the user's saved data, or a save would silently overwrite the real kit. */
+        /* A failed load is not an empty kit — showing blank defaults would let a save
+           overwrite the real one. */
         <div className="card p-10 text-center">
           <p className="text-[14px] text-muted">Marka kiti yüklenemedi</p>
           <button type="button" onClick={() => kitQ.refetch()} className="mt-2 text-[13px] font-medium text-signal">
@@ -118,181 +156,151 @@ export function BrandKitView() {
           </button>
         </div>
       ) : draft ? (
-        <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_320px]">
-          {/* ── Form ── */}
-          <div className="space-y-6">
-            {/* Logo */}
-            <section>
-              <h2 className="disp mb-2 text-[15px] font-semibold text-ink">Logo</h2>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                className="hidden"
-                onChange={(e) => pickLogo(e.target.files?.[0])}
-              />
-              {draft.logoUrl ? (
-                <div className="flex items-center gap-3">
-                  <div className="grid h-[68px] w-[68px] place-items-center overflow-hidden rounded-xl border border-hairline bg-mist">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={draft.logoUrl} alt="Logo" className="max-h-full max-w-full object-contain" />
-                  </div>
-                  <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-ghost">
-                    Değiştir
-                  </button>
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="flex flex-col gap-5">
+            <section className="card px-5 py-1">
+              <Row label="Logo" hint="PNG, JPG, WEBP ya da SVG">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={(e) => pickLogo(e.target.files?.[0])}
+                />
+                <div className="flex items-center gap-2.5">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSaved(false);
-                      setDraft((d) => (d ? { ...d, logoKey: null, logoUrl: null } : d));
-                    }}
-                    className="text-[13px] font-medium text-muted transition hover:text-ink"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={upload.isPending}
+                    aria-label={draft.logoUrl ? "Logoyu değiştir" : "Logo yükle"}
+                    className={`group relative grid h-[52px] w-[52px] flex-none place-items-center overflow-hidden rounded-xl border bg-mist transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
+                      draft.logoUrl ? "border-hairline hover:border-slate" : "border-dashed border-hairline hover:border-slate"
+                    }`}
                   >
-                    Kaldır
+                    {upload.isPending ? (
+                      <Spinner />
+                    ) : draft.logoUrl ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={draft.logoUrl} alt="" className="h-full w-full object-contain p-1.5" />
+                        <span className="absolute inset-0 hidden place-items-center bg-ink/70 text-paper group-hover:grid">
+                          <Icon.pencil width={15} height={15} />
+                        </span>
+                      </>
+                    ) : (
+                      <Icon.plus width={17} height={17} className="text-muted" />
+                    )}
                   </button>
+                  {draft.logoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSaved(false);
+                        setDraft((d) => (d ? { ...d, logoKey: null, logoUrl: null } : d));
+                      }}
+                      className="text-[13px] font-medium text-muted transition hover:text-ink"
+                    >
+                      Kaldır
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={upload.isPending}
-                  className="flex w-full flex-col items-center justify-center gap-3 rounded-[16px] border border-dashed border-hairline px-6 py-10 text-center transition hover:border-slate"
-                >
-                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-mist text-slate">
-                    {upload.isPending ? <Spinner /> : <Icon.media width={22} height={22} />}
-                  </span>
-                  <span className="text-[14px] font-medium text-ink">
-                    {upload.isPending ? "Yükleniyor…" : "Logonu yükle"}
-                  </span>
-                  <span className="text-[12.5px] text-muted">(.png, .jpg, .webp, .svg)</span>
-                </button>
-              )}
-              {uploadError && <p className="mt-2 text-[12.5px] text-red-600">{uploadError}</p>}
-            </section>
+              </Row>
 
-            {/* Text */}
-            <section className="space-y-3">
-              <h2 className="disp text-[15px] font-semibold text-ink">Marka bilgileri</h2>
-              <div>
-                <label htmlFor="bk-name" className="mb-1 block text-[13px] text-slate">
-                  Marka adı
-                </label>
+              <Row label="Marka adı">
                 <input
-                  id="bk-name"
                   value={draft.brandName}
                   onChange={(e) => set("brandName", e.target.value)}
                   maxLength={60}
                   placeholder="Sentezy"
-                  className={FIELD}
+                  className={INPUT}
+                  aria-label="Marka adı"
                 />
-              </div>
-              <div>
-                <label htmlFor="bk-handle" className="mb-1 block text-[13px] text-slate">
-                  Kullanıcı adı
-                </label>
+              </Row>
+
+              <Row label="Kullanıcı adı">
                 <input
-                  id="bk-handle"
                   value={draft.handle}
                   onChange={(e) => set("handle", e.target.value)}
                   maxLength={40}
                   placeholder="@sentezy"
-                  className={FIELD}
+                  className={INPUT}
+                  aria-label="Kullanıcı adı"
                 />
-              </div>
-              <div>
-                <label htmlFor="bk-cta" className="mb-1 block text-[13px] text-slate">
-                  Kapanış çağrısı
-                </label>
+              </Row>
+
+              <Row label="Kapanış yazısı" hint="Videonun sonundaki buton">
                 <input
-                  id="bk-cta"
                   value={draft.outroCta}
                   onChange={(e) => set("outroCta", e.target.value)}
                   maxLength={40}
                   placeholder="Hemen dene"
-                  className={FIELD}
+                  className={INPUT}
+                  aria-label="Kapanış yazısı"
                 />
-              </div>
+              </Row>
             </section>
 
-            {/* Colour */}
-            <section>
-              <h2 className="disp mb-2 text-[15px] font-semibold text-ink">Renk</h2>
-              <div className="flex flex-wrap items-center gap-2">
-                {SWATCHES.map((hex) => (
-                  <button
-                    key={hex}
-                    type="button"
-                    onClick={() => set("color", hex)}
-                    aria-label={hex}
-                    aria-pressed={draft.color.toUpperCase() === hex}
-                    className={`h-8 w-8 rounded-full border transition ${
-                      draft.color.toUpperCase() === hex ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"
-                    }`}
-                    style={{ backgroundColor: hex }}
-                  />
-                ))}
-                <label
-                  className="flex h-8 cursor-pointer items-center gap-2 rounded-full border border-hairline px-3 text-[12.5px] text-slate transition hover:border-slate"
-                  title="Özel renk"
-                >
-                  <span
-                    className="h-4 w-4 rounded-full border border-hairline"
-                    style={{ backgroundColor: draft.color }}
-                  />
-                  <span className="mono">{draft.color.toUpperCase()}</span>
-                  <input
-                    type="color"
-                    value={draft.color}
-                    onChange={(e) => set("color", e.target.value)}
-                    className="sr-only"
-                    aria-label="Özel renk"
-                  />
-                </label>
-              </div>
-            </section>
-
-            {/* Font */}
-            <section>
-              <h2 className="disp mb-2 text-[15px] font-semibold text-ink">Yazı tipi</h2>
-              <div className="flex flex-wrap gap-1.5">
-                {CAPTION_FONTS.map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => set("font", f)}
-                    className={`rounded-full border px-3 py-1.5 text-[13px] transition ${
-                      draft.font === f ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:border-slate"
-                    }`}
-                    style={{ fontFamily: `"${f}", sans-serif` }}
+            <section className="card px-5 py-1">
+              <Row label="Renk" hint="Giriş ve kapanış arka planı">
+                <div className="flex items-center gap-1.5">
+                  {SWATCHES.map((hex) => {
+                    const on = draft.color.toUpperCase() === hex;
+                    return (
+                      <button
+                        key={hex}
+                        type="button"
+                        onClick={() => set("color", hex)}
+                        aria-label={hex}
+                        aria-pressed={on}
+                        className={`h-7 w-7 flex-none rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
+                          on ? "ring-2 ring-ink ring-offset-2" : "ring-1 ring-hairline hover:ring-slate"
+                        }`}
+                        style={{ backgroundColor: hex }}
+                      />
+                    );
+                  })}
+                  <label
+                    className="ml-0.5 grid h-7 w-7 flex-none cursor-pointer place-items-center rounded-full border border-dashed border-hairline text-muted transition hover:border-slate hover:text-ink"
+                    title="Özel renk"
                   >
-                    {f}
-                  </button>
-                ))}
-              </div>
+                    <Icon.plus width={13} height={13} />
+                    <input
+                      type="color"
+                      value={draft.color}
+                      onChange={(e) => set("color", e.target.value)}
+                      className="sr-only"
+                      aria-label="Özel renk"
+                    />
+                  </label>
+                </div>
+              </Row>
+
+              <Row label="Yazı tipi">
+                <FontSelect value={draft.font} options={CAPTION_FONTS} onChange={(f) => set("font", f)} />
+              </Row>
             </section>
 
-            <div className="flex items-center gap-3 pt-1">
-              <button
-                type="button"
-                onClick={onSave}
-                disabled={!dirty || save.isPending}
-                className="btn btn-primary min-w-28 disabled:opacity-40"
-              >
-                {save.isPending ? "Kaydediliyor…" : "Kaydet"}
-              </button>
-              {saved && !dirty && (
-                <span role="status" className="text-[13px] text-muted">
-                  Kaydedildi
-                </span>
-              )}
-              {save.isError && <span className="text-[13px] text-red-600">Kaydedilemedi, tekrar dene.</span>}
-            </div>
+            {uploadError && <p className="text-[12.5px] text-red-600">{uploadError}</p>}
           </div>
 
-          {/* ── Live preview ── */}
-          <aside>
-            <h2 className="disp mb-2 text-[15px] font-semibold text-ink">Önizleme</h2>
+          <aside className="lg:sticky lg:top-6">
+            <div className="mb-2.5 flex gap-1 rounded-full border border-hairline p-1">
+              {MODES.map((m) => (
+                <button
+                  key={m.v}
+                  type="button"
+                  onClick={() => setMode(m.v)}
+                  aria-pressed={mode === m.v}
+                  className={`flex-1 rounded-full py-1.5 text-[12px] font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
+                    mode === m.v ? "bg-ink text-paper" : "text-slate hover:text-ink"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
             <BrandPreview
+              mode={mode}
               color={draft.color}
               font={draft.font}
               brandName={draft.brandName}
@@ -300,6 +308,9 @@ export function BrandKitView() {
               outroCta={draft.outroCta}
               logoUrl={draft.logoUrl}
             />
+            <p className="mt-2.5 text-[12px] leading-relaxed text-muted">
+              Yazı rengi marka rengine göre seçilir, her zaman okunur kalır.
+            </p>
           </aside>
         </div>
       ) : null}
