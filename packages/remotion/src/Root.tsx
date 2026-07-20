@@ -1,15 +1,10 @@
 // packages/remotion/src/Root.tsx
 import React from "react";
 import { Composition } from "remotion";
+import { reelSegments } from "./brand/timing";
 import { Reel } from "./reel/Reel";
 import type { ReelProps } from "./reel/types";
 import { SAMPLE_REEL_PROPS } from "./sample";
-
-/** Duration in frames from the last word's end (+0.3s tail). */
-const durationFromWords = (words: { end: number }[] | undefined, fps: number): number => {
-  const lastEnd = words && words.length > 0 ? words[words.length - 1]!.end : 5;
-  return Math.max(1, Math.ceil((lastEnd + 0.3) * fps));
-};
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -24,7 +19,8 @@ export const RemotionRoot: React.FC = () => {
       calculateMetadata={({ props }: { props: ReelProps }) => {
         const fps = props.fps ?? 30;
         return {
-          durationInFrames: durationFromWords(props.words, fps),
+          // reelSegments is the one place reel length is decided — see brand/timing.ts.
+          durationInFrames: reelSegments(props.words ?? [], props.brand ?? null, fps).totalFrames,
           fps,
           width: props.width ?? 1080,
           height: props.height ?? 1920,

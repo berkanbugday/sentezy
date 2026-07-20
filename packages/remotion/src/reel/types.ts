@@ -3,6 +3,7 @@ import type { CaptionStyleId } from "@sentezy/types";
 import type { AvatarPosition, CaptionPosition, CaptionWord } from "../types";
 import type { ResolvedSfxCue } from "./SfxTrack";
 import type { ReelBrollItem } from "./BrollLayer";
+import type { ReelBrand } from "../brand/types";
 
 /** Props for the single Reel composition — passed verbatim by the web <Player> (preview)
  *  and by the Cloudflare renderer as Remotion inputProps (render). Width/height/fps come
@@ -23,6 +24,9 @@ export type ReelProps = {
   musicUrl: string | null;
   /** 0..1 bed level, matched to options.music.volume. */
   musicVolume: number;
+  /** Brand kit for this video — intro/outro ends and the watermark. null/omitted = none,
+   *  in which case the reel is exactly what it was before the feature existed. */
+  brand?: ReelBrand | null;
   width?: number;
   height?: number;
   fps?: number;
