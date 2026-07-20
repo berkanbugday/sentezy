@@ -59,7 +59,10 @@ async function deliver(res, outPath, { key, contentType, keyField }) {
 }
 
 app.post("/render-reel", async (req, res) => {
-  const { jobId, words, avatarUrl, broll, captionStyle, avatarPosition, position, captions, width, height, fps } =
+  // NOTE: this destructuring is a whitelist — a prop missing from it is silently dropped
+  // and the composition falls back to its defaultProps. Add new props here as well as in
+  // build_reel_props, or they will not reach the render.
+  const { jobId, words, avatarUrl, broll, captionStyle, avatarPosition, position, captions, width, height, fps, brand } =
     req.body ?? {};
   if (!jobId || !Array.isArray(words)) {
     return res.status(400).json({ error: "jobId and words[] are required" });
@@ -75,6 +78,9 @@ app.post("/render-reel", async (req, res) => {
       words, avatarUrl: avatarUrl ?? null, broll: broll ?? [],
       captionStyle, avatarPosition, position,
       captions: captions !== false, previewAudio: false, sfxCues: [],
+      // Explicitly null when absent: leaving it undefined lets Remotion fall back to the
+      // composition's defaultProps, which would brand an unbranded video.
+      brand: brand ?? null,
       width, height, fps,
     };
     const composition = await selectComposition({ serveUrl, id: "Reel", inputProps });

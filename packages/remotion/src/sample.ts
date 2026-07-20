@@ -38,20 +38,11 @@ export const SAMPLE_REEL_PROPS: ReelProps = {
   sfxCues: [],
   musicUrl: null,
   musicVolume: 0.15,
-  // A brand with both ends on, so Remotion Studio shows the full intro → body → outro
-  // shape. No logoUrl: Studio has no signed R2 URL to load, and the card is designed to
-  // read as name-only when a kit has no logo yet.
-  brand: {
-    intro: { kind: "card" },
-    outro: { kind: "card" },
-    watermark: false,
-    logoUrl: null,
-    brandName: "Sentezy",
-    handle: "@sentezy",
-    cta: "Hemen dene",
-    color: "#0A0A0B",
-    font: "General Sans",
-  },
+  // MUST stay null. These are the composition's defaultProps, and Remotion falls back to
+  // them for any prop a caller omits — a sample brand here silently stamps its intro and
+  // outro onto every video whose render did not pass a brand of its own. To see the cards
+  // in Studio, edit the `brand` prop in the props panel instead.
+  brand: null,
   width: 1080,
   height: 1920,
   fps: 30,
