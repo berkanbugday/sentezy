@@ -193,3 +193,54 @@ def test_sfx_times_shift_by_the_intro_offset(monkeypatch):
     # Without the shift this would still be 1600 and the whoosh would fire during the
     # intro card, a transition-duration before the cutaway it belongs to.
     assert "adelay=3100|3100" in fc
+
+
+# ── Uploaded clip audio ────────────────────────────────────────────────────────────
+
+
+def test_clip_audio_is_mixed_at_its_position_without_silence_trimming():
+    # Intro clip at 0s, outro clip at intro+body. Trimming leading silence — which the
+    # whooshes do want — would slide a clip's sound away from its own picture.
+    cmd = _ffmpeg_audio_cmd(
+        video_path="/v.mp4", voice_path="/a.mp3", out_path="/o.mp4",
+        music_path=None, music_volume=0.15, broll=[], transition_sfx=False,
+        voice_offset=2.4, total_duration=10.0,
+        clip_audio=[{"path": "/intro.mp4", "at": 0.0}, {"path": "/outro.mp4", "at": 7.5}],
+    )
+    fc = cmd[cmd.index("-filter_complex") + 1]
+    assert "/intro.mp4" in cmd and "/outro.mp4" in cmd
+    assert "adelay=0|0" in fc
+    assert "adelay=7500|7500" in fc
+    # Full level, and NOT silence-trimmed.
+    assert "volume=1.0" in fc
+    assert "silenceremove" not in fc
+
+
+def test_whooshes_keep_their_silence_trim_alongside_clip_audio(monkeypatch):
+    monkeypatch.setattr("sentezy_worker.audio._transition_sfx_path", lambda t: "/lib/w.wav")
+    cmd = _ffmpeg_audio_cmd(
+        video_path="/v.mp4", voice_path="/a.mp3", out_path="/o.mp4",
+        music_path=None, music_volume=0.15,
+        broll=[{"start": 0.5, "transition": "fade"}, {"start": 2.0, "transition": "slide"}],
+        transition_sfx=True,
+        clip_audio=[{"path": "/intro.mp4", "at": 0.0}],
+    )
+    fc = cmd[cmd.index("-filter_complex") + 1]
+    # The whoosh is trimmed; the clip is not. Both are in the same mix.
+    assert "silenceremove" in fc
+    assert "volume=0.3" in fc and "volume=1.0" in fc
+    assert "amix=inputs=3" in fc  # bed + whoosh + clip
+
+
+def test_no_clip_audio_leaves_the_command_untouched():
+    without = _ffmpeg_audio_cmd(
+        video_path="/v.mp4", voice_path="/a.mp3", out_path="/o.mp4",
+        music_path=None, music_volume=0.15, broll=[], transition_sfx=False,
+    )
+    explicit_empty = _ffmpeg_audio_cmd(
+        video_path="/v.mp4", voice_path="/a.mp3", out_path="/o.mp4",
+        music_path=None, music_volume=0.15, broll=[], transition_sfx=False,
+        clip_audio=[],
+    )
+    assert without == explicit_empty
+    assert "-filter_complex" not in without

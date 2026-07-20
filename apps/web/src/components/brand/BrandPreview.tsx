@@ -17,6 +17,7 @@ export function BrandPreview({
   handle,
   outroCta,
   logoUrl,
+  clipUrl = null,
 }: {
   mode: PreviewMode;
   color: string;
@@ -25,17 +26,27 @@ export function BrandPreview({
   handle: string;
   outroCta: string;
   logoUrl: string | null;
+  /** An uploaded clip for THIS end, which replaces the generated card entirely. */
+  clipUrl?: string | null;
 }) {
   const ink = readableInk(color);
   const face = `"${font}", sans-serif`;
   const empty = !brandName && !logoUrl;
+  const showClip = clipUrl && mode !== "watermark";
 
   return (
     <div
       className="relative aspect-[9/16] w-full overflow-hidden rounded-[26px] border border-hairline"
-      style={{ backgroundColor: mode === "watermark" ? "#0b0b0d" : color }}
+      style={{ backgroundColor: mode === "watermark" || showClip ? "#0b0b0d" : color }}
     >
-      {mode === "watermark" ? (
+      {showClip ? (
+        /* The uploaded clip replaces the card outright, so the preview shows the clip and
+           nothing else — overlaying the brand name here would promise something the render
+           does not produce. Muted and looping: the render is silent, and an autoplaying
+           soundtrack in a settings screen is hostile. */
+        // eslint-disable-next-line jsx-a11y/media-has-caption
+        <video src={clipUrl} muted loop autoPlay playsInline className="h-full w-full object-cover" />
+      ) : mode === "watermark" ? (
         <>
           {/* Stand-in for the reel: a dim subject and caption band, so the watermark is
               judged against something rather than floating on empty black. */}

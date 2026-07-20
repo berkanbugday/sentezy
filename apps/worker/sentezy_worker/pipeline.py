@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 import subprocess
 import tempfile
@@ -19,6 +20,8 @@ from .providers.reel_remotion import (
 )
 from .storage import Storage
 from .thumbnail import make_thumbnail
+
+log = logging.getLogger("sentezy.worker")
 
 RATIO_DIMS = {"9:16": (1080, 1920), "1:1": (1080, 1080), "16:9": (1920, 1080)}
 # Reverse map (width, height) → HeyGen Avatar IV aspect_ratio label.
@@ -99,6 +102,46 @@ def _broll_segments(words: list, media: list[dict]) -> list[dict]:
         }
         for i, m in enumerate(media)
     ]
+
+
+def _has_audio_stream(path: str) -> bool:
+    """True when the file carries an audio track. A brand clip exported silently is common,
+    and handing ffmpeg a filter chain for a stream that isn't there fails the whole mux."""
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
+             "-of", "csv=p=0", path],
+            capture_output=True, text=True, timeout=30,
+        )
+        return bool(out.stdout.strip())
+    except Exception:
+        return False
+
+
+def _resolve_clip_audio(brand: dict | None, reel_seg: dict, storage: Storage, workdir: str, fps: int) -> list[dict]:
+    """Download uploaded brand intro/outro clips and return [{path, at}] for the ones that
+    actually have sound. The Remotion render is silent, so without this an uploaded intro
+    plays in dead silence."""
+    if not brand:
+        return []
+    out: list[dict] = []
+    ends = (
+        ("intro", brand.get("intro"), 0.0),
+        # The outro starts after the intro and the body.
+        ("outro", brand.get("outro"), (reel_seg["introFrames"] + reel_seg["bodyFrames"]) / fps),
+    )
+    for name, end, at in ends:
+        if not end or end.get("kind") != "clip":
+            continue
+        path = f"{workdir}/brand_{name}.mp4"
+        try:
+            storage.download(end["url"], path)
+        except Exception:
+            log.warning("brand %s clip download failed — rendering it silent", name)
+            continue
+        if _has_audio_stream(path):
+            out.append({"path": path, "at": at})
+    return out
 
 
 def _resolve_music(options: dict, storage: Storage, workdir: str) -> str | None:
@@ -297,6 +340,7 @@ def process_video(video_id: str, cfg: Config, db: Db, storage: Storage, el: Elev
         broll=segments, transition_sfx=transition_sfx,
         voice_offset=reel_seg["introFrames"] / 30,
         total_duration=(reel_seg["totalFrames"] / 30) if brand else None,
+        clip_audio=_resolve_clip_audio(brand, reel_seg, storage, workdir, 30),
     )
 
     # 4) Thumbnail + upload

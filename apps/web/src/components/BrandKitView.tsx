@@ -6,6 +6,7 @@ import { FontSelect } from "@/components/brand/FontSelect";
 import { Icon } from "@/components/icons";
 import { Spinner } from "@/components/composer/Spinner";
 import { CAPTION_FONTS } from "@/lib/captionStyles";
+import { clipErrorMessage, readClipDuration } from "@/lib/videoDuration";
 import { type BrandKit, useBrandKit, useUpdateBrandKit, useUploadBrandAsset } from "@/lib/queries";
 
 /** Six visibly distinct starting points — two neutrals and four hues. Deliberately not a
@@ -19,6 +20,8 @@ const MODES: { v: PreviewMode; label: string }[] = [
   { v: "watermark", label: "Filigran" },
 ];
 
+type Clip = { key: string; ms: number; url: string | null } | null;
+
 type Draft = {
   brandName: string;
   handle: string;
@@ -27,6 +30,8 @@ type Draft = {
   font: string;
   logoKey: string | null;
   logoUrl: string | null;
+  introClip: Clip;
+  outroClip: Clip;
 };
 
 const toDraft = (k: BrandKit): Draft => ({
@@ -37,6 +42,8 @@ const toDraft = (k: BrandKit): Draft => ({
   font: k.font,
   logoKey: k.logoKey,
   logoUrl: k.logoUrl,
+  introClip: k.introClipKey && k.introClipMs ? { key: k.introClipKey, ms: k.introClipMs, url: k.introClipUrl } : null,
+  outroClip: k.outroClipKey && k.outroClipMs ? { key: k.outroClipKey, ms: k.outroClipMs, url: k.outroClipUrl } : null,
 });
 
 const INPUT =
@@ -63,9 +70,13 @@ export function BrandKitView() {
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [clipError, setClipError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<"introClip" | "outroClip" | null>(null);
   const [saved, setSaved] = useState(false);
   const [mode, setMode] = useState<PreviewMode>("intro");
   const fileRef = useRef<HTMLInputElement>(null);
+  const introRef = useRef<HTMLInputElement>(null);
+  const outroRef = useRef<HTMLInputElement>(null);
 
   // Seed the form once the kit arrives. Re-seeding on every refetch would wipe edits.
   const seeded = useRef(false);
@@ -92,6 +103,28 @@ export function BrandKitView() {
     }
   };
 
+  /** Measure the clip BEFORE uploading: a file whose length we cannot read is unusable, and
+   *  rejecting it here avoids putting an orphan object in storage. */
+  const pickClip = async (end: "introClip" | "outroClip", file: File | undefined) => {
+    if (!file) return;
+    setClipError(null);
+    const measured = await readClipDuration(file);
+    if (!measured.ok) {
+      setClipError(clipErrorMessage(measured.reason));
+      return;
+    }
+    setUploading(end);
+    try {
+      const { key, url } = await upload.mutateAsync({ file, kind: "clip" });
+      setSaved(false);
+      setDraft((d) => (d ? { ...d, [end]: { key, ms: measured.ms, url } } : d));
+    } catch {
+      setClipError("Video yüklenemedi. Tekrar dene.");
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const onSave = async () => {
     if (!draft) return;
     // Empty fields are stored as null: "" would render an empty line on the card.
@@ -102,6 +135,12 @@ export function BrandKitView() {
       color: draft.color,
       font: draft.font,
       logoKey: draft.logoKey,
+      // Key and duration always travel together — the API rejects half a pair, because a
+      // clip without its length would desynchronise the reel's audio.
+      introClipKey: draft.introClip?.key ?? null,
+      introClipMs: draft.introClip?.ms ?? null,
+      outroClipKey: draft.outroClip?.key ?? null,
+      outroClipMs: draft.outroClip?.ms ?? null,
     });
     setSaved(true);
   };
@@ -280,7 +319,84 @@ export function BrandKitView() {
               </Row>
             </section>
 
-            {uploadError && <p className="text-[12.5px] text-red-600">{uploadError}</p>}
+            <section className="card px-5 py-1">
+              <div className="border-b border-hairline pb-3 pt-4">
+                <div className="text-[13.5px] font-medium text-ink">Kendi videon</div>
+                <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+                  Hazır kart yerine kendi giriş ya da kapanış videonu kullan. Yüklediğin video o
+                  bölümün yerini tamamen alır.
+                </p>
+              </div>
+              {(
+                [
+                  { end: "introClip", label: "Giriş videosu", ref: introRef },
+                  { end: "outroClip", label: "Kapanış videosu", ref: outroRef },
+                ] as const
+              ).map(({ end, label, ref }) => {
+                const clip = draft[end];
+                return (
+                  <Row key={end} label={label}>
+                    <input
+                      ref={ref}
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/webm"
+                      className="hidden"
+                      onChange={(e) => pickClip(end, e.target.files?.[0])}
+                    />
+                    {clip ? (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex min-w-0 items-center gap-2 text-[13px] text-ink">
+                          <Icon.video width={15} height={15} className="flex-none text-muted" />
+                          <span className="mono">{(clip.ms / 1000).toFixed(1)} sn</span>
+                        </span>
+                        <span className="flex flex-none items-center gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => ref.current?.click()}
+                            className="text-[13px] font-medium text-signal"
+                          >
+                            Değiştir
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSaved(false);
+                              setDraft((d) => (d ? { ...d, [end]: null } : d));
+                            }}
+                            className="text-[13px] font-medium text-muted transition hover:text-ink"
+                          >
+                            Kaldır
+                          </button>
+                        </span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => ref.current?.click()}
+                        disabled={uploading !== null}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-hairline py-2.5 text-[13px] font-medium text-slate transition hover:border-slate hover:text-ink disabled:opacity-45"
+                      >
+                        {uploading === end ? (
+                          <>
+                            <Spinner size={14} /> Yükleniyor…
+                          </>
+                        ) : (
+                          <>
+                            <Icon.plus width={14} height={14} /> Video yükle
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </Row>
+                );
+              })}
+            </section>
+
+            {(uploadError || clipError) && (
+              <p role="alert" className="text-[12.5px] text-red-600">
+                {uploadError ?? clipError}
+              </p>
+            )}
           </div>
 
           <aside className="lg:sticky lg:top-6">
@@ -307,6 +423,7 @@ export function BrandKitView() {
               handle={draft.handle}
               outroCta={draft.outroCta}
               logoUrl={draft.logoUrl}
+              clipUrl={mode === "intro" ? draft.introClip?.url ?? null : mode === "outro" ? draft.outroClip?.url ?? null : null}
             />
             <p className="mt-2.5 text-[12px] leading-relaxed text-muted">
               Yazı rengi marka rengine göre seçilir, her zaman okunur kalır.
