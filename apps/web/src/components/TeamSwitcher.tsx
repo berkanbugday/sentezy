@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -56,10 +57,14 @@ export function TeamSwitcher({ user, collapsed }: { user: UserInfo; collapsed?: 
       {open && (
         <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-white/10 bg-[#14141a] py-1 shadow-2xl">
           <div className="truncate px-3 py-1.5 text-[11px] text-white/50">{user.email}</div>
-          <button className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-white/85 hover:bg-white/10">
+          <Link
+            href="/settings"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-white/85 hover:bg-white/10"
+          >
             <Icon.settings width={16} height={16} />
             Ayarlar
-          </button>
+          </Link>
           <button
             onClick={signOut}
             className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-white/85 hover:bg-white/10"

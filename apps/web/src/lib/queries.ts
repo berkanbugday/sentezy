@@ -37,7 +37,31 @@ export const qk = {
   videos: ["videos"] as const,
   video: (id: string) => ["video", id] as const,
   brandKit: ["brand-kit"] as const,
+  profile: ["profile"] as const,
 };
+
+/** The signed-in user's account. Email is the auth identity; plan/credits are server-owned. */
+export type Profile = {
+  displayName: string | null;
+  email: string | null;
+  plan: string;
+  credits: number;
+};
+
+/** GET /profile provisions the row on first read, so this never 404s. Shared by the
+ *  settings screen, the sidebar credit pill and the bottom-nav sheet. */
+export function useProfile() {
+  return useQuery({ queryKey: qk.profile, queryFn: () => apiFetch<Profile>("/profile") });
+}
+
+export function useUpdateProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { displayName: string | null }) =>
+      apiFetch<Profile>("/profile", { method: "PATCH", body: JSON.stringify(input) }),
+    onSuccess: (p) => qc.setQueryData(qk.profile, p),
+  });
+}
 
 /** The user's brand kit. `*Key` fields are what gets stored on a video; the `*Url` fields
  *  are freshly-signed previews and must never be persisted — they expire. */

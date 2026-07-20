@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useProfile } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/client";
 import type { UserInfo } from "@/lib/user";
 import { Icon } from "./icons";
@@ -22,6 +23,7 @@ export function BottomNav({ user }: { user: UserInfo }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sheet, setSheet] = useState(false);
+  const credits = useProfile().data?.credits;
 
   async function signOut() {
     await createClient().auth.signOut();
@@ -77,14 +79,14 @@ export function BottomNav({ user }: { user: UserInfo }) {
               </div>
               <span className="flex flex-none items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5 text-[12.5px] font-semibold text-ink">
                 <Icon.bolt width={13} height={13} className="text-slate" />
-                50 <span className="text-muted">kredi</span>
+                {credits ?? "—"} <span className="text-muted">kredi</span>
               </span>
             </div>
             <div className="flex flex-col gap-0.5 border-t border-hairline pt-2">
-              <button className="nav-item">
+              <Link href="/settings" onClick={() => setSheet(false)} className="nav-item">
                 <Icon.settings width={18} height={18} />
                 Ayarlar
-              </button>
+              </Link>
               <button className="nav-item">
                 <Icon.help width={18} height={18} />
                 Yardım & destek

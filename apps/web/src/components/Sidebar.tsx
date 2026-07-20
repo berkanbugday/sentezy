@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useProfile } from "@/lib/queries";
 import type { UserInfo } from "@/lib/user";
 import { Icon } from "./icons";
 import { TeamSwitcher } from "./TeamSwitcher";
@@ -23,6 +24,7 @@ const STORAGE_KEY = "sentezy:sidebar-collapsed";
 export function Sidebar({ user, mobile = false, onNavigate }: { user: UserInfo; mobile?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const credits = useProfile().data?.credits;
 
   // Restore the persisted state after mount (avoids a hydration mismatch).
   useEffect(() => {
@@ -115,7 +117,7 @@ export function Sidebar({ user, mobile = false, onNavigate }: { user: UserInfo; 
 
       {/* footer: credits + help (pinned) */}
       <div className={`mt-auto flex ${isCollapsed ? "flex-col items-center gap-2" : "items-center gap-2 px-1"}`}>
-        <Tooltip label="50 kredi kaldı">
+        <Tooltip label={credits === undefined ? "Krediler" : `${credits} kredi kaldı`}>
           <span
             className={`flex items-center gap-1.5 rounded-full border border-white/20 text-[13px] font-semibold text-white ${
               isCollapsed ? "h-9 w-9 justify-center" : "px-3 py-1.5"
@@ -124,7 +126,8 @@ export function Sidebar({ user, mobile = false, onNavigate }: { user: UserInfo; 
             <Icon.bolt width={14} height={14} className="text-white/80" />
             {!isCollapsed && (
               <>
-                50 <span className="text-white/60">kredi</span>
+                {/* An em-dash placeholder while the profile loads — never the old hardcoded 50. */}
+                {credits ?? "—"} <span className="text-white/60">kredi</span>
               </>
             )}
           </span>

@@ -6,6 +6,7 @@ import { brandKitRoutes } from "./routes/brandKit";
 import { healthRoutes } from "./routes/health";
 import { importRoutes } from "./routes/import";
 import { musicRoutes } from "./routes/music";
+import { profileRoutes } from "./routes/profile";
 import { avatarRoutes } from "./routes/avatars";
 import { videoRoutes } from "./routes/videos";
 import { voiceRoutes } from "./routes/voices";
@@ -21,6 +22,7 @@ export function buildServer() {
   app.register(backgroundRoutes);
   app.register(brandKitRoutes);
   app.register(musicRoutes);
+  app.register(profileRoutes);
   app.register(avatarRoutes);
   app.register(videoRoutes);
   app.register(importRoutes);
