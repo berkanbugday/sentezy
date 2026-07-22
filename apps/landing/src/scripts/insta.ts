@@ -1,6 +1,10 @@
-/** Instagram's embed.js is ~40 KB of third-party JS that blocks nothing we need above the
- *  fold, so it is injected only when the showcase approaches the viewport. Until then each
- *  slot shows a skeleton sized to the embed's aspect, so nothing reflows when it lands. */
+/** Instagram's embed.js is heavy third-party JS that blocks nothing we need above the fold, so
+ *  it is injected only when the showcase approaches the viewport.
+ *
+ *  Until then each slot holds a skeleton at the typical reel-embed height. We cannot know the
+ *  real height in advance — Instagram sizes the iframe itself, and a longer caption makes it
+ *  taller — so this reduces the reflow rather than eliminating it. The section is below the
+ *  fold and loads on approach, so any residual shift lands off-screen. */
 declare global {
   interface Window {
     instgrm?: { Embeds: { process: () => void } };
@@ -18,7 +22,6 @@ const load = () => {
   // embed.js auto-processes on load, but call it explicitly in case it was already cached.
   s.addEventListener("load", () => window.instgrm?.Embeds.process());
   document.body.appendChild(s);
-  section?.classList.add("embeds-loading");
 };
 
 if (section) {

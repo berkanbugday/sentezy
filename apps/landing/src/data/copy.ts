@@ -93,5 +93,8 @@ export const showcase = {
     tr: "Bunların hepsi baştan sona üretildi — metin, sunucu, ses, altyazı ve kurgu. Kimse kamera tutmadı.",
   },
   follow: { en: "Follow @sentezy.ai", tr: "@sentezy.ai'yi takip et" },
+  /** Inside the blockquote. embed.js replaces it once the script lands, but it is our own
+   *  markup until then — and stays visible for anyone with JS blocked or Instagram unreachable. */
+  viewOnInstagram: { en: "View this reel on Instagram", tr: "Bu reels'i Instagram'da izle" },
   empty: { en: "See the latest reels on Instagram", tr: "En yeni reels'leri Instagram'da izleyin" },
 } satisfies Record<string, Copy>;
