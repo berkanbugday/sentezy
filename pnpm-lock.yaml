@@ -94,6 +94,9 @@ importers:
       '@tailwindcss/vite':
         specifier: 4.0.9
         version: 4.0.9(vite@6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.23.0)(yaml@2.9.0))
+      sharp:
+        specifier: 0.33.5
+        version: 0.33.5
       tailwindcss:
         specifier: 4.0.9
         version: 4.0.9
@@ -7083,13 +7086,11 @@ snapshots:
     dependencies:
       color-name: 1.1.4
       simple-swizzle: 0.2.4
-    optional: true
 
   color@4.2.3:
     dependencies:
       color-convert: 2.0.1
       color-string: 1.9.1
-    optional: true
 
   comma-separated-tokens@2.0.3: {}
 
@@ -7653,8 +7654,7 @@ snapshots:
 
   iron-webcrypto@1.2.1: {}
 
-  is-arrayish@0.3.4:
-    optional: true
+  is-arrayish@0.3.4: {}
 
   is-docker@2.2.1: {}
 
@@ -8627,7 +8627,6 @@ snapshots:
       '@img/sharp-wasm32': 0.33.5
       '@img/sharp-win32-ia32': 0.33.5
       '@img/sharp-win32-x64': 0.33.5
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:
@@ -8651,7 +8650,6 @@ snapshots:
   simple-swizzle@0.2.4:
     dependencies:
       is-arrayish: 0.3.4
-    optional: true
 
   sisteransi@1.0.5: {}
 

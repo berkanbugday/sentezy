@@ -1,0 +1,25 @@
+---
+import { hero } from "../data/copy";
+import { SIGNUP_URL } from "../data/site";
+import ReelMarquee from "./ReelMarquee.astro";
+---
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy reveal">
+      <div class="eyebrow" data-tr={hero.eyebrow.tr}>{hero.eyebrow.en}</div>
+      <h1 class="disp h1x" data-tr={hero.title.tr}>{hero.title.en}</h1>
+      <p class="lead" data-tr={hero.lead.tr}>{hero.lead.en}</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href={SIGNUP_URL}>
+          <span data-tr={hero.ctaPrimary.tr}>{hero.ctaPrimary.en}</span>
+        </a>
+        <a class="btn btn-ghost btn-lg" href="#showcase">
+          <span class="play">▶</span><span data-tr={hero.ctaSecondary.tr}>{hero.ctaSecondary.en}</span>
+        </a>
+      </div>
+      <div class="microcopy" data-tr={hero.microcopy.tr}>{hero.microcopy.en}</div>
+    </div>
+    <div class="hero-visual"><ReelMarquee /></div>
+  </div>
+</section>

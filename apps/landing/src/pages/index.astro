@@ -1,46 +1,14 @@
 ---
 import Base from "../layouts/Base.astro";
 import Nav from "../components/Nav.astro";
+import Hero from "../components/Hero.astro";
 import Footer from "../components/Footer.astro";
 ---
 
 <Base>
   <Nav />
 
-  <section class="hero">
-    <div class="wrap hero-grid">
-      <div class="hero-copy reveal">
-        <div class="eyebrow" data-tr="YAPAY ZEKA VİDEO STÜDYOSU">AI VIDEO STUDIO</div>
-        <h1 class="disp h1x" data-tr="Fikirlerinizi konuşan videolara sentezleyin.">Synthesize your ideas into talking video.</h1>
-        <p class="lead" data-tr="Metin, sunum ya da PDF'ten; gerçekçi AI avatarlar ve 175+ dilde seslendirmeyle bitmiş videolar. Kamera yok, ekip yok, stüdyo yok.">Turn a script, deck, or PDF into a finished video — lifelike AI avatars and voiceover in 175+ languages. No camera, no crew, no studio.</p>
-        <div class="hero-cta">
-          <a class="btn btn-primary btn-lg" href="#"><span data-tr="Ücretsiz oluştur">Create for free</span></a>
-          <a class="btn btn-ghost btn-lg" href="#"><span class="play">▶</span><span data-tr="Demoyu izle">Watch demo</span></a>
-        </div>
-        <div class="microcopy" data-tr="Kredi kartı gerekmez">No credit card required</div>
-        <div class="metric-row">
-          <div class="metric"><span class="metric-n" data-count="147" data-suffix="M+">0</span><span class="metric-l" data-tr="Oluşturulan video">Videos created</span></div>
-          <div class="metric"><span class="metric-n" data-count="122" data-suffix="M+">0</span><span class="metric-l" data-tr="Üretilen avatar">Avatars generated</span></div>
-          <div class="metric"><span class="metric-n" data-count="175" data-suffix="+">0</span><span class="metric-l" data-tr="Desteklenen dil">Languages supported</span></div>
-        </div>
-      </div>
-      <div class="hero-visual reveal">
-        <div class="beam-stage">
-          <div class="beam-glow"></div>
-          <div class="beam-inputs">
-            <div class="frag"><span class="frag-ic">TXT</span><span data-tr="Senaryo satırı">Script line</span></div>
-            <div class="frag"><span class="frag-ic">PDF</span><span>Deck.pdf</span></div>
-            <div class="frag"><span class="frag-ic">IMG</span><span data-tr="Fotoğraf">Photo</span></div>
-          </div>
-          <div class="beam-track"><span class="beam-flow"></span></div>
-          <div class="beam-avatar ph">
-            <span class="ph-label">avatar demo</span>
-            <div class="avatar-caption"><span class="rec-dot"></span><span data-tr="konuşuyor…">speaking…</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <Hero />
 
   <section class="sec">
     <div class="wrap">

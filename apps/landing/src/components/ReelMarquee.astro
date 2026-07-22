@@ -1,0 +1,35 @@
+---
+import { Image } from "astro:assets";
+import { columnA, columnB, type Still } from "../data/stills";
+
+/* The cutouts live in src/assets so astro:assets can downscale them and emit WebP — the
+   originals are 1024x1536 PNGs and these render at 270px wide. A glob is needed because the
+   slugs come from data; Astro resolves it at build time, so this stays fully static. */
+const avatarImages = import.meta.glob<{ default: ImageMetadata }>("../assets/avatars/*.png", {
+  eager: true,
+});
+const avatarOf = (slug: string): ImageMetadata => {
+  const mod = avatarImages[`../assets/avatars/${slug}.png`];
+  if (!mod) throw new Error(`no avatar image for slug "${slug}" — run pnpm --filter @sentezy/api export:stills`);
+  return mod.default;
+};
+
+const cols: { dir: "up" | "down"; items: Still[] }[] = [
+  { dir: "up", items: columnA },
+  { dir: "down", items: columnB },
+];
+---
+
+<div class="reels" aria-hidden="true">
+  {cols.map((col) => (
+    <div class={`reel-col ${col.dir}`}>
+      {[...col.items, ...col.items].map((s) => (
+        <div class={`tile tile-${s.tint}`}>
+          <Image src={avatarOf(s.slug)} alt="" widths={[270, 540]} sizes="270px" loading="lazy" decoding="async" />
+          <span class="tile-sector" data-tr={s.sector.tr}>{s.sector.en}</span>
+          <div class="tile-cap"><span class={`cap-${s.style}`} data-tr={s.caption.tr}>{s.caption.en}</span></div>
+        </div>
+      ))}
+    </div>
+  ))}
+</div>
