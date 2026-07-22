@@ -7,7 +7,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "typecheck": "astro check",
-    "lint": "echo 'no lint'"
+    "lint": "echo 'no lint'",
+    "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
     "astro": "5.6.1"

@@ -1,10 +1,35 @@
 @import "tailwindcss";
 @import "@sentezy/ui/theme.css";
 
-/* Non-scale tokens (gradients / washes) kept as plain custom properties. */
+/* Premium monochrome — lifted from apps/web/src/app/globals.css so the landing and the
+   product read as one company. Token NAMES are unchanged, so every existing utility and
+   rule below recolors automatically. packages/ui/theme.css is deliberately untouched. */
 :root {
-  --beam: linear-gradient(100deg, #8e97ec 0%, #c7a9ea 100%);
-  --wash: rgba(124, 134, 232, 0.08);
+  --color-paper: #ffffff;
+  --color-mist: #f4f4f5;
+  --color-ink: #0a0a0b;
+  --color-slate: #52525b;
+  --color-muted: #a1a1aa;
+  --color-hairline: #e4e4e7;
+  --color-signal: #18181b;
+  --beam: linear-gradient(135deg, #3f3f46, #18181b);
+  --wash: rgba(24, 24, 27, 0.06);
+
+  /* Aurora hero — cool blue/teal easing into warm amber/pink, fading into white. */
+  --hero:
+    radial-gradient(75% 100% at 2% -10%, rgba(46, 116, 196, 0.34) 0%, rgba(46, 116, 196, 0) 52%),
+    radial-gradient(55% 85% at 26% -12%, rgba(40, 196, 192, 0.20) 0%, rgba(40, 196, 192, 0) 48%),
+    radial-gradient(85% 100% at 100% -12%, rgba(232, 146, 96, 0.34) 0%, rgba(232, 146, 96, 0) 54%),
+    radial-gradient(48% 78% at 82% -12%, rgba(214, 112, 150, 0.22) 0%, rgba(214, 112, 150, 0) 50%),
+    #ffffff;
+
+  /* Soft-dark inset panel carrying the same aurora on near-black. Used for the
+     Instagram showcase and the final CTA, so the reels sit on black. */
+  --frame:
+    radial-gradient(95% 65% at 0% 0%, rgba(52, 104, 184, 0.70) 0%, rgba(52, 104, 184, 0) 58%),
+    radial-gradient(80% 70% at 12% 108%, rgba(96, 64, 168, 0.50) 0%, rgba(96, 64, 168, 0) 55%),
+    radial-gradient(85% 75% at 100% 18%, rgba(170, 86, 96, 0.55) 0%, rgba(170, 86, 96, 0) 55%),
+    linear-gradient(160deg, #16161c 0%, #111116 55%, #0d0d11 100%);
 }
 
 body {
@@ -168,3 +193,15 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
   .reveal, .stagger > * { opacity: 1; transform: none; transition: none; }
   .beam-flow, .rec-dot, .marquee-track { animation: none; }
 }
+
+/* ── dark band ──────────────────────────────────────────────────────────── */
+/* A full-bleed soft-dark section echoing the app's --frame sidebar. Text inside
+   flips to light; .btn-ghost inverts so it stays legible. */
+.band { background: var(--frame); color: rgba(255,255,255,0.72); position: relative; }
+.band .h2, .band .h3, .band .eyebrow { color: #fff; }
+.band .lead, .band p { color: rgba(255,255,255,0.72); }
+.band .btn-ghost { color: #fff; border-color: rgba(255,255,255,0.24); }
+.band .btn-ghost:hover { background: rgba(255,255,255,0.10); color: #fff; }
+.band .btn-primary { background: #fff; color: var(--color-ink); box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+.band .btn-primary:hover { color: var(--color-ink); }
+.band a { color: #fff; }
