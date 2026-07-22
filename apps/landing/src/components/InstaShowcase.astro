@@ -1,0 +1,46 @@
+---
+import { showcase } from "../data/copy";
+import { permalink, reels } from "../data/reels";
+import { INSTAGRAM_URL } from "../data/site";
+---
+
+<section class="sec band" id="showcase">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow" data-tr={showcase.eyebrow.tr}>{showcase.eyebrow.en}</div>
+      <h2 class="disp h2" data-tr={showcase.title.tr}>{showcase.title.en}</h2>
+      <p class="lead" data-tr={showcase.lead.tr}>{showcase.lead.en}</p>
+    </div>
+
+    {reels.length > 0 ? (
+      <div class="ig-grid reveal">
+        {reels.map((r) => (
+          <div class="ig-card">
+            <div class="ig-skeleton"></div>
+            <blockquote
+              class="instagram-media"
+              data-instgrm-permalink={permalink(r.shortcode)}
+              data-instgrm-version="14"
+            >
+              <a href={permalink(r.shortcode)} target="_blank" rel="noopener">
+                View this reel on Instagram
+              </a>
+            </blockquote>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div class="ig-follow">
+        <a class="btn btn-primary btn-lg" href={INSTAGRAM_URL} target="_blank" rel="noopener">
+          <span data-tr={showcase.empty.tr}>{showcase.empty.en}</span>
+        </a>
+      </div>
+    )}
+
+    <div class="ig-follow">
+      <a class="btn btn-ghost btn-lg" href={INSTAGRAM_URL} target="_blank" rel="noopener">
+        <span data-tr={showcase.follow.tr}>{showcase.follow.en}</span>
+      </a>
+    </div>
+  </div>
+</section>

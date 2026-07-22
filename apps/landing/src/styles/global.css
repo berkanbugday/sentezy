@@ -246,3 +246,21 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 
 @media (max-width: 900px) { .proof, .sector-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .sector-grid { grid-template-columns: 1fr; } .proof-n { font-size: 32px; } }
+
+/* ── instagram showcase ─────────────────────────────────────────────────── */
+.ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 44px;
+  align-items: start; }
+.ig-card { position: relative; border-radius: 20px; overflow: hidden; background: #fff;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.35); min-height: 540px; }
+/* Instagram replaces the blockquote's contents wholesale; these keep our frame tidy. */
+.ig-card .instagram-media { margin: 0 !important; min-width: 0 !important; width: 100% !important;
+  border-radius: 20px !important; box-shadow: none !important; }
+.ig-skeleton { position: absolute; inset: 0; z-index: 0; background:
+  linear-gradient(100deg, #f4f4f5 30%, #ececee 50%, #f4f4f5 70%) 0 0 / 300% 100%;
+  animation: ig-shimmer 1.4s linear infinite; }
+@keyframes ig-shimmer { to { background-position: -300% 0; } }
+.ig-card .instagram-media { position: relative; z-index: 1; }
+.ig-follow { display: flex; justify-content: center; margin-top: 40px; }
+
+@media (max-width: 900px) { .ig-grid { grid-template-columns: 1fr; max-width: 480px; margin-inline: auto; } }
+@media (prefers-reduced-motion: reduce) { .ig-skeleton { animation: none; } }

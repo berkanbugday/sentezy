@@ -84,3 +84,14 @@ export const sectors = {
     },
   ],
 } as const;
+
+export const showcase = {
+  eyebrow: { en: "SHOWCASE", tr: "ÖRNEKLER" },
+  title: { en: "Real reels. Made with Sentezy.", tr: "Gerçek reels'ler. Sentezy ile yapıldı." },
+  lead: {
+    en: "Every one of these was generated end to end — script, presenter, voice, captions and edit. Nobody held a camera.",
+    tr: "Bunların hepsi baştan sona üretildi — metin, sunucu, ses, altyazı ve kurgu. Kimse kamera tutmadı.",
+  },
+  follow: { en: "Follow @sentezy.ai", tr: "@sentezy.ai'yi takip et" },
+  empty: { en: "See the latest reels on Instagram", tr: "En yeni reels'leri Instagram'da izleyin" },
+} satisfies Record<string, Copy>;
