@@ -1102,9 +1102,13 @@ export const permalink = (shortcode: string) => `https://www.instagram.com/reel/
 Create `apps/landing/src/scripts/insta.ts`:
 
 ```ts
-/** Instagram's embed.js is ~40 KB of third-party JS that blocks nothing we need above the
- *  fold, so it is injected only when the showcase approaches the viewport. Until then each
- *  slot shows a skeleton sized to the embed's aspect, so nothing reflows when it lands. */
+/** Instagram's embed.js is heavy third-party JS that blocks nothing we need above the fold, so
+ *  it is injected only when the showcase approaches the viewport.
+ *
+ *  Until then each slot holds a skeleton at the typical reel-embed height. We cannot know the
+ *  real height in advance — Instagram sizes the iframe itself, and a longer caption makes it
+ *  taller — so this reduces the reflow rather than eliminating it. The section is below the
+ *  fold and loads on approach, so any residual shift lands off-screen. */
 declare global {
   interface Window {
     instgrm?: { Embeds: { process: () => void } };
@@ -1122,7 +1126,6 @@ const load = () => {
   // embed.js auto-processes on load, but call it explicitly in case it was already cached.
   s.addEventListener("load", () => window.instgrm?.Embeds.process());
   document.body.appendChild(s);
-  section?.classList.add("embeds-loading");
 };
 
 if (section) {
@@ -1154,6 +1157,9 @@ export const showcase = {
     tr: "Bunların hepsi baştan sona üretildi — metin, sunucu, ses, altyazı ve kurgu. Kimse kamera tutmadı.",
   },
   follow: { en: "Follow @sentezy.ai", tr: "@sentezy.ai'yi takip et" },
+  /** Inside the blockquote. embed.js replaces it once the script lands, but it is our own
+   *  markup until then — and stays visible for anyone with JS blocked or Instagram unreachable. */
+  viewOnInstagram: { en: "View this reel on Instagram", tr: "Bu reels'i Instagram'da izle" },
   empty: { en: "See the latest reels on Instagram", tr: "En yeni reels'leri Instagram'da izleyin" },
 } satisfies Record<string, Copy>;
 ```
@@ -1166,16 +1172,20 @@ Append to `apps/landing/src/styles/global.css`:
 /* ── instagram showcase ─────────────────────────────────────────────────── */
 .ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 44px;
   align-items: start; }
+/* min-height approximates a reel embed at this column width. Instagram sizes the iframe
+   itself and a long caption makes it taller, so this is a best-effort floor that limits the
+   shift, not a guarantee of none — the section is below the fold either way. */
 .ig-card { position: relative; border-radius: 20px; overflow: hidden; background: #fff;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.35); min-height: 540px; }
-/* Instagram replaces the blockquote's contents wholesale; these keep our frame tidy. */
-.ig-card .instagram-media { margin: 0 !important; min-width: 0 !important; width: 100% !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.35); min-height: 720px; }
+/* Instagram replaces the blockquote's contents wholesale; these keep our frame tidy and hold
+   the embed above the skeleton. */
+.ig-card .instagram-media { position: relative; z-index: 1;
+  margin: 0 !important; min-width: 0 !important; width: 100% !important;
   border-radius: 20px !important; box-shadow: none !important; }
 .ig-skeleton { position: absolute; inset: 0; z-index: 0; background:
   linear-gradient(100deg, #f4f4f5 30%, #ececee 50%, #f4f4f5 70%) 0 0 / 300% 100%;
   animation: ig-shimmer 1.4s linear infinite; }
 @keyframes ig-shimmer { to { background-position: -300% 0; } }
-.ig-card .instagram-media { position: relative; z-index: 1; }
 .ig-follow { display: flex; justify-content: center; margin-top: 40px; }
 
 @media (max-width: 900px) { .ig-grid { grid-template-columns: 1fr; max-width: 480px; margin-inline: auto; } }
@@ -1191,6 +1201,10 @@ Note the blockquote carries **only** the attributes Instagram's script requires 
 import { showcase } from "../data/copy";
 import { permalink, reels } from "../data/reels";
 import { INSTAGRAM_URL } from "../data/site";
+
+// With reels, the grid is the content and the trailing ghost button is the follow-up. With
+// none, the empty-state button IS the call to action — showing both would stack two buttons
+// pointing at the same URL, so each branch renders exactly one.
 ---
 
 <section class="sec band" id="showcase">
@@ -1211,8 +1225,8 @@ import { INSTAGRAM_URL } from "../data/site";
               data-instgrm-permalink={permalink(r.shortcode)}
               data-instgrm-version="14"
             >
-              <a href={permalink(r.shortcode)} target="_blank" rel="noopener">
-                View this reel on Instagram
+              <a href={permalink(r.shortcode)} target="_blank" rel="noopener" data-tr={showcase.viewOnInstagram.tr}>
+                {showcase.viewOnInstagram.en}
               </a>
             </blockquote>
           </div>
@@ -1226,11 +1240,13 @@ import { INSTAGRAM_URL } from "../data/site";
       </div>
     )}
 
-    <div class="ig-follow">
-      <a class="btn btn-ghost btn-lg" href={INSTAGRAM_URL} target="_blank" rel="noopener">
-        <span data-tr={showcase.follow.tr}>{showcase.follow.en}</span>
-      </a>
-    </div>
+    {reels.length > 0 && (
+      <div class="ig-follow">
+        <a class="btn btn-ghost btn-lg" href={INSTAGRAM_URL} target="_blank" rel="noopener">
+          <span data-tr={showcase.follow.tr}>{showcase.follow.en}</span>
+        </a>
+      </div>
+    )}
   </div>
 </section>
 ```
