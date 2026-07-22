@@ -426,7 +426,7 @@ def build_prompt(sector_slug: str, gender: str, age: str, ethnicity: str, featur
         f"natural approachable expression with a relaxed, slightly-open neutral mouth for lip-sync, "
         f"clear unobstructed face. Wearing {wearing} (not wearing any green). {mic_clause}Soft studio key "
         f"light on the subject, {rim}, {GREEN_BACKGROUND}. Eye-level, 85mm lens look, sharp focus on "
-        f"the eyes, realistic skin texture, {edges}. Vertical 2:3, single person, "
+        f"the eyes, realistic skin texture, {edges}. Vertical 9:16, single person, "
         f"{framing} The subject is never pressed against the frame: keep clear empty space on all "
         f"four sides, and the entire head — including the top of the hair or headscarf — stays "
         f"fully inside the frame with comfortable headroom above it, never cropped at the top. "

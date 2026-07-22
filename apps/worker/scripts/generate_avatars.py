@@ -74,7 +74,7 @@ def gen_replicate(prompt: str) -> bytes:
     r = httpx.post(
         "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions",
         headers={**headers, "Prefer": "wait"},
-        json={"input": {"prompt": prompt, "aspect_ratio": "2:3", "output_format": "png", "safety_tolerance": 2}},
+        json={"input": {"prompt": prompt, "aspect_ratio": "9:16", "output_format": "png", "safety_tolerance": 2}},
         timeout=180,
     )
     r.raise_for_status()

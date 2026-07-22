@@ -231,7 +231,7 @@ def test_width_share_geometrically_supports_a_waist_up_crop():
 
 
 def test_prompt_aspect_matches_the_size_actually_requested():
-    """The prompt claimed 'Vertical 9:16' while the API rendered 1024x1536 (2:3)."""
+    """The prompt claimed 'Vertical 9:16' while the API rendered 1024x1536 (9:16)."""
     from math import gcd
     w, h = _generator_size()
     g = gcd(w, h)
