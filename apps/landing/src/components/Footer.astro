@@ -1,5 +1,5 @@
 ---
-import { footer, sectorNames } from "../data/copy";
+import { footer, nav, sectorNames } from "../data/copy";
 import { INSTAGRAM_URL, SIGNUP_URL } from "../data/site";
 ---
 
@@ -34,9 +34,9 @@ import { INSTAGRAM_URL, SIGNUP_URL } from "../data/site";
         <a href="/terms" data-tr={footer.terms.tr}>{footer.terms.en}</a>
       </div>
       <div class="foot-col">
-        <h4>Instagram</h4>
+        <h4 data-tr={footer.instagramHead.tr}>{footer.instagramHead.en}</h4>
         <a href={INSTAGRAM_URL} target="_blank" rel="noopener">@sentezy.ai</a>
-        <a href={SIGNUP_URL} data-tr="Ücretsiz başla">Start free</a>
+        <a href={SIGNUP_URL} data-tr={nav.cta.tr}>{nav.cta.en}</a>
       </div>
     </div>
     <div class="foot-bottom">

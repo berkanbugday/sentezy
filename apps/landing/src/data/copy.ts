@@ -26,6 +26,9 @@ export const footer = {
   privacy: { en: "Privacy", tr: "Gizlilik" },
   terms: { en: "Terms", tr: "Şartlar" },
   madeFor: { en: "Made for teams worldwide", tr: "Türkiye'de tasarlandı" },
+  /** Identical in both languages, but it still lives here — a string that skips this module
+   *  is a string nobody can find when the copy changes. */
+  instagramHead: { en: "Instagram", tr: "Instagram" },
 } satisfies Record<string, Copy>;
 
 export const sectorNames = {

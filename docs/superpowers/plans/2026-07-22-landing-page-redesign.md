@@ -427,6 +427,9 @@ export const footer = {
   privacy: { en: "Privacy", tr: "Gizlilik" },
   terms: { en: "Terms", tr: "Şartlar" },
   madeFor: { en: "Made for teams worldwide", tr: "Türkiye'de tasarlandı" },
+  /** Identical in both languages, but it still lives here — a string that skips this module
+   *  is a string nobody can find when the copy changes. */
+  instagramHead: { en: "Instagram", tr: "Instagram" },
 } satisfies Record<string, Copy>;
 
 export const sectorNames = {
@@ -534,7 +537,7 @@ Create `apps/landing/src/components/Footer.astro`. The old Resources column (Blo
 
 ```astro
 ---
-import { footer, sectorNames } from "../data/copy";
+import { footer, nav, sectorNames } from "../data/copy";
 import { INSTAGRAM_URL, SIGNUP_URL } from "../data/site";
 ---
 
@@ -569,9 +572,9 @@ import { INSTAGRAM_URL, SIGNUP_URL } from "../data/site";
         <a href="/terms" data-tr={footer.terms.tr}>{footer.terms.en}</a>
       </div>
       <div class="foot-col">
-        <h4>Instagram</h4>
+        <h4 data-tr={footer.instagramHead.tr}>{footer.instagramHead.en}</h4>
         <a href={INSTAGRAM_URL} target="_blank" rel="noopener">@sentezy.ai</a>
-        <a href={SIGNUP_URL} data-tr="Ücretsiz başla">Start free</a>
+        <a href={SIGNUP_URL} data-tr={nav.cta.tr}>{nav.cta.en}</a>
       </div>
     </div>
     <div class="foot-bottom">
