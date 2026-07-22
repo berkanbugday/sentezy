@@ -1,6 +1,6 @@
 /**
  * One-shot: export the rendered avatar cutouts from R2 into the landing page's
- * public/ folder, so the Astro build stays fully static (Cloudflare Pages does
+ * src/assets folder, so the Astro build stays fully static (Cloudflare Pages does
  * not get R2 credentials). Re-run this whenever new avatars are rendered.
  *
  *   pnpm --filter @sentezy/api export:stills
