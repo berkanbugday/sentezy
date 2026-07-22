@@ -237,7 +237,13 @@ async function builtCss() {
   const names = (await readdir(dir).catch(() => [])).filter((n) => n.endsWith(".css"));
   if (names.length === 0) throw new Error(`no stylesheet found in ${dir} — cannot verify the palette`);
   const files = await Promise.all(names.map((n) => readFile(join(dir, n), "utf8")));
-  return files.join("\n").replace(/\s+/g, "").toLowerCase().replace(/--[a-z0-9-]+:[^;}]*/g, "");
+  // Only the two shared-theme tokens are stripped, not every custom property: a future rule
+  // that hides a periwinkle behind its own `--some-tint:` must still be caught.
+  return files
+    .join("\n")
+    .replace(/\s+/g, "")
+    .toLowerCase()
+    .replace(/--color-(signal|aurora):[^;}]*/g, "");
 }
 
 async function main() {
@@ -705,7 +711,12 @@ Append to `apps/landing/src/styles/global.css`:
 .reels { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; height: 620px; overflow: hidden;
   -webkit-mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
   mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent); }
-.reel-col { display: flex; flex-direction: column; gap: 18px; will-change: transform; }
+/* The column's items are duplicated so translateY(-50%) can loop. Spacing MUST come from a
+   per-tile margin, not `gap`: gap only renders BETWEEN children, so a doubled list of n tiles
+   gets 2n-1 gaps, not 2n. Half of that height falls half a gap short of one full set, and the
+   loop snaps by gap/2 (9px) every cycle. A bottom margin belongs to each tile, so the track is
+   exactly 2x one set and the seam is invisible. */
+.reel-col { display: flex; flex-direction: column; will-change: transform; }
 .reel-col.up { animation: reel-up 38s linear infinite; }
 .reel-col.down { animation: reel-down 38s linear infinite; }
 .reels:hover .reel-col { animation-play-state: paused; }
@@ -713,6 +724,7 @@ Append to `apps/landing/src/styles/global.css`:
 @keyframes reel-down { from { transform: translateY(-50%); } to { transform: translateY(0); } }
 
 .tile { position: relative; aspect-ratio: 9/16; border-radius: 18px; overflow: hidden; flex: none;
+  margin-bottom: 18px;
   border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 18px 44px rgba(10,10,12,0.16); }
 .tile-cool   { background: linear-gradient(165deg, #2e74c4, #14304f); }
 .tile-warm   { background: linear-gradient(165deg, #e89260, #6d3a1c); }
@@ -742,7 +754,7 @@ Append to `apps/landing/src/styles/global.css`:
 @media (prefers-reduced-motion: reduce) { .reel-col { animation: none; } }
 ```
 
-Then **delete** these now-unused rules from the same file: `.beam-stage`, `.beam-glow`, `.beam-inputs`, `.frag`, `.frag-ic`, `.beam-track`, `.beam-flow`, `@keyframes flow`, `.beam-avatar`, `.ph`, `.ph-label`, `.avatar-caption`, `.rec-dot`, `@keyframes pulse`, `.no-beam .beam-flow` (currently lines 69-82 and 147), and remove `.beam-flow, .rec-dot,` from the reduced-motion rule at the bottom, leaving `.marquee-track { animation: none; }`.
+Then **delete** these now-unused rules from the same file: `.beam-stage`, `.beam-glow`, `.beam-inputs`, `.frag`, `.frag-ic`, `.beam-track`, `.beam-flow`, `@keyframes flow`, `.beam-avatar`, `.avatar-caption`, `.rec-dot`, `@keyframes pulse`, `.no-beam .beam-flow` (currently lines 69-82 and 147), and remove `.beam-flow, .rec-dot,` from the reduced-motion rule at the bottom, leaving `.marquee-track { animation: none; }`.
 
 - [ ] **Step 3: Create ReelMarquee.astro**
 
@@ -1384,7 +1396,7 @@ Append to `apps/landing/src/styles/global.css`:
 .zig-shot img { display: block; width: 100%; height: auto; }
 ```
 
-Then **delete** the `.zig-media` rule — every zig block now uses `.zig-shot` and there are no aspect-ratio placeholders left.
+Then **delete** the `.zig-media`, `.ph` and `.ph-label` rules — every zig block now uses `.zig-shot`, and this task removes the last markup that referenced the placeholder styles. (They are deliberately kept alive through Tasks 4-6: deleting them earlier would leave three unstyled blank boxes on the page.)
 
 - [ ] **Step 4: Create HowItWorks.astro**
 

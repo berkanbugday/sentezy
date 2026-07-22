@@ -62,7 +62,13 @@ async function builtCss() {
   const names = (await readdir(dir).catch(() => [])).filter((n) => n.endsWith(".css"));
   if (names.length === 0) throw new Error(`no stylesheet found in ${dir} — cannot verify the palette`);
   const files = await Promise.all(names.map((n) => readFile(join(dir, n), "utf8")));
-  return files.join("\n").replace(/\s+/g, "").toLowerCase().replace(/--[a-z0-9-]+:[^;}]*/g, "");
+  // Only the two shared-theme tokens are stripped, not every custom property: a future rule
+  // that hides a periwinkle behind its own `--some-tint:` must still be caught.
+  return files
+    .join("\n")
+    .replace(/\s+/g, "")
+    .toLowerCase()
+    .replace(/--color-(signal|aurora):[^;}]*/g, "");
 }
 
 async function main() {
