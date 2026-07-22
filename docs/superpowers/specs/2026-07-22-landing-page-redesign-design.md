@@ -229,8 +229,9 @@ left dead. The footer keeps Product, Solutions and Legal columns only.
 `src/data/site.ts`:
 
 - `APP_URL` — base URL of the web app. `Start free` → `${APP_URL}/signup`,
-  `Log in` → `${APP_URL}/login`. Defaults to `https://app.sentezy.com`, overridable at build
-  time via the `PUBLIC_APP_URL` env var. **Open: the production app host is unconfirmed.**
+  `Log in` → `${APP_URL}/login`. Defaults to `http://localhost:3000`, overridable at build
+  time via the `PUBLIC_APP_URL` env var. A production host is not yet chosen; setting
+  `PUBLIC_APP_URL` in the Cloudflare Pages build is the only change needed when it is.
 - `INSTAGRAM_URL` — `https://www.instagram.com/sentezy.ai/`
 
 ## Non-goals
