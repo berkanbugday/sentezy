@@ -49,3 +49,38 @@ export const hero = {
   ctaSecondary: { en: "Watch a reel", tr: "Bir reels izle" },
   microcopy: { en: "No credit card required", tr: "Kredi kartı gerekmez" },
 } satisfies Record<string, Copy>;
+
+/** Every number here traces to source. Do not add one that does not.
+ *   12 → apps/api/src/data/avatars.json, entries with a non-empty displayImageId
+ *   24 → same file, distinct `sector` values
+ *   20 → CAPTION_STYLE_META in packages/types/src/index.ts
+ *   14 → BROLL_EFFECT_META in packages/types/src/index.ts */
+export const proof = [
+  { n: "12", label: { en: "AI presenters", tr: "Yapay zeka sunucu" } },
+  { n: "24", label: { en: "Sectors covered", tr: "Sektör" } },
+  { n: "20", label: { en: "Caption styles", tr: "Altyazı stili" } },
+  { n: "14", label: { en: "Transitions", tr: "Geçiş efekti" } },
+] satisfies { n: string; label: Copy }[];
+
+export const sectors = {
+  eyebrow: { en: "BUILT FOR", tr: "KİMLER İÇİN" },
+  title: { en: "Made for the businesses that live on reels.", tr: "Reels'te yaşayan işletmeler için." },
+  items: [
+    {
+      key: "travel",
+      body: { en: "Fill tours and hotel nights with reels that show the place, not a brochure.", tr: "Turları ve otel gecelerini broşür değil, mekânı gösteren reels'lerle doldurun." },
+    },
+    {
+      key: "beauty",
+      body: { en: "Before-and-afters, price drops and open slots — posted daily, filmed never.", tr: "Öncesi-sonrası, indirimler ve boş randevular — her gün paylaşın, hiç çekim yapmayın." },
+    },
+    {
+      key: "realestate",
+      body: { en: "Every new listing gets its own presenter-led reel the day it goes live.", tr: "Her yeni ilan, yayına girdiği gün kendi sunuculu reels'ine kavuşur." },
+    },
+    {
+      key: "gym",
+      body: { en: "Class schedules, transformations and campaigns, on a weekly drumbeat.", tr: "Ders programları, dönüşümler ve kampanyalar — her hafta düzenli." },
+    },
+  ],
+} as const;

@@ -1,0 +1,16 @@
+---
+import { proof } from "../data/copy";
+---
+
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="proof stagger">
+      {proof.map((p) => (
+        <div class="proof-item">
+          <div class="proof-n mono">{p.n}</div>
+          <span class="proof-l" data-tr={p.label.tr}>{p.label.en}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

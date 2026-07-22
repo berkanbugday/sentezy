@@ -43,7 +43,11 @@ const FORBIDDEN_CSS = ["c9a9e9", "201,169,233", "7c86e8", "124,134,232"];
 //   24 distinct sectors               → same file
 //   20 caption styles                 → CAPTION_STYLE_META, packages/types/src/index.ts
 //   14 b-roll effects                 → BROLL_EFFECT_META, packages/types/src/index.ts
-const REQUIRED = [];
+const REQUIRED = [
+  ">12<", ">24<", ">20<", ">14<",           // the four verified proof numbers
+  "Reels that sell",                         // hero headline
+  "instagram.com/sentezy.ai",                // the real account is linked
+];
 
 /** Built CSS, concatenated, whitespace-stripped and lowercased, so `rgba(201, 169, 233, …)`
  *  and the minifier's `#C9A9E938` both match the same needle.
