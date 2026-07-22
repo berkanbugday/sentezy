@@ -39,7 +39,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 a { color: var(--color-signal); text-decoration: none; }
-a:hover { color: var(--color-aurora); }
+/* --color-aurora is the old periwinkle accent from packages/ui/theme.css. The monochrome
+   retheme overrides every other token by name, but not that one — it has no monochrome
+   equivalent, so the hover state moves to ink rather than leaving a lone purple flash. */
+a:hover { color: var(--color-ink); }
 
 /* ── typography / layout primitives ─────────────────────────────────────── */
 .disp { font-family: var(--font-display); }
