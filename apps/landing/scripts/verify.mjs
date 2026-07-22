@@ -1,24 +1,40 @@
 /**
  * Post-build assertions for the landing page. Not a unit-test runner — it checks the
  * things that actually matter for a marketing page: that no invented claim survived,
- * that the real claims are present, and that no dead links shipped.
+ * that the real claims are present, that no dead links shipped, and that no periwinkle
+ * from the pre-monochrome palette leaked through.
  *
  *   pnpm --filter @sentezy/landing verify   (runs after `build`)
  */
-import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { readFile, readdir } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DIST = resolve(HERE, "../dist/index.html");
+const DIST = resolve(HERE, "../dist");
 
-// Claims that were invented and must never come back.
-const FORBIDDEN = [
+// Invented claims and unshipped features that must never come back.
+const FORBIDDEN_TEXT = [
   "147M", "122M", "175+", "SOC 2",
-  "Northwind", "Vertex", "LUMEN", "Kavis", "Orbita", "Meridian", "Aster", "Polar",
   "digital twin", "dijital ikiz",
   'href="#"',
 ];
+
+// The fake customer-logo marquee. Matched on word boundaries, not as substrings:
+// "Aster" and "Polar" live inside ordinary words (disaster, polarizing, popularity),
+// and a bare includes() would fail the build on legitimate copy with a message that
+// reads as though the fake logos had reappeared.
+const FORBIDDEN_WORDS = [
+  "Northwind", "Vertex", "LUMEN", "Kavis", "Orbita", "Meridian", "Aster", "Polar",
+];
+
+// The old periwinkle accents, hardcoded as color literals in the stylesheet. A token
+// rename cannot reach these, so the monochrome retheme cannot be verified from :root
+// alone — the built CSS has to be checked directly. Both spellings are listed because
+// Astro's minifier folds `rgba(201,169,233,.22)` into `#c9a9e938`.
+//   #c9a9e9 / 201,169,233 — old --color-aurora
+//   #7c86e8 / 124,134,232 — old --color-signal
+const FORBIDDEN_CSS = ["c9a9e9", "201,169,233", "7c86e8", "124,134,232"];
 
 // Claims that are true and must be present. Verified against source at plan time:
 //   12 avatars with a displayImageId  → apps/api/src/data/avatars.json
@@ -27,20 +43,37 @@ const FORBIDDEN = [
 //   14 b-roll effects                 → BROLL_EFFECT_META, packages/types/src/index.ts
 const REQUIRED = [];
 
+/** Built CSS, concatenated, whitespace-stripped and lowercased, so `rgba(201, 169, 233, …)`
+ *  and the minifier's `#C9A9E938` both match the same needle. Throws rather than passing
+ *  vacuously if no stylesheet was emitted — a silently empty haystack would make every CSS
+ *  assertion below succeed for the wrong reason. */
+async function builtCss() {
+  const dir = join(DIST, "_astro");
+  const names = (await readdir(dir).catch(() => [])).filter((n) => n.endsWith(".css"));
+  if (names.length === 0) throw new Error(`no stylesheet found in ${dir} — cannot verify the palette`);
+  const files = await Promise.all(names.map((n) => readFile(join(dir, n), "utf8")));
+  return files.join("\n").replace(/\s+/g, "").toLowerCase();
+}
+
 async function main() {
-  const html = await readFile(DIST, "utf8");
+  const html = await readFile(join(DIST, "index.html"), "utf8");
+  const css = await builtCss();
 
-  const found = FORBIDDEN.filter((needle) => html.includes(needle));
-  const missing = REQUIRED.filter((needle) => !html.includes(needle));
+  const failures = [
+    ...FORBIDDEN_TEXT.filter((n) => html.includes(n)).map((n) => `forbidden claim in HTML: ${JSON.stringify(n)}`),
+    ...FORBIDDEN_WORDS.filter((w) => new RegExp(`\\b${w}\\b`).test(html)).map((w) => `fake customer logo in HTML: ${w}`),
+    ...FORBIDDEN_CSS.filter((n) => css.includes(n)).map((n) => `periwinkle literal in built CSS: ${n} — a hardcoded color the token retheme could not reach`),
+    ...REQUIRED.filter((n) => !html.includes(n)).map((n) => `required claim missing from HTML: ${JSON.stringify(n)}`),
+  ];
 
-  for (const f of found) console.error(`FORBIDDEN string present in dist: ${JSON.stringify(f)}`);
-  for (const m of missing) console.error(`REQUIRED string missing from dist: ${JSON.stringify(m)}`);
-
-  if (found.length || missing.length) {
-    console.error(`\nverify FAILED — ${found.length} forbidden, ${missing.length} missing`);
+  if (failures.length) {
+    for (const f of failures) console.error(f);
+    console.error(`\nverify FAILED — ${failures.length} problem(s)`);
     process.exit(1);
   }
-  console.log(`verify OK — ${FORBIDDEN.length} forbidden absent, ${REQUIRED.length} required present`);
+
+  const checks = FORBIDDEN_TEXT.length + FORBIDDEN_WORDS.length + FORBIDDEN_CSS.length + REQUIRED.length;
+  console.log(`verify OK — ${checks} checks passed`);
 }
 
 main().catch((err) => {
