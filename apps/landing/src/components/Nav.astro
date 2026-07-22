@@ -1,0 +1,23 @@
+---
+import { nav } from "../data/copy";
+import { LOGIN_URL, SIGNUP_URL } from "../data/site";
+---
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="logo" href="/"><img class="logo-mark" src="/sentezy-logo.png" alt="Sentezy" />Sentezy</a>
+    <nav class="nav-menu">
+      <a href="#showcase" data-tr={nav.showcase.tr}>{nav.showcase.en}</a>
+      <a href="#how" data-tr={nav.how.tr}>{nav.how.en}</a>
+      <a href="#platform" data-tr={nav.platform.tr}>{nav.platform.en}</a>
+    </nav>
+    <div class="nav-util">
+      <div class="switch">
+        <button class="sw-btn" data-switch="tr">TR</button>
+        <button class="sw-btn on" data-switch="en">EN</button>
+      </div>
+      <a href={LOGIN_URL} class="nav-login" data-tr={nav.login.tr}>{nav.login.en}</a>
+      <a href={SIGNUP_URL} class="btn btn-primary"><span data-tr={nav.cta.tr}>{nav.cta.en}</span></a>
+    </div>
+  </div>
+</header>

@@ -1,27 +1,11 @@
 ---
 import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
 ---
 
 <Base>
-  <header class="nav">
-    <div class="wrap nav-in">
-      <a class="logo" href="#"><img class="logo-mark" src="/sentezy-logo.png" alt="Sentezy" />Sentezy</a>
-      <nav class="nav-menu">
-        <a href="#features" data-tr="Platform">Platform</a>
-        <a href="#solutions" data-tr="Çözümler">Solutions</a>
-        <a href="#" data-tr="Fiyatlandırma">Pricing</a>
-        <a href="#faq" data-tr="Kaynaklar">Resources</a>
-      </nav>
-      <div class="nav-util">
-        <div class="switch">
-          <button class="sw-btn" data-switch="tr">TR</button>
-          <button class="sw-btn on" data-switch="en">EN</button>
-        </div>
-        <a href="#" class="nav-login" data-tr="Giriş yap">Log in</a>
-        <a href="#" class="btn btn-primary"><span data-tr="Ücretsiz başla">Start free</span></a>
-      </div>
-    </div>
-  </header>
+  <Nav />
 
   <section class="hero">
     <div class="wrap hero-grid">
@@ -186,91 +170,10 @@ import Base from "../layouts/Base.astro";
     </div>
   </section>
 
-  <footer class="footer">
-    <div class="wrap">
-      <div class="foot-grid">
-        <div class="foot-brand">
-          <a class="logo" href="#"><img class="logo-mark" src="/sentezy-logo.png" alt="Sentezy" />Sentezy</a>
-          <p data-tr="Fikirleri konuşan videoya sentezleyin.">Synthesize ideas into talking video.</p>
-          <div class="switch">
-            <button class="sw-btn" data-switch="tr">TR</button>
-            <button class="sw-btn on" data-switch="en">EN</button>
-          </div>
-        </div>
-        <div class="foot-col"><h4 data-tr="Ürün">Product</h4><a href="#" data-tr="Platform">Platform</a><a href="#" data-tr="Avatarlar">Avatars</a><a href="#" data-tr="Çeviri">Translation</a><a href="#">AI Studio</a><a href="#" data-tr="Fiyatlandırma">Pricing</a></div>
-        <div class="foot-col"><h4 data-tr="Çözümler">Solutions</h4><a href="#" data-tr="Pazarlama">Marketing</a><a href="#" data-tr="Eğitim">Training</a><a href="#" data-tr="Satış">Sales</a><a href="#" data-tr="Yerelleştirme">Localization</a></div>
-        <div class="foot-col"><h4 data-tr="Kaynaklar">Resources</h4><a href="#">Blog</a><a href="#" data-tr="Rehberler">Guides</a><a href="#" data-tr="Destek">Support</a></div>
-        <div class="foot-col"><h4 data-tr="Yasal">Legal</h4><a href="#">KVKK</a><a href="#" data-tr="Gizlilik">Privacy</a><a href="#" data-tr="Şartlar">Terms</a></div>
-      </div>
-      <div class="foot-bottom"><span>© 2026 Sentezy</span><span data-tr="Türkiye'de tasarlandı">Made for teams worldwide</span></div>
-    </div>
-  </footer>
+  <Footer />
 </Base>
 
 <script>
-  const q = (s: string) => Array.from(document.querySelectorAll<HTMLElement>(s));
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  // i18n: store original EN text once, then swap on toggle
-  q("[data-tr]").forEach((el) => {
-    if (!el.hasAttribute("data-en")) el.setAttribute("data-en", el.textContent ?? "");
-  });
-  const swBtns = q("[data-switch]");
-  const setLang = (l: string) => {
-    q("[data-tr]").forEach((el) => {
-      el.textContent = l === "tr" ? el.getAttribute("data-tr") : el.getAttribute("data-en");
-    });
-    swBtns.forEach((b) => b.classList.toggle("on", b.getAttribute("data-switch") === l));
-    document.documentElement.lang = l;
-  };
-  swBtns.forEach((b) => b.addEventListener("click", () => setLang(b.getAttribute("data-switch") ?? "en")));
-
-  // sticky/dock nav shadow on scroll
-  const nav = document.querySelector(".nav");
-  const onScroll = () => nav?.classList.toggle("scrolled", window.scrollY > 20);
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
-
-  // count-up metrics
-  const animate = (el: HTMLElement) => {
-    if (el.dataset.done) return;
-    el.dataset.done = "1";
-    const target = Number(el.dataset.count), suf = el.dataset.suffix ?? "";
-    if (reduce) { el.textContent = target + suf; return; }
-    const dur = 1300;
-    let s: number | null = null;
-    const step = (t: number) => {
-      if (s === null) s = t;
-      const p = Math.min((t - s) / dur, 1);
-      const e = 0.5 - Math.cos(p * Math.PI) / 2;
-      el.textContent = Math.round(e * target) + suf;
-      if (p < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  };
-
-  // reveal on scroll + trigger counters
-  if (reduce) {
-    q(".reveal,.stagger").forEach((el) => el.classList.add("in"));
-    q("[data-count]").forEach(animate);
-  } else {
-    const io = new IntersectionObserver(
-      (es) => {
-        es.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("in");
-            e.target.querySelectorAll<HTMLElement>("[data-count]").forEach(animate);
-            io.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.15, rootMargin: "0px 0px -8% 0px" },
-    );
-    q(".reveal,.stagger").forEach((el) => io.observe(el));
-  }
-
-  // faq accordion
-  q(".faq-q").forEach((qq) => {
-    qq.addEventListener("click", () => qq.closest(".faq-item")?.classList.toggle("open"));
-  });
+  import "../scripts/i18n";
+  import "../scripts/reveal";
 </script>
