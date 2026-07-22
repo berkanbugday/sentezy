@@ -104,6 +104,12 @@ a:hover { color: var(--color-ink); }
 .card p { font-size: 15px; color: var(--color-slate); }
 .zig { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; margin-top: 72px; }
 .zig.rev .zig-media { order: -1; }
+/* Placeholder styling for the three zig-media boxes that still ship in the Product section.
+   Task 7 replaces that markup with real app screenshots and deletes these two rules with it —
+   removing them before the markup goes would leave three unstyled blank boxes on the page. */
+.ph { background: repeating-linear-gradient(135deg, #f4f4f5, #f4f4f5 10px, #eaeaec 10px, #eaeaec 20px); border: 1px solid var(--color-hairline); position: relative; overflow: hidden; }
+.ph-label { position: absolute; top: 12px; left: 12px; font-family: var(--font-mono); font-size: 11px; color: var(--color-muted); background: rgba(255,255,255,0.75); padding: 3px 7px; border-radius: 6px; }
+
 .zig-media { aspect-ratio: 4/3; border-radius: 24px; box-shadow: 0 24px 64px rgba(10,16,36,0.1); }
 .zig .h2 { margin-top: 12px; }
 .blist { list-style: none; padding: 0; margin: 22px 0 0; display: flex; flex-direction: column; gap: 11px; }
@@ -193,12 +199,6 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .band .btn-primary { background: #fff; color: var(--color-ink); box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
 .band .btn-primary:hover { color: var(--color-ink); }
 .band a { color: #fff; }
-
-/* Placeholder styling for the three zig-media boxes that still ship in the Product section.
-   Task 7 replaces that markup with real app screenshots and deletes these two rules with it —
-   removing them before the markup goes would leave three unstyled blank boxes on the page. */
-.ph { background: repeating-linear-gradient(135deg, #f4f4f5, #f4f4f5 10px, #eaeaec 10px, #eaeaec 20px); border: 1px solid var(--color-hairline); position: relative; overflow: hidden; }
-.ph-label { position: absolute; top: 12px; left: 12px; font-family: var(--font-mono); font-size: 11px; color: var(--color-muted); background: rgba(255,255,255,0.75); padding: 3px 7px; border-radius: 6px; }
 
 /* ── reel marquee ───────────────────────────────────────────────────────── */
 .reels { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; height: 620px; overflow: hidden;
