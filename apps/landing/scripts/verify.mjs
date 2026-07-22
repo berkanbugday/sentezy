@@ -46,15 +46,23 @@ const FORBIDDEN_CSS = ["c9a9e9", "201,169,233", "7c86e8", "124,134,232"];
 const REQUIRED = [];
 
 /** Built CSS, concatenated, whitespace-stripped and lowercased, so `rgba(201, 169, 233, …)`
- *  and the minifier's `#C9A9E938` both match the same needle. Throws rather than passing
- *  vacuously if no stylesheet was emitted — a silently empty haystack would make every CSS
- *  assertion below succeed for the wrong reason. */
+ *  and the minifier's `#C9A9E938` both match the same needle.
+ *
+ *  Custom-property *declarations* are stripped first. `packages/ui/theme.css` is shared with
+ *  the web app and always defines the old periwinkle (`--color-signal: #7c86e8`,
+ *  `--color-aurora: #c9a9e9`); the landing overrides those names in its own `:root`, so the
+ *  declarations are inert. Only a color that survives into an actual property value — a
+ *  background, a gradient, a shadow — is a real leak. Without this the gate could never pass,
+ *  and Task 10 chains it into `build`.
+ *
+ *  Throws rather than passing vacuously if no stylesheet was emitted — a silently empty
+ *  haystack would make every CSS assertion below succeed for the wrong reason. */
 async function builtCss() {
   const dir = join(DIST, "_astro");
   const names = (await readdir(dir).catch(() => [])).filter((n) => n.endsWith(".css"));
   if (names.length === 0) throw new Error(`no stylesheet found in ${dir} — cannot verify the palette`);
   const files = await Promise.all(names.map((n) => readFile(join(dir, n), "utf8")));
-  return files.join("\n").replace(/\s+/g, "").toLowerCase();
+  return files.join("\n").replace(/\s+/g, "").toLowerCase().replace(/--[a-z0-9-]+:[^;}]*/g, "");
 }
 
 async function main() {
