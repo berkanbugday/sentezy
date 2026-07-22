@@ -31,7 +31,9 @@ const FORBIDDEN_WORDS = [
 // The old periwinkle accents, hardcoded as color literals in the stylesheet. A token
 // rename cannot reach these, so the monochrome retheme cannot be verified from :root
 // alone — the built CSS has to be checked directly. Both spellings are listed because
-// Astro's minifier folds `rgba(201,169,233,.22)` into `#c9a9e938`.
+// Astro's minifier folds `rgba(201,169,233,.22)` into `#c9a9e938`. In the production
+// pipeline only the hex needles ever fire; the decimal ones are defensive, for a
+// dev-mode or unminified artifact reaching dist/.
 //   #c9a9e9 / 201,169,233 — old --color-aurora
 //   #7c86e8 / 124,134,232 — old --color-signal
 const FORBIDDEN_CSS = ["c9a9e9", "201,169,233", "7c86e8", "124,134,232"];
