@@ -141,8 +141,15 @@ tint, caption text and caption style id. 12 tiles, 6 per column.
 `apps/landing/scripts/pull-avatar-stills.ts` — a one-time Node script, not part of the build.
 It reads `apps/api/src/data/avatars.json`, takes the entries with a non-empty `displayImageId`,
 downloads each cutout from R2 using the existing worker credentials, and writes them to
-`apps/landing/public/avatars/<slug>.png`. The PNGs are committed. The build never touches R2
+`apps/landing/src/assets/avatars/<slug>.png`. The PNGs are committed. The build never touches R2
 or the network, so Cloudflare Pages stays a pure static build.
+
+They go under `src/assets/`, **not** `public/`, and are rendered through `astro:assets`
+`<Image>`. Astro only optimizes images reachable through the module graph; `public/` is copied
+verbatim. The raw cutouts are 1024×1536 RGBA PNGs averaging 1.8 MB (~22 MB for twelve) and
+render at 270×480, so serving them unprocessed would put ~22 MB above the fold on a page whose
+purpose includes being fast. `<Image>` downscales them and emits WebP, taking the delivered
+payload under 1 MB.
 
 ### InstaShowcase
 

@@ -15,6 +15,7 @@ Spec: `docs/superpowers/specs/2026-07-22-landing-page-redesign-design.md`
 - Node 24 is required for this repo's toolchain. Run `node -v` before starting; if it reports v20, run `nvm use 24` (see the project's dev gotchas).
 - All commands run from the repo root `/Users/berkan/Projects/sentezy`.
 - The landing build must remain **fully static** — no network calls, no R2 access, no workspace TS imports at build time. `packages/types` is NOT imported by the landing; values are transcribed.
+- **Avatar images are never referenced by URL.** They live in `src/assets/avatars/` and are rendered through `astro:assets` `<Image>`, so Astro resizes them and emits WebP at the size actually used. Files placed in `public/` are served byte-for-byte with no optimization — the raw cutouts are 1024×1536 RGBA PNGs totalling 22 MB, which would be catastrophic above the fold.
 - `packages/ui/theme.css` must NOT be modified. The landing overrides tokens locally in `:root`, exactly as `apps/web/src/app/globals.css` does.
 - `apps/web` must NOT be modified.
 - **Forbidden strings** — these must never appear in `apps/landing/src` or `apps/landing/dist` again: `147M`, `122M`, `175+`, `SOC 2`, `Northwind`, `Vertex`, `LUMEN`, `Kavis`, `Orbita`, `Meridian`, `Aster`, `Polar`, `digital twin`, `dijital ikiz`.
@@ -30,8 +31,8 @@ Spec: `docs/superpowers/specs/2026-07-22-landing-page-redesign-design.md`
 
 | Path | Responsibility |
 |---|---|
-| `apps/api/scripts/export-avatar-stills.ts` | One-shot: download the 12 avatar cutouts from R2 into the landing's `public/` |
-| `apps/landing/public/avatars/*.png` | 12 committed avatar cutout PNGs |
+| `apps/api/scripts/export-avatar-stills.ts` | One-shot: download the 12 avatar cutouts from R2 into the landing's `src/assets/` |
+| `apps/landing/src/assets/avatars/*.png` | 12 committed avatar cutout PNGs, optimized at build time by `astro:assets` |
 | `apps/landing/public/app/*.png` | 3 committed app screenshots |
 | `apps/landing/scripts/verify.mjs` | Greps `dist/` for forbidden claims and required strings |
 | `apps/landing/src/data/site.ts` | Outbound URLs (`APP_URL`, `INSTAGRAM_URL`) |
@@ -60,12 +61,14 @@ Spec: `docs/superpowers/specs/2026-07-22-landing-page-redesign-design.md`
 
 **Files:**
 - Create: `apps/api/scripts/export-avatar-stills.ts`
-- Create (generated, committed): `apps/landing/public/avatars/{anna,amara,camila,arda,aisha,hana,alp,mariam,sumeyye,aaliyah,kevser,beyza}.png`
+- Create (generated, committed): `apps/landing/src/assets/avatars/{anna,amara,camila,arda,aisha,hana,alp,mariam,sumeyye,aaliyah,kevser,beyza}.png`
 - Modify: `apps/api/package.json` (add script entry)
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: 12 PNG files at `apps/landing/public/avatars/<slug>.png`, where `<slug>` is the avatar's `slug` field from `apps/api/src/data/avatars.json`. Task 4 references these paths as `/avatars/<slug>.png`.
+- Produces: 12 PNG files at `apps/landing/src/assets/avatars/<slug>.png`, where `<slug>` is the avatar's `slug` field from `apps/api/src/data/avatars.json`. Tasks 4 and 8 resolve them with `import.meta.glob("../assets/avatars/*.png", { eager: true })` and render them through `astro:assets`.
+
+**Why `src/assets/` and not `public/`:** Astro only optimizes images it can see through the module graph. Anything in `public/` is copied to the output verbatim — these cutouts are 1024×1536 RGBA PNGs averaging 1.8 MB, and they render at 270×480. Under `src/assets/` the `<Image>` component downscales them and emits WebP, taking the delivered payload from ~22 MB to well under 1 MB.
 
 - [ ] **Step 1: Write the export script**
 
@@ -89,8 +92,9 @@ import catalog from "../src/data/avatars.json" with { type: "json" };
 
 type CatalogAvatar = { slug: string; name: string; sector: string; displayImageId: string; imageId: string };
 
+// src/assets, not public/ — Astro only optimizes images reachable through the module graph.
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT_DIR = resolve(HERE, "../../landing/public/avatars");
+const OUT_DIR = resolve(HERE, "../../landing/src/assets/avatars");
 
 async function main(): Promise<void> {
   const avatars = (catalog.avatars as CatalogAvatar[]).filter((a) => a.displayImageId);
@@ -129,7 +133,7 @@ In `apps/api/package.json`, add to `"scripts"` after `"start"`:
 Run:
 ```bash
 pnpm --filter @sentezy/api export:stills
-ls -1 apps/landing/public/avatars/*.png | wc -l
+ls -1 apps/landing/src/assets/avatars/*.png | wc -l
 ```
 Expected: the script prints 12 lines then `exported 12 avatar cutouts`, and `ls` reports `12`.
 
@@ -139,16 +143,16 @@ If the script fails with a zod env error, the root `.env` is missing R2 credenti
 
 Run:
 ```bash
-file apps/landing/public/avatars/kevser.png
-du -sh apps/landing/public/avatars
+file apps/landing/src/assets/avatars/kevser.png
+du -sh apps/landing/src/assets/avatars
 ```
-Expected: `PNG image data, ... 8-bit/color RGBA` (the `-cut` variants are background-removed, so RGBA with alpha), and a total directory size under 25 MB.
+Expected: `PNG image data, ... 8-bit/color RGBA` (the `-cut` variants are background-removed, so RGBA with alpha). The source directory is ~22 MB; that is fine because these are build inputs, not shipped bytes — Tasks 4 and 8 render them through `astro:assets`, and Task 10 Step 10 asserts the delivered payload.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/scripts/export-avatar-stills.ts apps/api/package.json apps/landing/public/avatars
-git commit -m "feat(landing): export rendered avatar cutouts from R2 into public/"
+git add apps/api/scripts/export-avatar-stills.ts apps/api/package.json apps/landing/src/assets/avatars
+git commit -m "feat(landing): export rendered avatar cutouts from R2 into src/assets"
 ```
 
 ---
@@ -700,7 +704,20 @@ Create `apps/landing/src/components/ReelMarquee.astro`. Each column's tile list 
 
 ```astro
 ---
+import { Image } from "astro:assets";
 import { columnA, columnB, type Still } from "../data/stills";
+
+/* The cutouts live in src/assets so astro:assets can downscale them and emit WebP — the
+   originals are 1024x1536 PNGs and these render at 270px wide. A glob is needed because the
+   slugs come from data; Astro resolves it at build time, so this stays fully static. */
+const avatarImages = import.meta.glob<{ default: ImageMetadata }>("../assets/avatars/*.png", {
+  eager: true,
+});
+const avatarOf = (slug: string): ImageMetadata => {
+  const mod = avatarImages[`../assets/avatars/${slug}.png`];
+  if (!mod) throw new Error(`no avatar image for slug "${slug}" — run pnpm --filter @sentezy/api export:stills`);
+  return mod.default;
+};
 
 const cols: { dir: "up" | "down"; items: Still[] }[] = [
   { dir: "up", items: columnA },
@@ -713,7 +730,7 @@ const cols: { dir: "up" | "down"; items: Still[] }[] = [
     <div class={`reel-col ${col.dir}`}>
       {[...col.items, ...col.items].map((s) => (
         <div class={`tile tile-${s.tint}`}>
-          <img src={`/avatars/${s.slug}.png`} alt="" loading="lazy" decoding="async" width="270" height="480" />
+          <Image src={avatarOf(s.slug)} alt="" widths={[270, 540]} sizes="270px" loading="lazy" decoding="async" />
           <span class="tile-sector" data-tr={s.sector.tr}>{s.sector.en}</span>
           <div class="tile-cap"><span class={`cap-${s.style}`} data-tr={s.caption.tr}>{s.caption.en}</span></div>
         </div>
@@ -722,6 +739,8 @@ const cols: { dir: "up" | "down"; items: Still[] }[] = [
   ))}
 </div>
 ```
+
+`ImageMetadata` is a global type provided by Astro's client types — no import needed. If `astro check` cannot find it, add `/// <reference types="astro/client" />` to `apps/landing/src/env.d.ts`.
 
 - [ ] **Step 4: Add the hero copy**
 
@@ -1511,7 +1530,10 @@ Append to `apps/landing/src/styles/global.css`:
 
 ```astro
 ---
+import { Image } from "astro:assets";
 import { captionDemo } from "../data/copy";
+/* Static import, unlike ReelMarquee's glob — this component always shows the same avatar. */
+import kevser from "../assets/avatars/kevser.png";
 ---
 
 <section class="sec" id="captions">
@@ -1523,7 +1545,7 @@ import { captionDemo } from "../data/copy";
     </div>
     <div class="cap-demo reveal">
       <div class="cap-phone">
-        <img src="/avatars/kevser.png" alt="" loading="lazy" decoding="async" width="300" height="533" />
+        <Image src={kevser} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
         {captionDemo.styles.map((s, i) => (
           <div class={`cap-demo-slide${i === 0 ? " on" : ""}`}>
             <span class={`cap-${s.id}`} data-tr={captionDemo.sample.tr}>{captionDemo.sample.en}</span>
@@ -1856,7 +1878,32 @@ git add apps/landing
 git commit -m "chore(landing): gate the build on the claim-verification check"
 ```
 
-- [ ] **Step 9: Report**
+- [ ] **Step 9: Assert the delivered image payload**
+
+The source cutouts total ~22 MB. `astro:assets` must have downscaled them and emitted WebP.
+
+Run:
+```bash
+du -sh apps/landing/dist
+du -sh apps/landing/dist/_astro
+ls apps/landing/dist/_astro | grep -cE '\.(webp|avif)$'
+ls -1 apps/landing/src/assets/avatars/*.png | wc -l
+```
+
+Expected:
+- `dist/_astro` is **under 3 MB** — if it is anywhere near 22 MB, the images are being copied
+  unoptimized and something still references them by URL rather than through `<Image>`.
+- The WebP/AVIF count is at least 12 (one or more variants per avatar).
+- No `dist/avatars/` directory exists at all:
+  ```bash
+  test -d apps/landing/dist/avatars && echo "REGRESSION: avatars served unoptimized from public/" || echo "ok"
+  ```
+  Expected: `ok`.
+
+If any of these fail, find the component still using a `src="/avatars/…"` string and convert it
+to `astro:assets`.
+
+- [ ] **Step 10: Report**
 
 Summarise for the user:
 - The verify output.
