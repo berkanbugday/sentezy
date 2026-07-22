@@ -972,7 +972,7 @@ Append to `apps/landing/src/styles/global.css`:
 @media (max-width: 560px) { .sector-grid { grid-template-columns: 1fr; } .proof-n { font-size: 32px; } }
 ```
 
-Then **delete** the now-unused `.metric-row`, `.metric`, `.metric-n`, `.metric-l`, `.marquee`, `.marquee-track`, `@keyframes marq` and `.wordmark` rules, and drop `.marquee-track { animation: none; }` from the reduced-motion block (which then only needs the `.reveal, .stagger > *` rule plus `.reel-col`). Also delete the `.metric-row`/`.metric-n` entries in the `max-width: 560px` media query.
+Then **delete** the now-unused `.metric-row`, `.metric`, `.metric-n`, `.metric-l`, `.marquee`, `.marquee-track`, `@keyframes marq` and `.wordmark` rules, plus the rules orphaned by removing the feature-card and use-case sections — `.grid3`, `.card`, `.card:hover`, `.chip`, `.card .h3`, `.card p`, `.grid4`, `.uc`, `.uc:hover`, `.uc-num`, `.uc .h3`, `.uc p`, and the `.grid3, .grid4` entries in both media queries. Retitle the section comment to `zig blocks / steps`, and drop `.marquee-track { animation: none; }` from the reduced-motion block (which then only needs the `.reveal, .stagger > *` rule plus `.reel-col`). Also delete the `.metric-row`/`.metric-n` entries in the `max-width: 560px` media query.
 
 - [ ] **Step 3: Create ProofBar.astro**
 
