@@ -33,3 +33,7 @@ tmp/
 
 # Superpowers SDD scratch (task briefs, reports, diffs) — process artifacts, not source
 .superpowers/
+
+# Landing reel masters: 1080p sources (~80 MB) kept locally for re-encoding. Only the
+# transcoded apps/landing/public/reels/*.mp4 are committed — see src/data/reels.ts.
+apps/landing/src/assets/videos/

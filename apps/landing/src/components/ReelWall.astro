@@ -1,0 +1,58 @@
+---
+/* The reel wall: four finished reels playing on the dark band, in phone frames rather than
+   Instagram's embed chrome — that embed wrapped our best work in a white card with a "0 likes"
+   counter, an "Add a comment" field and a letterboxed player.
+
+   Muted autoplay once a card scrolls into view. The file is only fetched at that point
+   (preload="none" plus a data-src the script promotes), so the initial payload is four posters,
+   not five megabytes of video. */
+import { getImage } from "astro:assets";
+import { showcase } from "../data/copy";
+import { reels } from "../data/reels";
+import { INSTAGRAM_URL } from "../data/site";
+
+const posters = import.meta.glob<{ default: ImageMetadata }>("../assets/posters/*.jpg", { eager: true });
+const cards = await Promise.all(
+  reels.map(async (r) => {
+    const mod = posters[`../assets/posters/${r.file}.jpg`];
+    if (!mod) throw new Error(`no poster for reel "${r.file}" — expected src/assets/posters/${r.file}.jpg`);
+    // getImage, not <Image>: a poster is an attribute URL, not an element.
+    const poster = await getImage({ src: mod.default, width: 540, format: "webp" });
+    return { ...r, poster: poster.src };
+  }),
+);
+---
+
+<section class="sec band" id="showcase">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow" data-tr={showcase.eyebrow.tr}>{showcase.eyebrow.en}</div>
+      <h2 class="disp h2" data-tr={showcase.title.tr}>{showcase.title.en}</h2>
+      <p class="lead" data-tr={showcase.lead.tr}>{showcase.lead.en}</p>
+    </div>
+
+    <div class="wall reveal">
+      {cards.map((r) => (
+        <button class="reel" type="button" aria-label={r.alt} data-reel>
+          <video class="reel-v" data-src={`/reels/${r.file}.mp4`} poster={r.poster} muted loop playsinline preload="none"></video>
+          <span class="reel-sector" data-tr={r.sector.tr}>{r.sector.en}</span>
+          <span class="reel-sound">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M8 2.5 4.6 5.2H2v5.6h2.6L8 13.5z" fill="currentColor"></path>
+              <path class="reel-x" d="M10.6 6.2l3.2 3.6M13.8 6.2l-3.2 3.6" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"></path>
+              <path class="reel-on" d="M10.8 5.8a3.2 3.2 0 010 4.4M12.7 4.2a5.6 5.6 0 010 7.6" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"></path>
+            </svg>
+            <em class="s-off" data-tr={showcase.soundOff.tr}>{showcase.soundOff.en}</em>
+            <em class="s-on" data-tr={showcase.soundOn.tr}>{showcase.soundOn.en}</em>
+          </span>
+        </button>
+      ))}
+    </div>
+
+    <div class="wall-cta reveal">
+      <a class="btn btn-ghost btn-lg" href={INSTAGRAM_URL} target="_blank" rel="noopener">
+        <span data-tr={showcase.follow.tr}>{showcase.follow.en}</span>
+      </a>
+    </div>
+  </div>
+</section>

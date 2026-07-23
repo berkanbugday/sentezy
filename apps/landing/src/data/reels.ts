@@ -1,12 +1,29 @@
-/** Real posts from instagram.com/sentezy.ai. Adding a reel here is the only step needed
- *  to put it on the page — InstaShowcase renders one card per entry, and falls back to a
- *  single follow card when the list is empty. */
-export type Reel = { shortcode: string };
+/** The reels on the showcase wall, self-hosted rather than embedded.
+ *
+ *  Instagram's embed ships its own chrome — a white card, a "0 likes" counter, an "Add a
+ *  comment" field and a letterboxed player — which framed our best work inside someone else's
+ *  dead-looking UI. These are the same reels, served as files we control.
+ *
+ *  `file` names `public/reels/<file>.mp4`, transcoded to 540x960 H.264 (CRF 29, faststart)
+ *  from the 1080p masters, and `src/assets/posters/<file>.jpg`, which goes through
+ *  astro:assets. The masters live in src/assets/videos/ and are git-ignored — 80 MB of source
+ *  has no business in a repo when only the 5 MB of output ships.
+ *
+ *  To add a reel, from apps/landing:
+ *    ffmpeg -i src/assets/videos/N.mp4 -vf scale=-2:960:flags=lanczos -c:v libx264 \
+ *      -profile:v high -preset slow -crf 29 -pix_fmt yuv420p -r 30 -c:a aac -b:a 80k -ac 1 \
+ *      -movflags +faststart public/reels/N.mp4
+ *    ffmpeg -ss 1.2 -i src/assets/videos/N.mp4 -frames:v 1 -vf scale=-2:1280 -q:v 3 \
+ *      src/assets/posters/N.jpg
+ *  then append an entry here.
+ */
+import type { Copy } from "./copy";
+
+export type Reel = { file: string; sector: Copy; alt: string };
 
 export const reels: Reel[] = [
-  { shortcode: "DbCAH3rCwxe" },
-  { shortcode: "DbDOIBPic25" },
-  { shortcode: "DbFxuR3CUqM" },
+  { file: "2", sector: { en: "Beauty", tr: "Güzellik" }, alt: "A Sentezy reel made for a beauty salon" },
+  { file: "1", sector: { en: "Travel", tr: "Seyahat" }, alt: "A Sentezy reel made for a travel agency" },
+  { file: "3", sector: { en: "Gym", tr: "Spor salonu" }, alt: "A Sentezy reel made for a gym" },
+  { file: "4", sector: { en: "Café", tr: "Kafe" }, alt: "A Sentezy reel made for a café" },
 ];
-
-export const permalink = (shortcode: string) => `https://www.instagram.com/reel/${shortcode}/`;
