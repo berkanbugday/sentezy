@@ -29,16 +29,20 @@ const HOST = "kevser";
       <p class="lead">{platform.lead}</p>
     </div>
 
-    <div class="demo-row reveal" data-demo data-interval="2400">
-      <div class="phone">
-        {presenters.map((p, i) => (
+    <div class="demo-row reveal" data-demo data-interval="2400" style="--dur:2400ms;--accent:#2e74c4">
+      <div class="stage">
+        <div class="glow"></div>
+        <div class="phone">
+          {presenters.map((p, i) => (
           <div class={`slide tile-${p.tint}${i === 0 ? " on" : ""}`} data-slide>
             <Image src={face(p.slug)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
             <span class="slide-tag">{p.sector}</span>
             <div class="slide-foot"><b>{p.name}</b></div>
           </div>
         ))}
+        </div>
       </div>
+      <div class="spine"><span class="node">01</span></div>
       <div class="demo-copy">
         <div class="eyebrow">{platform.presenters.eyebrow}</div>
         <h3 class="disp h3">{platform.presenters.title}</h3>
@@ -51,9 +55,11 @@ const HOST = "kevser";
       </div>
     </div>
 
-    <div class="demo-row rev reveal" data-demo data-interval="2800">
-      <div class="phone">
-        {voices.map((v, i) => (
+    <div class="demo-row rev reveal" data-demo data-interval="2800" style="--dur:2800ms;--accent:#28c4c0">
+      <div class="stage">
+        <div class="glow"></div>
+        <div class="phone">
+          {voices.map((v, i) => (
           <div class={`slide tile-${v.tint}${i === 0 ? " on" : ""}`} data-slide>
             <Image src={face(v.presenter)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
             <div class="slide-foot">
@@ -63,7 +69,9 @@ const HOST = "kevser";
             </div>
           </div>
         ))}
+        </div>
       </div>
+      <div class="spine"><span class="node">02</span></div>
       <div class="demo-copy">
         <div class="eyebrow">{platform.voices.eyebrow}</div>
         <h3 class="disp h3">{platform.voices.title}</h3>
@@ -76,9 +84,11 @@ const HOST = "kevser";
       </div>
     </div>
 
-    <div class="demo-row reveal" data-demo data-interval="2600">
-      <div class="phone">
-        {tracks.map((t, i) => (
+    <div class="demo-row reveal" data-demo data-interval="2600" style="--dur:2600ms;--accent:#e89260">
+      <div class="stage">
+        <div class="glow"></div>
+        <div class="phone">
+          {tracks.map((t, i) => (
           <div class={`slide tile-teal${i === 0 ? " on" : ""}`} data-slide>
             <Image src={face(HOST)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
             <div class="slide-foot">
@@ -88,7 +98,9 @@ const HOST = "kevser";
             </div>
           </div>
         ))}
+        </div>
       </div>
+      <div class="spine"><span class="node">03</span></div>
       <div class="demo-copy">
         <div class="eyebrow">{platform.music.eyebrow}</div>
         <h3 class="disp h3">{platform.music.title}</h3>
@@ -101,15 +113,19 @@ const HOST = "kevser";
       </div>
     </div>
 
-    <div class="demo-row rev reveal" data-demo data-interval="2200">
-      <div class="phone">
-        {captionStyles.map((s, i) => (
+    <div class="demo-row rev reveal" data-demo data-interval="2200" style="--dur:2200ms;--accent:#d67096">
+      <div class="stage">
+        <div class="glow"></div>
+        <div class="phone">
+          {captionStyles.map((s, i) => (
           <div class={`slide tile-cool${i === 0 ? " on" : ""}`} data-slide>
             <Image src={face(HOST)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
             <div class="slide-cap"><span class={`cap-${s.id}`}>{platform.captions.sample}</span></div>
           </div>
         ))}
+        </div>
       </div>
+      <div class="spine"><span class="node">04</span></div>
       <div class="demo-copy">
         <div class="eyebrow">{platform.captions.eyebrow}</div>
         <h3 class="disp h3">{platform.captions.title}</h3>

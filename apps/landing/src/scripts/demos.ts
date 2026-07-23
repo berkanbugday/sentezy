@@ -31,6 +31,7 @@ for (const demo of Array.from(document.querySelectorAll<HTMLElement>("[data-demo
   chips.forEach((chip, n) =>
     chip.addEventListener("click", () => {
       if (timer) { clearInterval(timer); timer = 0; }
+      demo.classList.add("manual"); // stops the chip's countdown bar
       show(n);
     }),
   );

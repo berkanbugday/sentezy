@@ -232,20 +232,62 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 /* Four rows, one shape: a phone that plays through a catalog, and the copy plus chips beside
    it. The phone alternates sides so the eye moves down the section instead of straight down
    one column. */
-.demo-row { display: grid; grid-template-columns: 300px 1fr; gap: 72px; align-items: center;
+/* Three columns: phone at one edge, copy at the other, and a spine down the middle carrying
+   the step number. The four rows ARE a sequence — you pick a presenter, then a voice, then
+   music, then captions — so numbering them says something true, and the spine fills the empty
+   middle the two-column version left behind. */
+.demo-row { display: grid; grid-template-columns: 1fr 96px 1fr; gap: 32px; align-items: center;
   margin-top: 104px; }
-.demo-row.rev .phone { order: 2; }
-/* Phone in one corner, copy in the other. Without this the copy hugs the phone and leaves the
-   far half of the row empty — the two blocks read as one crowded lump in the middle. */
+.stage { position: relative; justify-self: start; }
+.spine { position: relative; align-self: stretch; justify-self: center; width: 96px; }
 .demo-copy { max-width: 30em; justify-self: end; }
-.demo-row.rev .demo-copy { justify-self: start; }
+.demo-row.rev .stage { order: 3; justify-self: end; }
+.demo-row.rev .demo-copy { order: 1; justify-self: start; }
+/* The line overshoots by half the row gap at both ends, so consecutive rows join into one
+   continuous rail rather than four floating segments. */
+.spine::before { content: ""; position: absolute; left: 50%; top: -52px; bottom: -52px; width: 1px;
+  background: linear-gradient(180deg, transparent, var(--color-hairline) 12%, var(--color-hairline) 88%, transparent); }
+.node { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.6);
+  display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+  background: var(--color-paper); border: 1px solid var(--color-hairline);
+  font-family: var(--font-mono); font-size: 13px; color: var(--color-ink);
+  opacity: 0; transition: transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s, opacity 0.5s 0.1s, box-shadow 0.5s; }
+.demo-row.in .node { opacity: 1; transform: translate(-50%, -50%) scale(1);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 16%, transparent); }
+
+/* The accent wash behind the phone — the only color in an otherwise monochrome section, one hue
+   per step, breathing slowly so the section is never completely still. */
+.glow { position: absolute; inset: -16% -22%; border-radius: 50%; opacity: 0.3; filter: blur(44px);
+  background: radial-gradient(closest-side, var(--accent), transparent 72%);
+  animation: breathe 7s ease-in-out infinite alternate; }
+@keyframes breathe { from { transform: scale(0.94); opacity: 0.22; } to { transform: scale(1.06); opacity: 0.36; } }
+
 .demo-copy .h3 { margin: 12px 0 12px; }
 .demo-copy p { font-size: 15.5px; line-height: 1.6; color: var(--color-slate); }
 .demo-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
+/* Each half enters from the edge it lives on, so the row assembles toward the spine. */
+.demo-row .stage, .demo-row .demo-copy { opacity: 0; transition: opacity 0.6s, translate 0.6s cubic-bezier(0.22,1,0.36,1); }
+.demo-row .stage { translate: -28px 0; }
+.demo-row .demo-copy { translate: 28px 0; }
+.demo-row.rev .stage { translate: 28px 0; }
+.demo-row.rev .demo-copy { translate: -28px 0; }
+.demo-row.in .stage, .demo-row.in .demo-copy { opacity: 1; translate: 0 0; }
+.demo-row.in .demo-copy { transition-delay: 0.1s; }
+/* The active chip runs a hairline timer for exactly this row's interval, so the cycling reads
+   as deliberate rather than random. It stops once a click hands the row over. */
+.chip.on::after { content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: 2px;
+  background: var(--accent); transform-origin: left; animation: chipfill var(--dur, 2400ms) linear forwards; }
+@keyframes chipfill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.demo-row.manual .chip.on::after { animation: none; opacity: 0; }
 
 .phone { position: relative; width: 300px; aspect-ratio: 9/16; border-radius: 26px;
   overflow: hidden; border: 6px solid #0a0a0b; background: #0a0a0b;
-  box-shadow: 0 30px 80px rgba(10,10,12,0.28); }
+  box-shadow: 0 30px 80px rgba(10,10,12,0.28);
+  transform: perspective(1100px) rotateY(5deg) rotateX(1.5deg);
+  animation: float 7s ease-in-out infinite alternate; }
+.demo-row.rev .phone { transform: perspective(1100px) rotateY(-5deg) rotateX(1.5deg); }
+@keyframes float { from { translate: 0 -7px; } to { translate: 0 7px; } }
+.demo-row:nth-of-type(odd) .phone { animation-delay: -3s; }
 /* Slides stack and the incoming one WIPES in over the outgoing, fully opaque the whole way. A
    cross-fade double-exposes two faces and two labels through each other for half a second — the
    one thing a presenter picker must never look like.
@@ -263,6 +305,8 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .slide-tag { position: absolute; top: 12px; left: 12px; z-index: 2; font-family: var(--font-mono);
   font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: #fff;
   background: rgba(0,0,0,0.42); backdrop-filter: blur(6px); padding: 4px 9px; border-radius: 999px; }
+.slide.on .slide-foot, .slide.on .slide-cap { animation: liftIn 0.5s 0.14s both cubic-bezier(0.22,1,0.36,1); }
+@keyframes liftIn { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
 .slide-foot { position: absolute; left: 16px; right: 16px; bottom: 18px; z-index: 2;
   display: flex; flex-direction: column; align-items: flex-start; gap: 5px; color: #fff; }
 .slide-foot b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
@@ -288,15 +332,22 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 @keyframes eq { from { transform: scaleY(0.55); } to { transform: scaleY(1); } }
 
 @media (max-width: 900px) {
-  .demo-row { grid-template-columns: 1fr; justify-items: center; gap: 28px; text-align: center; }
-  .demo-row.rev .phone { order: 0; }
+  .demo-row { grid-template-columns: 1fr; justify-items: center; gap: 26px; text-align: center;
+    margin-top: 72px; }
+  .stage, .demo-row.rev .stage, .demo-copy, .demo-row.rev .demo-copy { justify-self: center; order: 0; }
+  .spine { order: -1; align-self: auto; height: 46px; }
+  .spine::before { display: none; }
+  .node { position: static; transform: none; }
+  .demo-row.in .node { transform: none; }
   .demo-copy p { margin-inline: auto; }
   .demo-chips { justify-content: center; }
   .phone { width: 260px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .slide.on { animation: none; }
-  .slide.on .wave i, .slide.on .eq i { animation: none; }
+  .slide.on, .slide.on .slide-foot, .slide.on .slide-cap { animation: none; }
+  .slide.on .wave i, .slide.on .eq i, .glow, .phone { animation: none; }
+  .chip.on::after { animation: none; opacity: 0; }
+  .demo-row .stage, .demo-row .demo-copy { opacity: 1; translate: 0 0; transition: none; }
 }
 
 /* ── pricing teaser / final CTA ─────────────────────────────────────────── */
@@ -313,10 +364,11 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 
 /* ── chips ──────────────────────────────────────────────────────────────── */
 /* Shared by every demo row: the option you can click, lit when its slide is up. */
-.chip { font-family: var(--font-mono); font-size: 12.5px; padding: 8px 14px; border-radius: 999px;
-  border: 1px solid var(--color-hairline); background: var(--color-paper); color: var(--color-slate);
-  cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
-.chip:hover { border-color: var(--color-muted); color: var(--color-ink); }
+.chip { position: relative; overflow: hidden; font-family: var(--font-mono); font-size: 12.5px;
+  padding: 8px 14px; border-radius: 999px; border: 1px solid var(--color-hairline);
+  background: var(--color-paper); color: var(--color-slate); cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s; }
+.chip:hover { border-color: var(--color-muted); color: var(--color-ink); transform: translateY(-1px); }
 .chip.on { background: var(--color-ink); border-color: var(--color-ink); color: #fff; }
 
 /* ── reel wall ──────────────────────────────────────────────────────────── */
