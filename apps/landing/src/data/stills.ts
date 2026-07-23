@@ -5,25 +5,25 @@
 export type Still = {
   slug: string;
   tint: "cool" | "warm" | "rose" | "teal" | "violet" | "amber";
-  sector: { en: string; tr: string };
-  caption: { en: string; tr: string };
+  sector: string;
+  caption: string;
   /** Caption treatment. Mirrors real CAPTION_STYLE_META ids. */
   style: "hormozi" | "tiktok" | "highlight" | "boxed" | "glow" | "clean";
 };
 
 export const stills: Still[] = [
-  { slug: "kevser",   tint: "rose",   sector: { en: "E-commerce",  tr: "E-ticaret" },   caption: { en: "SOLD OUT TWICE", tr: "İKİ KEZ TÜKENDİ" }, style: "hormozi" },
-  { slug: "anna",     tint: "cool",   sector: { en: "Real Estate", tr: "Emlak" },       caption: { en: "3+1 SEA VIEW",   tr: "3+1 DENİZ MANZARA" }, style: "boxed" },
-  { slug: "aaliyah",  tint: "violet", sector: { en: "Influencer",  tr: "Influencer" },  caption: { en: "LINK IN BIO",    tr: "LİNK BIO'DA" },      style: "glow" },
-  { slug: "mariam",   tint: "teal",   sector: { en: "Dental",      tr: "Diş" },         caption: { en: "SAME DAY SMILE", tr: "AYNI GÜN GÜLÜŞ" },   style: "highlight" },
-  { slug: "beyza",    tint: "warm",   sector: { en: "E-commerce",  tr: "E-ticaret" },   caption: { en: "NEW DROP",       tr: "YENİ SEZON" },       style: "tiktok" },
-  { slug: "hana",     tint: "cool",   sector: { en: "Finance",     tr: "Finans" },      caption: { en: "0% FOR 12 MO",   tr: "12 AY 0 FAİZ" },     style: "boxed" },
-  { slug: "sumeyye",  tint: "teal",   sector: { en: "Health",      tr: "Sağlık" },      caption: { en: "BOOK IN 30 SEC", tr: "30 SANİYEDE RANDEVU" }, style: "highlight" },
-  { slug: "camila",   tint: "amber",  sector: { en: "Automotive",  tr: "Otomotiv" },    caption: { en: "TEST DRIVE IT",  tr: "TEST SÜRÜŞÜ" },      style: "hormozi" },
-  { slug: "arda",     tint: "teal",   sector: { en: "Pharmacy",    tr: "Eczane" },      caption: { en: "OPEN 24/7",      tr: "7/24 AÇIK" },        style: "clean" },
-  { slug: "amara",    tint: "violet", sector: { en: "Education",   tr: "Eğitim" },      caption: { en: "ENROLL TODAY",   tr: "BUGÜN KAYIT OL" },   style: "tiktok" },
-  { slug: "alp",      tint: "cool",   sector: { en: "Optics",      tr: "Optik" },       caption: { en: "2ND PAIR FREE",  tr: "2. GÖZLÜK BEDAVA" }, style: "glow" },
-  { slug: "aisha",    tint: "warm",   sector: { en: "Automotive",  tr: "Otomotiv" },    caption: { en: "0 KM, 0 STRESS", tr: "0 KM, 0 STRES" },    style: "boxed" },
+  { slug: "kevser",   tint: "rose",   sector: "E-commerce",   caption: "SOLD OUT TWICE", style: "hormozi" },
+  { slug: "anna",     tint: "cool",   sector: "Real Estate",       caption: "3+1 SEA VIEW", style: "boxed" },
+  { slug: "aaliyah",  tint: "violet", sector: "Influencer",  caption: "LINK IN BIO",      style: "glow" },
+  { slug: "mariam",   tint: "teal",   sector: "Dental",         caption: "SAME DAY SMILE",   style: "highlight" },
+  { slug: "beyza",    tint: "warm",   sector: "E-commerce",   caption: "NEW DROP",       style: "tiktok" },
+  { slug: "hana",     tint: "cool",   sector: "Finance",      caption: "0% FOR 12 MO",     style: "boxed" },
+  { slug: "sumeyye",  tint: "teal",   sector: "Health",      caption: "BOOK IN 30 SEC", style: "highlight" },
+  { slug: "camila",   tint: "amber",  sector: "Automotive",    caption: "TEST DRIVE IT",      style: "hormozi" },
+  { slug: "arda",     tint: "teal",   sector: "Pharmacy",      caption: "OPEN 24/7",        style: "clean" },
+  { slug: "amara",    tint: "violet", sector: "Education",      caption: "ENROLL TODAY",   style: "tiktok" },
+  { slug: "alp",      tint: "cool",   sector: "Optics",       caption: "2ND PAIR FREE", style: "glow" },
+  { slug: "aisha",    tint: "warm",   sector: "Automotive",    caption: "0 KM, 0 STRESS",    style: "boxed" },
 ];
 
 /** Two counter-scrolling columns. Split rather than interleaved so each column has a

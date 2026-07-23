@@ -81,9 +81,6 @@ a:hover { color: var(--color-ink); }
 .nav-util { display: flex; align-items: center; gap: 16px; }
 .nav-login { color: var(--color-ink); font-size: 15px; font-weight: 500; }
 .nav-login:hover { color: var(--color-signal); }
-.switch { display: inline-flex; border: 1px solid var(--color-hairline); border-radius: 999px; padding: 2px; background: var(--color-paper); }
-.sw-btn { border: none; background: transparent; font-family: var(--font-mono); font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 999px; color: var(--color-muted); cursor: pointer; }
-.sw-btn.on { background: var(--color-ink); color: #fff; }
 
 /* ── hero ────────────────────────────────────────────────────────────────── */
 .hero { padding: 150px 0 96px; background: var(--hero); }
@@ -91,10 +88,7 @@ a:hover { color: var(--color-ink); }
 .hero-cta { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
 .microcopy { font-size: 14px; color: var(--color-muted); margin-top: 14px; }
 
-/* ── zig blocks / steps ─────────────────────────────────────────────────── */
-.zig { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; margin-top: 72px; }
-.zig.rev .panel { order: -1; }
-.zig .h2 { margin-top: 12px; }
+/* ── bullets / steps ───────────────────────────────────────────────────── */
 .blist { list-style: none; padding: 0; margin: 22px 0 0; display: flex; flex-direction: column; gap: 11px; }
 .blist li { display: flex; gap: 11px; font-size: 15px; color: var(--color-slate); line-height: 1.5; }
 .blist li::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--color-signal); margin-top: 7px; flex: none; transform: rotate(45deg); }
@@ -113,13 +107,14 @@ a:hover { color: var(--color-ink); }
 .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; color: var(--color-slate); font-size: 15px; }
 .faq-item.open .faq-a { max-height: 220px; }
 .faq-a p { margin: 0 0 22px; max-width: 60em; }
-.footer { background: var(--color-paper); border-top: 1px solid var(--color-hairline); padding: 64px 0 36px; }
+.footer { background: var(--frame); color: rgba(255,255,255,0.62); padding: 72px 0 40px; }
 .foot-grid { display: grid; grid-template-columns: 1.5fr repeat(4,1fr); gap: 32px; }
-.foot-brand p { font-size: 14px; color: var(--color-muted); max-width: 20em; margin: 14px 0 18px; }
-.foot-col h4 { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--color-ink); margin: 0 0 14px; text-transform: uppercase; letter-spacing: 0.06em; }
-.foot-col a { display: block; color: var(--color-slate); font-size: 14px; margin-bottom: 10px; }
-.foot-col a:hover { color: var(--color-ink); }
-.foot-bottom { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--color-hairline); font-size: 13px; color: var(--color-muted); }
+.footer .logo { color: #fff; }
+.foot-brand p { font-size: 14px; color: rgba(255,255,255,0.62); max-width: 20em; margin: 14px 0 18px; }
+.foot-col h4 { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: #fff; margin: 0 0 14px; text-transform: uppercase; letter-spacing: 0.06em; }
+.foot-col a { display: block; color: rgba(255,255,255,0.62); font-size: 14px; margin-bottom: 10px; }
+.foot-col a:hover { color: #fff; }
+.foot-bottom { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 48px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.14); font-size: 13px; color: rgba(255,255,255,0.5); }
 
 /* ── reveal ─────────────────────────────────────────────────────────────── */
 .reveal { opacity: 0; transform: translateY(8px); transition: opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1); }
@@ -134,7 +129,7 @@ a:hover { color: var(--color-ink); }
 a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid var(--color-signal); outline-offset: 2px; border-radius: 6px; }
 
 @media (max-width: 900px) {
-  .hero-grid, .zig { grid-template-columns: 1fr; }
+  .hero-grid { grid-template-columns: 1fr; }
   .steps { grid-template-columns: 1fr 1fr; }
   .foot-grid { grid-template-columns: 1fr 1fr; }
   .nav-menu, .nav-login { display: none; }
@@ -142,7 +137,6 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
   .h2 { font-size: 28px; }
   .hero { padding: 120px 0 64px; }
   .sec { padding: 64px 0; }
-  .zig.rev .panel { order: 0; }
 }
 @media (max-width: 560px) {
   .steps, .foot-grid { grid-template-columns: 1fr; }
@@ -234,35 +228,65 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 @media (max-width: 900px) { .proof, .sector-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .sector-grid { grid-template-columns: 1fr; } .proof-n { font-size: 32px; } }
 
-/* ── caption demo ───────────────────────────────────────────────────────── */
-/* Reuses the six .cap-* treatments defined with the hero marquee above — the demo restates
-   the styles, it does not redefine them. */
-.cap-demo { display: grid; grid-template-columns: 320px 1fr; gap: 56px; align-items: center;
-  margin-top: 48px; }
-.cap-phone { position: relative; width: 300px; aspect-ratio: 9/16; border-radius: 26px;
-  overflow: hidden; background: linear-gradient(165deg, #2e74c4, #14304f);
-  border: 6px solid #0a0a0b; box-shadow: 0 30px 80px rgba(10,10,12,0.28); }
-.cap-phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+/* ── platform demos ─────────────────────────────────────────────────────── */
+/* Four rows, one shape: a phone that plays through a catalog, and the copy plus chips beside
+   it. The phone alternates sides so the eye moves down the section instead of straight down
+   one column. */
+.demo-row { display: grid; grid-template-columns: 300px 1fr; gap: 56px; align-items: center;
+  margin-top: 72px; }
+.demo-row.rev .phone { order: 2; }
+.demo-copy .h3 { margin: 12px 0 12px; }
+.demo-copy p { font-size: 15.5px; line-height: 1.6; color: var(--color-slate); max-width: 34em; }
+.demo-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
+
+.phone { position: relative; width: 300px; aspect-ratio: 9/16; border-radius: 26px;
+  overflow: hidden; border: 6px solid #0a0a0b; background: #0a0a0b;
+  box-shadow: 0 30px 80px rgba(10,10,12,0.28); }
+/* Slides stack; only .on is visible, and they cross-fade rather than cut. */
+.slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.5s ease; }
+.slide.on { opacity: 1; }
+.slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
   object-position: top center; }
-.cap-phone::after { content: ""; position: absolute; inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.5) 100%); }
-.cap-demo-slide { position: absolute; left: 16px; right: 16px; bottom: 40px; z-index: 2;
-  text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 22px;
-  line-height: 1.15; text-transform: uppercase; color: #fff;
-  opacity: 0; transform: translateY(6px); transition: opacity 0.35s, transform 0.35s; }
-.cap-demo-slide.on { opacity: 1; transform: none; }
-.cap-chips { display: flex; flex-wrap: wrap; gap: 10px; }
-.cap-chip { font-family: var(--font-mono); font-size: 12.5px; padding: 8px 14px; border-radius: 999px;
-  border: 1px solid var(--color-hairline); color: var(--color-muted); background: var(--color-paper);
-  transition: background 0.25s, color 0.25s, border-color 0.25s; }
-.cap-chip.on { background: var(--color-ink); color: #fff; border-color: var(--color-ink); }
-.cap-more { margin-top: 18px; font-size: 14px; color: var(--color-muted); }
+.slide::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 30%, rgba(0,0,0,0.62) 100%); }
+.slide-tag { position: absolute; top: 12px; left: 12px; z-index: 2; font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: #fff;
+  background: rgba(0,0,0,0.42); backdrop-filter: blur(6px); padding: 4px 9px; border-radius: 999px; }
+.slide-foot { position: absolute; left: 16px; right: 16px; bottom: 18px; z-index: 2;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 5px; color: #fff; }
+.slide-foot b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.slide-foot em { font-style: normal; font-family: var(--font-mono); font-size: 10.5px;
+  color: rgba(255,255,255,0.72); }
+/* The caption row prints its sample where a burned-in caption actually sits. */
+.slide-cap { position: absolute; left: 16px; right: 16px; bottom: 40px; z-index: 2; text-align: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.15;
+  text-transform: uppercase; color: #fff; }
+
+/* Voice: bars ride the read. Music: a fixed silhouette per track, so the four moods look
+   different standing still and only breathe when their slide is up. */
+.wave, .eq { display: flex; align-items: flex-end; gap: 3px; height: 22px; margin-bottom: 2px; }
+.wave i { width: 3px; height: 5px; border-radius: 2px; background: rgba(255,255,255,0.9); }
+.slide.on .wave i { animation: wave 900ms ease-in-out infinite alternate;
+  animation-delay: calc(var(--b) * 60ms); }
+@keyframes wave { from { height: 5px; } to { height: 21px; } }
+.eq { height: 26px; gap: 4px; }
+.eq i { width: 4px; border-radius: 2px; background: rgba(255,255,255,0.9);
+  height: calc(var(--h) * 0.26); }
+.slide.on .eq i { animation: eq 1.15s ease-in-out infinite alternate;
+  animation-delay: calc(var(--b) * 80ms); }
+@keyframes eq { from { transform: scaleY(0.55); } to { transform: scaleY(1); } }
 
 @media (max-width: 900px) {
-  .cap-demo { grid-template-columns: 1fr; justify-items: center; gap: 32px; }
-  .cap-phone { width: 260px; }
+  .demo-row { grid-template-columns: 1fr; justify-items: center; gap: 28px; text-align: center; }
+  .demo-row.rev .phone { order: 0; }
+  .demo-copy p { margin-inline: auto; }
+  .demo-chips { justify-content: center; }
+  .phone { width: 260px; }
 }
-@media (prefers-reduced-motion: reduce) { .cap-demo-slide { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .slide { transition: none; }
+  .slide.on .wave i, .slide.on .eq i { animation: none; }
+}
 
 /* ── pricing teaser / final CTA ─────────────────────────────────────────── */
 .price-band { text-align: center; max-width: 44em; margin: 0 auto; }
@@ -276,63 +300,13 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
    and at equal specificity the later rule would win and cancel the override. */
 @media (max-width: 900px) { .final-cta .h2 { font-size: 32px; } }
 
-/* ── studio demo panels ─────────────────────────────────────────────────── */
-/* The app's own pickers, rebuilt in CSS so they actually work on the page. Shares the
-   .tile-<tint> gradients with the hero marquee — one presenter backdrop, defined once. */
-.panel { border-radius: 20px; border: 1px solid var(--color-hairline); background: var(--color-paper);
-  box-shadow: 0 28px 72px rgba(10,10,12,0.10); padding: 18px; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.chip { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono);
-  font-size: 12.5px; padding: 7px 13px; border-radius: 999px; border: 1px solid var(--color-hairline);
-  background: var(--color-paper); color: var(--color-slate); cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s; }
+/* ── chips ──────────────────────────────────────────────────────────────── */
+/* Shared by every demo row: the option you can click, lit when its slide is up. */
+.chip { font-family: var(--font-mono); font-size: 12.5px; padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--color-hairline); background: var(--color-paper); color: var(--color-slate);
+  cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
 .chip:hover { border-color: var(--color-muted); color: var(--color-ink); }
 .chip.on { background: var(--color-ink); border-color: var(--color-ink); color: #fff; }
-.chip-n { font-size: 11px; opacity: 0.55; font-variant-numeric: tabular-nums; }
-
-.faces { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.face { margin: 0; cursor: pointer; }
-.face.out { display: none; }
-.face-shot { position: relative; aspect-ratio: 3/4; border-radius: 12px; overflow: hidden;
-  outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 0.2s, transform 0.25s cubic-bezier(0.22,1,0.36,1); }
-.face:hover .face-shot { transform: translateY(-2px); }
-.face.sel .face-shot { outline-color: var(--color-ink); }
-.face-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-  object-position: top center; }
-.face figcaption { margin-top: 7px; display: flex; flex-direction: column; line-height: 1.25; }
-.face b { font-size: 13px; color: var(--color-ink); font-weight: 600; }
-.face figcaption span { font-size: 11.5px; color: var(--color-muted); }
-
-.rows { display: flex; flex-direction: column; gap: 8px; }
-.rows.scroller { max-height: 296px; overflow-y: auto; padding-right: 4px; }
-.row { cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  padding: 11px 14px; border-radius: 12px; border: 1px solid var(--color-hairline);
-  transition: border-color 0.25s, background 0.25s; }
-.row.out { display: none; }
-.row.on { border-color: var(--color-ink); background: var(--color-mist); }
-.row-main { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
-.row b { font-size: 14px; color: var(--color-ink); font-weight: 600; }
-.row-meta { font-size: 11.5px; color: var(--color-muted); }
-.row-dur { font-family: var(--font-mono); font-size: 12px; color: var(--color-muted);
-  font-variant-numeric: tabular-nums; }
-
-/* Marks the row the demo is reading. Bars rest flat and only move on the active row, so a
-   still page is quiet and the moving one is unmistakable. */
-.wave { display: flex; align-items: center; gap: 3px; height: 22px; flex: none; }
-.wave i { display: block; width: 3px; height: 4px; border-radius: 2px; background: var(--color-hairline); }
-.row.on .wave i { background: var(--color-ink);
-  animation: wave 900ms ease-in-out infinite alternate;
-  animation-delay: calc(var(--b) * 70ms); }
-@keyframes wave { from { height: 4px; } to { height: 20px; } }
-
-@media (max-width: 900px) {
-  .faces { grid-template-columns: repeat(4, 1fr); }
-  .rows.scroller { max-height: 240px; }
-}
-@media (max-width: 560px) { .faces { grid-template-columns: repeat(3, 1fr); } }
-@media (prefers-reduced-motion: reduce) {
-  .row.on .wave i { animation: none; height: 12px; }
-}
 
 /* ── reel wall ──────────────────────────────────────────────────────────── */
 /* Four finished reels on the dark band, framed as phones. Sits on .band, so the copy above
@@ -352,7 +326,7 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
   background: rgba(0,0,0,0.46); backdrop-filter: blur(6px); padding: 5px 9px; border-radius: 999px; }
 .reel-sound em { font-style: normal; }
 /* One icon, two states: the slash and the arcs swap, and so do the two labels — both ship in
-   the markup with their own data-tr so a language switch cannot desync them. */
+   the markup, so the class swap is the whole state change. */
 .reel-on, .s-on { display: none; }
 .reel.loud .reel-x, .reel.loud .s-off { display: none; }
 .reel.loud .reel-on { display: inline; }

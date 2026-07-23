@@ -26,8 +26,8 @@ const cols: { dir: "up" | "down"; items: Still[] }[] = [
       {[...col.items, ...col.items].map((s) => (
         <div class={`tile tile-${s.tint}`}>
           <Image src={avatarOf(s.slug)} alt="" widths={[270, 540]} sizes="270px" loading="lazy" decoding="async" />
-          <span class="tile-sector" data-tr={s.sector.tr}>{s.sector.en}</span>
-          <div class="tile-cap"><span class={`cap-${s.style}`} data-tr={s.caption.tr}>{s.caption.en}</span></div>
+          <span class="tile-sector">{s.sector}</span>
+          <div class="tile-cap"><span class={`cap-${s.style}`}>{s.caption}</span></div>
         </div>
       ))}
     </div>

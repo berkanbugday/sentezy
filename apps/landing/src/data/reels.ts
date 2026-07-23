@@ -17,13 +17,11 @@
  *      src/assets/posters/N.jpg
  *  then append an entry here.
  */
-import type { Copy } from "./copy";
-
-export type Reel = { file: string; sector: Copy; alt: string };
+export type Reel = { file: string; sector: string; alt: string };
 
 export const reels: Reel[] = [
-  { file: "2", sector: { en: "Beauty", tr: "Güzellik" }, alt: "A Sentezy reel made for a beauty salon" },
-  { file: "1", sector: { en: "Travel", tr: "Seyahat" }, alt: "A Sentezy reel made for a travel agency" },
-  { file: "3", sector: { en: "Gym", tr: "Spor salonu" }, alt: "A Sentezy reel made for a gym" },
-  { file: "4", sector: { en: "Café", tr: "Kafe" }, alt: "A Sentezy reel made for a café" },
+  { file: "2", sector: "Beauty", alt: "A Sentezy reel made for a beauty salon" },
+  { file: "1", sector: "Travel", alt: "A Sentezy reel made for a travel agency" },
+  { file: "3", sector: "Gym", alt: "A Sentezy reel made for a gym" },
+  { file: "4", sector: "Café", alt: "A Sentezy reel made for a café" },
 ];

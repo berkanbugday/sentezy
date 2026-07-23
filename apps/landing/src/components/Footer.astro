@@ -8,40 +8,36 @@ import { INSTAGRAM_URL, SIGNUP_URL } from "../data/site";
     <div class="foot-grid">
       <div class="foot-brand">
         <a class="logo" href="/"><img class="logo-mark" src="/sentezy-logo.png" alt="Sentezy" />Sentezy</a>
-        <p data-tr={footer.tagline.tr}>{footer.tagline.en}</p>
-        <div class="switch">
-          <button class="sw-btn" data-switch="tr">TR</button>
-          <button class="sw-btn on" data-switch="en">EN</button>
-        </div>
+        <p>{footer.tagline}</p>
       </div>
       <div class="foot-col">
-        <h4 data-tr={footer.productHead.tr}>{footer.productHead.en}</h4>
-        <a href="#platform" data-tr={footer.presenters.tr}>{footer.presenters.en}</a>
-        <a href="#captions" data-tr={footer.captions.tr}>{footer.captions.en}</a>
-        <a href="#platform" data-tr={footer.music.tr}>{footer.music.en}</a>
+        <h4>{footer.productHead}</h4>
+        <a href="#platform">{footer.presenters}</a>
+        <a href="#platform">{footer.captions}</a>
+        <a href="#platform">{footer.music}</a>
       </div>
       <div class="foot-col">
-        <h4 data-tr={footer.solutionsHead.tr}>{footer.solutionsHead.en}</h4>
-        <a href="#sectors" data-tr={sectorNames.travel.tr}>{sectorNames.travel.en}</a>
-        <a href="#sectors" data-tr={sectorNames.beauty.tr}>{sectorNames.beauty.en}</a>
-        <a href="#sectors" data-tr={sectorNames.realestate.tr}>{sectorNames.realestate.en}</a>
-        <a href="#sectors" data-tr={sectorNames.gym.tr}>{sectorNames.gym.en}</a>
+        <h4>{footer.solutionsHead}</h4>
+        <a href="#sectors">{sectorNames.travel}</a>
+        <a href="#sectors">{sectorNames.beauty}</a>
+        <a href="#sectors">{sectorNames.realestate}</a>
+        <a href="#sectors">{sectorNames.gym}</a>
       </div>
       <div class="foot-col">
-        <h4 data-tr={footer.legalHead.tr}>{footer.legalHead.en}</h4>
+        <h4>{footer.legalHead}</h4>
         <a href="/kvkk">KVKK</a>
-        <a href="/privacy" data-tr={footer.privacy.tr}>{footer.privacy.en}</a>
-        <a href="/terms" data-tr={footer.terms.tr}>{footer.terms.en}</a>
+        <a href="/privacy">{footer.privacy}</a>
+        <a href="/terms">{footer.terms}</a>
       </div>
       <div class="foot-col">
-        <h4 data-tr={footer.instagramHead.tr}>{footer.instagramHead.en}</h4>
+        <h4>{footer.instagramHead}</h4>
         <a href={INSTAGRAM_URL} target="_blank" rel="noopener">@sentezy.ai</a>
-        <a href={SIGNUP_URL} data-tr={nav.cta.tr}>{nav.cta.en}</a>
+        <a href={SIGNUP_URL}>{nav.cta}</a>
       </div>
     </div>
     <div class="foot-bottom">
       <span>© 2026 Sentezy</span>
-      <span data-tr={footer.madeFor.tr}>{footer.madeFor.en}</span>
+      <span>{footer.madeFor}</span>
     </div>
   </div>
 </footer>

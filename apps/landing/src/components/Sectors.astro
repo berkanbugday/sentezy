@@ -5,15 +5,15 @@ import { sectorNames, sectors } from "../data/copy";
 <section class="sec mist" id="sectors">
   <div class="wrap">
     <div class="sec-head reveal">
-      <div class="eyebrow" data-tr={sectors.eyebrow.tr}>{sectors.eyebrow.en}</div>
-      <h2 class="disp h2" data-tr={sectors.title.tr}>{sectors.title.en}</h2>
+      <div class="eyebrow">{sectors.eyebrow}</div>
+      <h2 class="disp h2">{sectors.title}</h2>
     </div>
     <div class="sector-grid stagger">
       {sectors.items.map((s) => (
         <div class="sector">
           <div class="sector-bar"></div>
-          <h3 class="disp h3" data-tr={sectorNames[s.key].tr}>{sectorNames[s.key].en}</h3>
-          <p data-tr={s.body.tr}>{s.body.en}</p>
+          <h3 class="disp h3">{sectorNames[s.key]}</h3>
+          <p>{s.body}</p>
         </div>
       ))}
     </div>

@@ -2,20 +2,20 @@
 import { faq } from "../data/copy";
 ---
 
-<section class="sec" id="faq">
+<section class="sec mist" id="faq">
   <div class="wrap">
     <div class="sec-head reveal">
-      <div class="eyebrow" data-tr={faq.eyebrow.tr}>{faq.eyebrow.en}</div>
-      <h2 class="disp h2" data-tr={faq.title.tr}>{faq.title.en}</h2>
+      <div class="eyebrow">{faq.eyebrow}</div>
+      <h2 class="disp h2">{faq.title}</h2>
     </div>
     <div class="faq reveal">
       {faq.items.map((item) => (
         <div class="faq-item">
           <button class="faq-q" type="button">
-            <span data-tr={item.q.tr}>{item.q.en}</span>
+            <span>{item.q}</span>
             <span class="faq-ic">+</span>
           </button>
-          <div class="faq-a"><p data-tr={item.a.tr}>{item.a.en}</p></div>
+          <div class="faq-a"><p>{item.a}</p></div>
         </div>
       ))}
     </div>

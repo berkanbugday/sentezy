@@ -1,18 +1,16 @@
 ---
-/* A teaser, deliberately without numbers — there is no billing yet, so quoting a price
-   would be the kind of claim the rest of this rebuild exists to remove. */
+/* A teaser, deliberately without numbers — there is no billing yet, so quoting a price would be
+   the kind of claim the rest of this rebuild exists to remove. */
 import { pricing } from "../data/copy";
 import { SIGNUP_URL } from "../data/site";
 ---
 
-<section class="sec mist">
+<section class="sec">
   <div class="wrap">
     <div class="price-band reveal">
-      <h2 class="disp h2" data-tr={pricing.title.tr}>{pricing.title.en}</h2>
-      <p class="lead" data-tr={pricing.body.tr}>{pricing.body.en}</p>
-      <a class="btn btn-primary btn-lg" href={SIGNUP_URL}>
-        <span data-tr={pricing.cta.tr}>{pricing.cta.en}</span>
-      </a>
+      <h2 class="disp h2">{pricing.title}</h2>
+      <p class="lead">{pricing.body}</p>
+      <a class="btn btn-primary btn-lg" href={SIGNUP_URL}><span>{pricing.cta}</span></a>
     </div>
   </div>
 </section>

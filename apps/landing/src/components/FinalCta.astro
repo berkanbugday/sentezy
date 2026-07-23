@@ -1,18 +1,16 @@
 ---
-/* The closer sits on the same dark aurora band as the showcase, replacing the old section's
-   periwinkle radial wash — the last hardcoded pre-monochrome color on the page. */
+/* The closer sits on light: the page now ends on the dark footer, and two dark bands in a row
+   would read as one long black slab. */
 import { finalCta } from "../data/copy";
 import { SIGNUP_URL } from "../data/site";
 ---
 
-<section class="sec band final-cta">
+<section class="sec final-cta">
   <div class="wrap">
     <div class="price-band reveal">
-      <h2 class="disp h2" data-tr={finalCta.title.tr}>{finalCta.title.en}</h2>
-      <a class="btn btn-primary btn-lg" href={SIGNUP_URL}>
-        <span data-tr={finalCta.cta.tr}>{finalCta.cta.en}</span>
-      </a>
-      <div class="microcopy" data-tr={finalCta.microcopy.tr}>{finalCta.microcopy.en}</div>
+      <h2 class="disp h2">{finalCta.title}</h2>
+      <a class="btn btn-primary btn-lg" href={SIGNUP_URL}><span>{finalCta.cta}</span></a>
+      <div class="microcopy">{finalCta.microcopy}</div>
     </div>
   </div>
 </section>

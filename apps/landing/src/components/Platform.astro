@@ -1,0 +1,125 @@
+---
+/* Four choices, four phones, each playing through its own catalog: presenter, voice, music,
+   captions. The caption demo used to be its own section — it is the shape that worked, so the
+   other three were built to match it and it moved in here rather than living next door.
+
+   Every row is the same object: one phone cycling slides, and a row of chips lighting in step
+   that you can also click to take over. */
+import { Image } from "astro:assets";
+import { platform } from "../data/copy";
+import { captionStyles, mmss, presenters, tracks, voices } from "../data/studio";
+
+const avatars = import.meta.glob<{ default: ImageMetadata }>("../assets/avatars/*.png", { eager: true });
+const face = (slug: string): ImageMetadata => {
+  const mod = avatars[`../assets/avatars/${slug}.png`];
+  if (!mod) throw new Error(`no avatar image for slug "${slug}"`);
+  return mod.default;
+};
+
+/** The one presenter the voice, music and caption rows keep on screen: the choice being
+ *  demonstrated is the overlay, so the face stays put and the eye watches the thing changing. */
+const HOST = "kevser";
+---
+
+<section class="sec mist" id="platform">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">{platform.eyebrow}</div>
+      <h2 class="disp h2">{platform.title}</h2>
+      <p class="lead">{platform.lead}</p>
+    </div>
+
+    <div class="demo-row reveal" data-demo data-interval="2400">
+      <div class="phone">
+        {presenters.map((p, i) => (
+          <div class={`slide tile-${p.tint}${i === 0 ? " on" : ""}`} data-slide>
+            <Image src={face(p.slug)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+            <span class="slide-tag">{p.sector}</span>
+            <div class="slide-foot"><b>{p.name}</b></div>
+          </div>
+        ))}
+      </div>
+      <div class="demo-copy">
+        <div class="eyebrow">{platform.presenters.eyebrow}</div>
+        <h3 class="disp h3">{platform.presenters.title}</h3>
+        <p>{platform.presenters.body}</p>
+        <div class="demo-chips">
+          {presenters.map((p, i) => (
+            <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{p.name}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-row rev reveal" data-demo data-interval="2800">
+      <div class="phone">
+        {voices.map((v, i) => (
+          <div class={`slide tile-${v.tint}${i === 0 ? " on" : ""}`} data-slide>
+            <Image src={face(v.presenter)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+            <div class="slide-foot">
+              <span class="wave" aria-hidden="true">{Array.from({ length: 15 }).map((_, b) => <i style={`--b:${b}`}></i>)}</span>
+              <b>{v.name}</b>
+              <em>{v.meta}</em>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div class="demo-copy">
+        <div class="eyebrow">{platform.voices.eyebrow}</div>
+        <h3 class="disp h3">{platform.voices.title}</h3>
+        <p>{platform.voices.body}</p>
+        <div class="demo-chips">
+          {voices.map((v, i) => (
+            <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{v.name}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-row reveal" data-demo data-interval="2600">
+      <div class="phone">
+        {tracks.map((t, i) => (
+          <div class={`slide tile-teal${i === 0 ? " on" : ""}`} data-slide>
+            <Image src={face(HOST)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+            <div class="slide-foot">
+              <span class="eq" aria-hidden="true">{t.bars.map((h, b) => <i style={`--h:${h}%;--b:${b}`}></i>)}</span>
+              <b>{t.name}</b>
+              <em>{t.mood} · {mmss(t.sec)}</em>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div class="demo-copy">
+        <div class="eyebrow">{platform.music.eyebrow}</div>
+        <h3 class="disp h3">{platform.music.title}</h3>
+        <p>{platform.music.body}</p>
+        <div class="demo-chips">
+          {tracks.map((t, i) => (
+            <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{t.mood}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-row rev reveal" data-demo data-interval="2200">
+      <div class="phone">
+        {captionStyles.map((s, i) => (
+          <div class={`slide tile-cool${i === 0 ? " on" : ""}`} data-slide>
+            <Image src={face(HOST)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+            <div class="slide-cap"><span class={`cap-${s.id}`}>{platform.captions.sample}</span></div>
+          </div>
+        ))}
+      </div>
+      <div class="demo-copy">
+        <div class="eyebrow">{platform.captions.eyebrow}</div>
+        <h3 class="disp h3">{platform.captions.title}</h3>
+        <p>{platform.captions.body}</p>
+        <div class="demo-chips">
+          {captionStyles.map((s, i) => (
+            <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{s.label}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

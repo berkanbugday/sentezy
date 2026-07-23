@@ -5,15 +5,15 @@ import { how } from "../data/copy";
 <section class="sec" id="how">
   <div class="wrap">
     <div class="sec-head reveal">
-      <div class="eyebrow" data-tr={how.eyebrow.tr}>{how.eyebrow.en}</div>
-      <h2 class="disp h2" data-tr={how.title.tr}>{how.title.en}</h2>
+      <div class="eyebrow">{how.eyebrow}</div>
+      <h2 class="disp h2">{how.title}</h2>
     </div>
     <div class="steps stagger">
       {how.steps.map((s) => (
         <div class="step">
           <div class="step-n">{s.n}</div>
-          <h3 class="disp h3" data-tr={s.title.tr}>{s.title.en}</h3>
-          <p data-tr={s.body.tr}>{s.body.en}</p>
+          <h3 class="disp h3">{s.title}</h3>
+          <p>{s.body}</p>
         </div>
       ))}
     </div>
