@@ -45,7 +45,7 @@ const FORBIDDEN_CSS = ["c9a9e9", "201,169,233", "7c86e8", "124,134,232"];
 //   14 b-roll effects                 → BROLL_EFFECT_META, packages/types/src/index.ts
 const REQUIRED = [
   ">12<", ">24<", ">20<", ">14<",           // the four verified proof numbers
-  "Reels that sell",                         // hero headline
+  "Post a reel a day without filming one.", // hero headline
   "instagram.com/sentezy.ai",                // the real account is linked
 ];
 
