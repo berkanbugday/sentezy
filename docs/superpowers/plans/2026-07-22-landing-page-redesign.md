@@ -1407,21 +1407,30 @@ git commit -m "feat(landing): how-it-works section and screenshot-gated studio b
 
 ---
 
-### Task 8: Caption style demo
+### Task 8: Caption style demo — SHIPPED 2026-07-23
 
 **Files:**
 - Create: `apps/landing/src/components/CaptionDemo.astro`
 - Create: `apps/landing/src/scripts/captions.ts`
 - Modify: `apps/landing/src/data/copy.ts` (append `captionDemo`)
 - Modify: `apps/landing/src/styles/global.css`
-- Modify: `apps/landing/src/layouts/Base.astro`
+- ~~Modify: `apps/landing/src/layouts/Base.astro`~~ — not needed. The file list said "caption-demo
+  fonts", but the demo uses `--font-display` (General Sans), already loaded for the whole page.
+  The other reason to touch Base — its meta description still claims "175+ languages" — belongs
+  to Task 9, which rewrites the title and description defaults.
 - Modify: `apps/landing/src/pages/index.astro`
+
+**Deviation:** the `…and 14 more styles.` string went into `captionDemo.more` rather than being
+inlined in the markup, matching how every other string on the page is handled. The six ids and
+TR labels were re-checked against `CAPTION_STYLE_META` before shipping: clean=Sade, tiktok=TikTok,
+hormozi=Hormozi, boxed=Kutu, highlight=Vurgu, glow=Neon — all present, 20 entries total, so
+6 shown + 14 more is exact.
 
 **Interfaces:**
 - Consumes: the `.cap-*` caption treatments from Task 4 (reused verbatim, not redefined).
 - Produces: `<CaptionDemo />` rendering `id="captions"`, linked from the footer.
 
-- [ ] **Step 1: Add the demo copy**
+- [x] **Step 1: Add the demo copy**
 
 Append to `apps/landing/src/data/copy.ts`. The style ids and Turkish labels are transcribed from `CAPTION_STYLE_META` in `packages/types/src/index.ts:26` — the landing does not import from the workspace, per the build constraint. Six of the twenty are shown; the heading states the real total.
 
@@ -1446,7 +1455,7 @@ export const captionDemo = {
 } as const;
 ```
 
-- [ ] **Step 2: Write the cycler**
+- [x] **Step 2: Write the cycler**
 
 Create `apps/landing/src/scripts/captions.ts`:
 
@@ -1470,7 +1479,7 @@ if (slides.length > 1 && !window.matchMedia("(prefers-reduced-motion: reduce)").
 export {};
 ```
 
-- [ ] **Step 3: Add the styles**
+- [x] **Step 3: Add the styles**
 
 Append to `apps/landing/src/styles/global.css`:
 
@@ -1504,7 +1513,7 @@ Append to `apps/landing/src/styles/global.css`:
 @media (prefers-reduced-motion: reduce) { .cap-demo-slide { transition: none; } }
 ```
 
-- [ ] **Step 4: Create CaptionDemo.astro**
+- [x] **Step 4: Create CaptionDemo.astro**
 
 ```astro
 ---
@@ -1543,23 +1552,25 @@ import kevser from "../assets/avatars/kevser.png";
 </section>
 ```
 
-- [ ] **Step 5: Wire it up**
+- [x] **Step 5: Wire it up**
 
 In `apps/landing/src/pages/index.astro`, add `import CaptionDemo from "../components/CaptionDemo.astro";` and place `<CaptionDemo />` after `<StudioBlocks />`. Add `import "../scripts/captions";` to the page script block.
 
-- [ ] **Step 6: Build and check**
+- [x] **Step 6: Build and check**
 
-Run:
 ```bash
 pnpm --filter @sentezy/landing typecheck && pnpm --filter @sentezy/landing build
 ```
-Expected: both succeed.
+Actual: 0 errors, build clean, `dist/_astro` still 1.6 MB (no new image — the demo reuses
+`kevser.png`, already emitted for the marquee). Built HTML carries 6 `.cap-demo-slide` and
+6 `.cap-chip`, exactly one of each with `on`, and the cycler is inside the single inlined
+module script. `verify` unchanged at 6 failures, all Task 9's.
 
 In the browser: a phone frame cycles through six caption treatments roughly every 2.2s, with the matching chip highlighting in step. Under emulated reduced motion, it freezes on `Hormozi` with that chip lit.
 
 Confirm the arithmetic reads correctly: six shown + "and 14 more styles" = the 20 claimed in the heading.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/landing/src

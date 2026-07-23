@@ -163,3 +163,26 @@ export const studio = {
     },
   ],
 } as const;
+
+/** Six of the twenty caption styles, shown live. `id` is both the real style id and the
+ *  `.cap-<id>` class from the hero marquee — the treatments are reused, not redefined.
+ *  ids and TR labels are transcribed from CAPTION_STYLE_META (packages/types/src/index.ts);
+ *  the landing does not import from the workspace. 6 shown + "14 more" = the 20 claimed. */
+export const captionDemo = {
+  eyebrow: { en: "CAPTIONS", tr: "ALTYAZILAR" },
+  title: { en: "20 caption styles. Burned into the file.", tr: "20 altyazı stili. Dosyaya işlenmiş." },
+  lead: {
+    en: "Not an overlay a platform can strip — the captions are rendered into the video, word by word, on the beat.",
+    tr: "Platformun kaldırabileceği bir katman değil — altyazılar videoya, kelime kelime, ritme oturarak işlenir.",
+  },
+  sample: { en: "THIS REEL SELLS", tr: "BU REELS SATIYOR" },
+  more: { en: "…and 14 more styles.", tr: "…ve 14 stil daha." },
+  styles: [
+    { id: "hormozi", label: { en: "Hormozi", tr: "Hormozi" } },
+    { id: "tiktok", label: { en: "TikTok", tr: "TikTok" } },
+    { id: "highlight", label: { en: "Highlight", tr: "Vurgu" } },
+    { id: "boxed", label: { en: "Boxed", tr: "Kutu" } },
+    { id: "glow", label: { en: "Neon", tr: "Neon" } },
+    { id: "clean", label: { en: "Clean", tr: "Sade" } },
+  ],
+} as const;
