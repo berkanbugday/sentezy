@@ -81,6 +81,8 @@ a:hover { color: var(--color-ink); }
 .nav-util { display: flex; align-items: center; gap: 16px; }
 .nav-login { color: var(--color-ink); font-size: 15px; font-weight: 500; }
 .nav-login:hover { color: var(--color-signal); }
+/* Smaller than a page CTA: in a 54px dock it is a label, not the call to action. */
+.nav .btn-primary { padding: 9px 16px; font-size: 14px; }
 
 /* ── hero ────────────────────────────────────────────────────────────────── */
 .hero { padding: 150px 0 96px; background: var(--hero); }
@@ -147,7 +149,10 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
   .sec { padding: 64px 0; }
 }
 @media (max-width: 560px) {
-  .steps, .foot-grid { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+  /* Four short link lists stacked is a very long footer; two columns halve it. */
+  .foot-grid { grid-template-columns: 1fr 1fr; gap: 24px 20px; }
+  .foot-brand { grid-column: 1 / -1; }
   .btn-lg { flex: 1; justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -252,7 +257,8 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 /* ── sector cards ───────────────────────────────────────────────────────── */
 /* 24 sectors, sliding on their own. Full-bleed on purpose: a rail that stops at the container
    edge looks like a grid that ran out of room. */
-.rail { --speed: 90s; --space: 16px; padding: 4px 0 10px; }
+/* 6816px per cycle (half a 24-card track) ≈ 59px/s, matching the showcase. */
+.rail { --speed: 115s; --space: 16px; padding: 4px 0 10px; }
 .sector { width: 268px; padding: 24px; border-radius: 20px;
   border: 1px solid var(--color-hairline); background: var(--color-paper);
   transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s; }
@@ -270,7 +276,7 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .sector p { font-size: 14.5px; color: var(--color-slate); line-height: 1.55; }
 
 @media (max-width: 900px) { .proof { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 560px) { .proof-n { font-size: 32px; } .rail { --speed: 70s; --space: 12px; } .sector { width: 74vw; padding: 20px; } }
+@media (max-width: 560px) { .proof-n { font-size: 32px; } .rail { --speed: 120s; --space: 12px; } .sector { width: 74vw; padding: 20px; } }
 
 /* ── platform demos ─────────────────────────────────────────────────────── */
 /* Four rows, one shape: a phone that plays through a catalog, and the copy plus chips beside
@@ -408,7 +414,8 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
    and cost 12px of picture on every card; a reel already looks like a reel. Cards are small
    enough that four fit on a laptop and the row still scrolls with a thumb on a handset, which
    is where this page is actually read. */
-.wall { --speed: 76s; --space: 14px; margin-top: 40px; }
+/* 728px per cycle (a quarter of a 2912px track) ≈ 56px/s — a card crosses in about 3s. */
+.wall { --speed: 13s; --space: 14px; margin-top: 40px; }
 /* Four passes of four reels — see ReelWall.astro. */
 .wall .marquee-track { animation-name: slide4; }
 .reel { position: relative; width: 168px; aspect-ratio: 9/16; padding: 0; border: 0;
@@ -432,7 +439,7 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .reel.loud .reel-on, .reel.loud .s-on { display: inline; }
 
 
-@media (max-width: 560px) { .wall { --speed: 52s; --space: 10px; } .reel { width: 144px; } }
+@media (max-width: 560px) { .wall { --speed: 11s; --space: 10px; } .reel { width: 144px; } }
 
 
 /* ── mobile ─────────────────────────────────────────────────────────────── */
@@ -459,6 +466,7 @@ html { scroll-behavior: smooth; }
   .logo { font-size: 19px; }
   .logo-mark { height: 26px; }
   .btn { padding: 12px 18px; }
+  .nav .btn-primary { padding: 9px 15px; font-size: 13.5px; }
   .btn-lg { padding: 14px 22px; font-size: 15px; }
   .chip { padding: 11px 16px; font-size: 13px; }
   .demo-chips { gap: 8px; }
