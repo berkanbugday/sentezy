@@ -238,9 +238,12 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
    middle the two-column version left behind. */
 .demo-row { display: grid; grid-template-columns: 1fr 96px 1fr; gap: 32px; align-items: center;
   margin-top: 104px; }
-.stage { position: relative; justify-self: start; }
-.spine { position: relative; align-self: stretch; justify-self: center; width: 96px; }
-.demo-copy { max-width: 30em; justify-self: end; }
+/* Every column states its order. Leaving the spine to default meant `order: 0` — it sorted
+   BEFORE the reordered copy on reversed rows, so the copy landed in the 96px spine column and
+   collapsed to one word per line. */
+.stage { position: relative; justify-self: start; order: 1; }
+.spine { position: relative; align-self: stretch; justify-self: center; width: 96px; order: 2; }
+.demo-copy { max-width: 30em; justify-self: end; order: 3; }
 .demo-row.rev .stage { order: 3; justify-self: end; }
 .demo-row.rev .demo-copy { order: 1; justify-self: start; }
 /* The line overshoots by half the row gap at both ends, so consecutive rows join into one
@@ -257,7 +260,7 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 
 /* The accent wash behind the phone — the only color in an otherwise monochrome section, one hue
    per step, breathing slowly so the section is never completely still. */
-.glow { position: absolute; inset: -16% -22%; border-radius: 50%; opacity: 0.3; filter: blur(44px);
+.glow { position: absolute; inset: -16% -22%; border-radius: 50%; opacity: 0.24; filter: blur(48px);
   background: radial-gradient(closest-side, var(--accent), transparent 72%);
   animation: breathe 7s ease-in-out infinite alternate; }
 @keyframes breathe { from { transform: scale(0.94); opacity: 0.22; } to { transform: scale(1.06); opacity: 0.36; } }
@@ -300,6 +303,9 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 @keyframes wipe { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
 .slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
   object-position: top center; }
+/* Rows whose choice is an overlay (voice, music) play a real reel underneath instead of a
+   still — the same files the showcase serves, so the browser has them cached. */
+.phone-v { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
 .slide::after { content: ""; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 30%, rgba(0,0,0,0.62) 100%); }
 .slide-tag { position: absolute; top: 12px; left: 12px; z-index: 2; font-family: var(--font-mono);

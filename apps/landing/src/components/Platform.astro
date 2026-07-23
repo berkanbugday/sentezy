@@ -5,7 +5,7 @@
 
    Every row is the same object: one phone cycling slides, and a row of chips lighting in step
    that you can also click to take over. */
-import { Image } from "astro:assets";
+import { Image, getImage } from "astro:assets";
 import { platform } from "../data/copy";
 import { captionStyles, mmss, presenters, tracks, voices } from "../data/studio";
 
@@ -16,9 +16,19 @@ const face = (slug: string): ImageMetadata => {
   return mod.default;
 };
 
-/** The one presenter the voice, music and caption rows keep on screen: the choice being
- *  demonstrated is the overlay, so the face stays put and the eye watches the thing changing. */
+/** The caption row keeps one presenter on screen: the choice being demonstrated is the caption
+ *  treatment, so the face stays put and the eye watches the thing that changes. */
 const HOST = "kevser";
+
+/** Voice and music are overlays on a finished reel, so those two phones play a real one instead
+ *  of holding a still — the same files the showcase serves, already in the browser's cache.
+ *  Reels 1 and 3 were picked because their own burned captions sit high in the frame, clear of
+ *  the overlay at the bottom. The caption row can't use video at all: our sample would print on
+ *  top of the reel's real captions. */
+const posters = import.meta.glob<{ default: ImageMetadata }>("../assets/posters/*.jpg", { eager: true });
+const still = async (file: string) =>
+  (await getImage({ src: posters[`../assets/posters/${file}.jpg`]!.default, width: 400, format: "webp" })).src;
+const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
 ---
 
 <section class="sec mist" id="platform">
@@ -59,9 +69,9 @@ const HOST = "kevser";
       <div class="stage">
         <div class="glow"></div>
         <div class="phone">
+          <video class="phone-v" data-src="/reels/3.mp4" poster={voicePoster} muted loop playsinline preload="none"></video>
           {voices.map((v, i) => (
-          <div class={`slide tile-${v.tint}${i === 0 ? " on" : ""}`} data-slide>
-            <Image src={face(v.presenter)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+          <div class={`slide${i === 0 ? " on" : ""}`} data-slide>
             <div class="slide-foot">
               <span class="wave" aria-hidden="true">{Array.from({ length: 15 }).map((_, b) => <i style={`--b:${b}`}></i>)}</span>
               <b>{v.name}</b>
@@ -88,9 +98,9 @@ const HOST = "kevser";
       <div class="stage">
         <div class="glow"></div>
         <div class="phone">
+          <video class="phone-v" data-src="/reels/1.mp4" poster={musicPoster} muted loop playsinline preload="none"></video>
           {tracks.map((t, i) => (
-          <div class={`slide tile-teal${i === 0 ? " on" : ""}`} data-slide>
-            <Image src={face(HOST)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+          <div class={`slide${i === 0 ? " on" : ""}`} data-slide>
             <div class="slide-foot">
               <span class="eq" aria-hidden="true">{t.bars.map((h, b) => <i style={`--h:${h}%;--b:${b}`}></i>)}</span>
               <b>{t.name}</b>

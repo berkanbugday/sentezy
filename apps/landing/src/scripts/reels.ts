@@ -9,6 +9,9 @@
  *  Under reduced motion nothing autoplays; the posters stand until a card is clicked, which
  *  then plays it with sound, because a click is a request.
  */
+/** Every lazy video on the page — the showcase cards AND the phones in the platform demos.
+ *  One policy: load on approach, play while visible, pause when it leaves. */
+const lazyVideos = Array.from(document.querySelectorAll<HTMLVideoElement>("video[data-src]"));
 const cards = Array.from(document.querySelectorAll<HTMLElement>("[data-reel]"));
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const videoOf = (card: HTMLElement) => card.querySelector("video") as HTMLVideoElement;
@@ -19,28 +22,27 @@ function load(video: HTMLVideoElement) {
   if (!video.src && video.dataset.src) video.src = video.dataset.src;
 }
 
-if (cards.length) {
-  if (!reduce) {
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          const card = e.target as HTMLElement;
-          const video = videoOf(card);
-          if (e.isIntersecting) {
-            load(video);
-            void video.play().catch(() => {
-              /* A browser that refuses muted autoplay keeps the poster. Nothing to recover. */
-            });
-          } else {
-            video.pause();
-          }
+if (lazyVideos.length && !reduce) {
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        const video = e.target as HTMLVideoElement;
+        if (e.isIntersecting) {
+          load(video);
+          void video.play().catch(() => {
+            /* A browser that refuses muted autoplay keeps the poster. Nothing to recover. */
+          });
+        } else {
+          video.pause();
         }
-      },
-      { threshold: 0.35 },
-    );
-    for (const card of cards) io.observe(card);
-  }
+      }
+    },
+    { threshold: 0.35 },
+  );
+  for (const video of lazyVideos) io.observe(video);
+}
 
+if (cards.length) {
   for (const card of cards) {
     card.addEventListener("click", () => {
       const video = videoOf(card);
