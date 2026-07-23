@@ -196,8 +196,8 @@ export const pricing = {
   cta: { en: "Start free", tr: "Ücretsiz başla" },
 } satisfies Record<string, Copy>;
 
-/** Rewritten to four answers that are all true today. The old SOC 2, digital-twin and
- *  175-language answers were claims about things that do not exist and are gone for good —
+/** Rewritten to four answers that are all true today. The old compliance-badge, avatar-cloning
+ *  and language-count answers were claims about things that do not exist and are gone for good —
  *  scripts/verify.mjs fails the build if any of them comes back. */
 export const faq = {
   eyebrow: { en: "FAQ", tr: "SSS" },
