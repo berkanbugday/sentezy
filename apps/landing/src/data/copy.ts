@@ -127,12 +127,6 @@ export const platform = {
   },
 };
 
-export const pricing = {
-  title: "Start free. Upgrade when you scale.",
-  body: "Your first reels are on us — no card, no trial timer. Move to a paid plan when you need more of them.",
-  cta: "Start free",
-};
-
 /** Four answers that are all true today. The old SOC 2, avatar-cloning and language-count
  *  answers described things that do not exist and are gone for good — scripts/verify.mjs fails
  *  the build if any of them comes back. */
@@ -159,8 +153,12 @@ export const faq = {
   ],
 } as const;
 
+/** The page's single closing CTA. There used to be two — a pricing teaser before the FAQ and
+ *  this one after it — saying the same thing twice with the same button. The teaser's promise
+ *  survives as the lead line here. */
 export const finalCta = {
   title: "Your next reel is five minutes away.",
+  lead: "Your first reels are on us — no card, no trial timer. Move to a paid plan when you need more of them.",
   cta: "Start free",
   microcopy: "No credit card required",
 };

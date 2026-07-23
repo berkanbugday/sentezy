@@ -1,14 +1,15 @@
 ---
-/* The closer sits on light: the page now ends on the dark footer, and two dark bands in a row
-   would read as one long black slab. */
+/* The page's only call to action after the hero. It sits on mist between the white FAQ and the
+   dark footer, so the eye has somewhere to land before the page ends. */
 import { finalCta } from "../data/copy";
 import { SIGNUP_URL } from "../data/site";
 ---
 
-<section class="sec final-cta">
+<section class="sec mist final-cta">
   <div class="wrap">
     <div class="price-band reveal">
       <h2 class="disp h2">{finalCta.title}</h2>
+      <p class="lead">{finalCta.lead}</p>
       <a class="btn btn-primary btn-lg" href={SIGNUP_URL}><span>{finalCta.cta}</span></a>
       <div class="microcopy">{finalCta.microcopy}</div>
     </div>

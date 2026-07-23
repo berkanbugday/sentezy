@@ -88,14 +88,16 @@ a:hover { color: var(--color-ink); }
 .hero-cta { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
 .microcopy { font-size: 14px; color: var(--color-muted); margin-top: 14px; }
 
-/* ── bullets / steps ───────────────────────────────────────────────────── */
-.blist { list-style: none; padding: 0; margin: 22px 0 0; display: flex; flex-direction: column; gap: 11px; }
-.blist li { display: flex; gap: 11px; font-size: 15px; color: var(--color-slate); line-height: 1.5; }
-.blist li::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--color-signal); margin-top: 7px; flex: none; transform: rotate(45deg); }
-.steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 28px; }
-.step-n { font-family: var(--font-mono); font-size: 56px; font-weight: 500; color: var(--color-signal); line-height: 1; }
-.step .h3 { margin: 18px 0 8px; }
-.step p { color: var(--color-slate); font-size: 15px; }
+/* ── steps ──────────────────────────────────────────────────────────────── */
+.steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 40px; }
+/* A rule across the top of all three, and one rhythm inside each: rule → number → title → body,
+   with equal air at every step. Before this the number sat 18px from its title and the title 8px
+   from its body, so the three columns lined up at the top and drifted apart down the block. */
+.step { border-top: 1px solid var(--color-hairline); padding-top: 24px; }
+.step-n { font-family: var(--font-mono); font-size: 40px; font-weight: 500; color: var(--color-muted);
+  line-height: 1; letter-spacing: -0.02em; }
+.step .h3 { font-size: 21px; margin: 16px 0 0; }
+.step p { color: var(--color-slate); font-size: 15px; line-height: 1.6; margin: 16px 0 0; }
 
 /* ── faq / final / footer ───────────────────────────────────────────────── */
 .faq { max-width: 760px; margin: 40px auto 0; }
