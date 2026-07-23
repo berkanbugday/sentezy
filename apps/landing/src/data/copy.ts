@@ -22,7 +22,6 @@ export const footer = {
   legalHead: "Legal",
   privacy: "Privacy",
   terms: "Terms",
-  madeFor: "Made in Türkiye",
   instagramHead: "Instagram",
 };
 
@@ -32,12 +31,12 @@ export const footer = {
 export const hero = {
   eyebrow: "VERTICAL VIDEO, WITHOUT A CAMERA",
   title: "Post every day without filming a thing.",
-  lead: "Paste a product link and Sentezy pulls the photos and writes the script. Or upload your own clips and type two sentences. Choose a presenter, a voice, captions and music, watch the whole thing preview, then download it — one 9:16 file that fits Reels, TikTok and Shorts. About five minutes.",
+  lead: "Paste a product link and Sentezy pulls the photos and writes the script. Or upload your own clips and type two sentences. Choose a presenter, a voice, captions and music, watch the whole thing preview, then download one vertical file that fits Reels, TikTok and Shorts. About five minutes.",
   ctaPrimary: "Make your first video",
   ctaSecondary: "See real examples",
   /* 30 credits on signup (profile default), 1 credit per video (CREDIT_COST in
    * apps/api/src/routes/videos.ts) — so this is literal, not a rounding of "some". */
-  microcopy: "Your first 30 videos are free. No card.",
+  microcopy: "Your first videos are free. No card.",
 };
 
 /** Every number here traces to source. Do not add one that does not.
@@ -92,7 +91,7 @@ export const sectors = {
 export const showcase = {
   eyebrow: "EXAMPLES",
   title: "These were made with Sentezy.",
-  lead: "Script, presenter, voice, captions, edit — all of it. No camera, no studio, no editor. Tap one to hear it.",
+  lead: "Script, presenter, voice, captions and the edit. No camera, no studio, no editor. Tap one to hear it.",
   follow: "Follow @sentezy.ai",
   /** The wall autoplays muted, the way a feed does. These are the only affordance telling you
    *  the sound is there; a card swaps one label for the other. */
@@ -112,12 +111,12 @@ export const how = {
     {
       n: "02",
       title: "Choose how it looks and sounds",
-      body: "Presenter, voice, captions, music, and the cut between each clip. Play the whole video back before it is rendered — nothing is charged until you are happy with it.",
+      body: "Presenter, voice, captions, music, and the cut between each clip. Play the whole video back before it is rendered. Nothing is charged until you are happy with it.",
     },
     {
       n: "03",
       title: "Download it and post it",
-      body: "You get one finished 9:16 MP4 with the captions burned in — the same file works for Instagram Reels, TikTok, YouTube Shorts and anywhere else vertical. You post it yourself, from whichever account you want.",
+      body: "You get one finished vertical MP4 with the captions burned in. The same file works for Instagram Reels, TikTok, YouTube Shorts and anywhere else vertical. You post it yourself, from whichever account you want.",
     },
   ],
 } as const;
@@ -126,34 +125,28 @@ export const how = {
  *  options instead of describing them. The rows themselves live in src/data/studio.ts. */
 export const platform = {
   eyebrow: "WHAT YOU CHOOSE",
-  title: "Five choices. One finished video.",
+  title: "Four choices. One finished video.",
   lead: "Everything below is the actual catalogue you pick from inside Sentezy.",
   presenters: {
     eyebrow: "THE PRESENTER",
     title: "Someone who looks like they work in your business.",
-    body: "A pharmacist in a lab coat, an estate agent in a blazer, a trainer in the gym — 126 of them across 24 lines of work. Filter by gender, age or hijab. And if you would rather not show a face at all, you do not have to.",
+    body: "126 presenters across 24 kinds of business, dressed for the job. Filter by gender, age or hijab. Or show no face at all.",
   },
   voices: {
     eyebrow: "THE VOICE",
     title: "Hear your own words before you spend anything.",
-    body: "Type your script, press play, and the voice reads your actual sentences back to you — not a stock sample. Six tones to pick from, and the pauses and emphasis are marked up line by line, including in Turkish, where most tools get the words wrong.",
+    body: "Type your script and press play to hear it read back in your own words. Six tones, in English and Turkish.",
   },
   music: {
     eyebrow: "THE MUSIC",
     title: "Music that stays under the voice.",
-    body: "Eleven royalty-free tracks in four moods, with a level you control. The music turns itself down whenever the presenter speaks, so you never have to mix anything. Silence is fine too.",
+    body: "Eleven royalty-free tracks in four moods, at a level you set. The music turns down when the presenter speaks. Silence is fine too.",
   },
   captions: {
     eyebrow: "THE CAPTIONS",
     title: "Captions people can read with the sound off.",
-    body: "They are burned into the video, so they survive wherever you post it. Twenty styles across thirteen fonts and twelve colours — the word being spoken lights up as it is said.",
+    body: "Burned into the video, so they work anywhere you post. Twenty styles, thirteen fonts, twelve colours. Each word lights up as it is said.",
     sample: "THIS REEL SELLS",
-  },
-  brand: {
-    eyebrow: "YOUR BRAND",
-    title: "Set your brand once. Every video wears it.",
-    body: "Your logo, colour and font become the opening and closing cards, and a watermark in the corner. Swap either card for your own photo or clip. Set it up once and you never think about it again.",
-    closing: "Book now",
   },
 };
 
@@ -166,11 +159,11 @@ export const faq = {
   items: [
     {
       q: "What does it cost to try?",
-      a: "Nothing, and no card. You get 30 credits when you sign up and a video costs one credit, so your first 30 videos are on us.",
+      a: "Nothing, and no card. You get free credits when you sign up, so your first videos are on us.",
     },
     {
       q: "How long does one video take?",
-      a: "About five minutes from a link or a couple of sentences to a finished file — most of that is Sentezy rendering, not you working.",
+      a: "About five minutes from a link or a couple of sentences to a finished file. Most of that is Sentezy rendering, not you working.",
     },
     {
       q: "Do I need a camera, a studio or editing skills?",
@@ -178,7 +171,7 @@ export const faq = {
     },
     {
       q: "Where can I post the videos?",
-      a: "Anywhere vertical video goes — Instagram Reels, TikTok, YouTube Shorts, Facebook. You get one 9:16 file and post it yourself; Sentezy never asks for a password to any of them.",
+      a: "Anywhere vertical video goes: Instagram Reels, TikTok, YouTube Shorts, Facebook. You get one vertical file and post it yourself; Sentezy never asks for a password to any of them.",
     },
     {
       q: "Is my data safe? (KVKK/GDPR)",
@@ -192,7 +185,7 @@ export const faq = {
  *  survives as the lead line here. */
 export const finalCta = {
   title: "Make one and see.",
-  lead: "Thirty videos on us — no card, no trial countdown. Pay only when you want more than that.",
+  lead: "Free to start, no card, no trial countdown. Pay only when you want more than that.",
   cta: "Make your first video",
   microcopy: "Takes about five minutes.",
 };

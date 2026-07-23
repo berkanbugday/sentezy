@@ -1,12 +1,14 @@
 ---
-/* Four choices, four phones, each playing through its own catalog: presenter, voice, music,
-   captions. The caption demo used to be its own section — it is the shape that worked, so the
-   other three were built to match it and it moved in here rather than living next door.
+/* Four choices, four phones. Every row is now a reel-style still: a real avatar cutout dropped
+   into a bottom corner over a real reel frame, blurred and darkened in CSS so it reads as the soft
+   B-roll behind a presenter. The choice each row demonstrates rides on top — the presenter's name,
+   the voice, the track — the way a finished reel looks. The captions row is the exception: its
+   sample is the point, so it keeps its overlay.
 
-   Every row is the same object: one phone cycling slides, and a row of chips lighting in step
-   that you can also click to take over. No step numbers: the four are things you choose, not a
-   sequence you complete, and on a phone the numbered rail was furniture between two thumbs. */
-import { Image, getImage } from "astro:assets";
+   Every row is the same object: one phone cycling slides and a row of chips lighting in step that
+   you can also click to take over. No step numbers: the four are things you choose, not a sequence
+   you complete, and on a phone the numbered rail was furniture between two thumbs. */
+import { Image } from "astro:assets";
 import { platform } from "../data/copy";
 import { captionStyles, mmss, presenters, tracks, voices } from "../data/studio";
 
@@ -17,28 +19,24 @@ const face = (slug: string): ImageMetadata => {
   return mod.default;
 };
 
-/** The caption row keeps one presenter on screen: the choice being demonstrated is the caption
- *  treatment, so the face stays put and the eye watches the thing that changes. */
-const HOST = "kevser";
+/** The caption row keeps one presenter in the corner while the sample cycles through the styles. */
+const HOST = "camila";
 
-/** The closing card, drawn in CSS rather than screenshotted — the same stand-in approach the
- *  caption treatments use. Three brands, because the point of the row is that the card takes
- *  the colour, the mark and the name of whoever set it up. */
-const brandCards = [
-  { name: "Ada Kuaför", handle: "@adakuafor", initial: "A", bg: "#1f2a44", ink: "#f4d7a1" },
-  { name: "Vera Estate", handle: "@veraestate", initial: "V", bg: "#f4f1ea", ink: "#1b1b1f" },
-  { name: "Kaf Coffee", handle: "@kafcoffee", initial: "K", bg: "#2f1d16", ink: "#e8a06a" },
-];
-
-/** Voice and music are overlays on a finished reel, so those two phones play a real one instead
- *  of holding a still — the same files the showcase serves, already in the browser's cache.
- *  Reels 1 and 3 were picked because their own burned captions sit high in the frame, clear of
- *  the overlay at the bottom. The caption row can't use video at all: our sample would print on
- *  top of the reel's real captions. */
+/** One reel frame sits behind each card, blurred and darkened in CSS so it reads as soft B-roll
+ *  and its own burned captions disappear. Our own footage, so it is ours to use. */
 const posters = import.meta.glob<{ default: ImageMetadata }>("../assets/posters/*.jpg", { eager: true });
-const still = async (file: string) =>
-  (await getImage({ src: posters[`../assets/posters/${file}.jpg`]!.default, width: 400, format: "webp" })).src;
-const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
+const posterMeta = (file: string): ImageMetadata => {
+  const mod = posters[`../assets/posters/${file}.jpg`];
+  if (!mod) throw new Error(`no poster for reel "${file}"`);
+  return mod.default;
+};
+/** The presenter row is the one that changes face — the others hold one presenter and one backdrop
+ *  and only cycle their label (the voice, the track), so the eye watches the choice, not the scene. */
+const presenterBg = ["4", "2", "1", "5", "6", "3"];
+const VOICE_HOST = "hana";
+const VOICE_BG = "3";
+const MUSIC_HOST = "anna";
+const MUSIC_BG = "1";
 ---
 
 <section class="sec mist" id="platform">
@@ -54,10 +52,10 @@ const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
         <div class="glow"></div>
         <div class="phone">
           {presenters.map((p, i) => (
-          <div class={`slide tile-${p.tint}${i === 0 ? " on" : ""}`} data-slide>
-            <Image src={face(p.slug)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
-            <span class="slide-tag">{p.sector}</span>
-            <div class="slide-foot"><b>{p.name}</b></div>
+          <div class={`slide ${i % 2 ? "side-l" : "side-r"}${i === 0 ? " on" : ""}`} data-slide>
+            <Image class="slide-bg" src={posterMeta(presenterBg[i % presenterBg.length])} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+            <Image class="slide-cutout" src={face(p.slug)} alt="" widths={[270, 540]} sizes="270px" loading="lazy" decoding="async" />
+            <div class="slide-foot"><b>{p.name}</b><em>{p.sector}</em></div>
           </div>
         ))}
         </div>
@@ -78,9 +76,10 @@ const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
       <div class="stage">
         <div class="glow"></div>
         <div class="phone">
-          <video class="phone-v" data-src="/reels/3.mp4" poster={voicePoster} muted loop playsinline preload="none"></video>
           {voices.map((v, i) => (
-          <div class={`slide${i === 0 ? " on" : ""}`} data-slide>
+          <div class={`slide side-r${i === 0 ? " on" : ""}`} data-slide>
+            <Image class="slide-bg" src={posterMeta(VOICE_BG)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+            <Image class="slide-cutout" src={face(VOICE_HOST)} alt="" widths={[270, 540]} sizes="270px" loading="lazy" decoding="async" />
             <div class="slide-foot">
               <span class="wave" aria-hidden="true">{Array.from({ length: 15 }).map((_, b) => <i style={`--b:${b}`}></i>)}</span>
               <b>{v.name}</b>
@@ -106,9 +105,10 @@ const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
       <div class="stage">
         <div class="glow"></div>
         <div class="phone">
-          <video class="phone-v" data-src="/reels/1.mp4" poster={musicPoster} muted loop playsinline preload="none"></video>
           {tracks.map((t, i) => (
-          <div class={`slide${i === 0 ? " on" : ""}`} data-slide>
+          <div class={`slide side-r${i === 0 ? " on" : ""}`} data-slide>
+            <Image class="slide-bg" src={posterMeta(MUSIC_BG)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+            <Image class="slide-cutout" src={face(MUSIC_HOST)} alt="" widths={[270, 540]} sizes="270px" loading="lazy" decoding="async" />
             <div class="slide-foot">
               <span class="eq" aria-hidden="true">{t.bars.map((h, b) => <i style={`--h:${h}%;--b:${b}`}></i>)}</span>
               <b>{t.name}</b>
@@ -130,41 +130,14 @@ const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
       </div>
     </div>
 
-    <div class="demo-row rev reveal" data-demo data-interval="2600" style="--dur:2600ms;--accent:#7f5ad0">
-      <div class="stage">
-        <div class="glow"></div>
-        <div class="phone">
-          {brandCards.map((b, i) => (
-            <div class={`slide${i === 0 ? " on" : ""}`} data-slide style={`background:${b.bg}`} data-brand>
-              <div class="brandcard" style={`color:${b.ink}`}>
-                <span class="brandmark" style={`background:${b.ink};color:${b.bg}`}>{b.initial}</span>
-                <b>{b.name}</b>
-                <em>{b.handle}</em>
-                <span class="brandcta" style={`background:${b.ink};color:${b.bg}`}>{platform.brand.closing}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div class="demo-copy">
-        <div class="eyebrow">{platform.brand.eyebrow}</div>
-        <h3 class="disp h3">{platform.brand.title}</h3>
-        <p>{platform.brand.body}</p>
-        <div class="demo-chips">
-          {brandCards.map((b, i) => (
-            <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{b.name}</button>
-          ))}
-        </div>
-      </div>
-    </div>
-
     <div class="demo-row rev reveal" data-demo data-interval="2200" style="--dur:2200ms;--accent:#d67096">
       <div class="stage">
         <div class="glow"></div>
         <div class="phone">
           {captionStyles.map((s, i) => (
-          <div class={`slide tile-cool${i === 0 ? " on" : ""}`} data-slide>
-            <Image src={face(HOST)} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+          <div class={`slide side-r${i === 0 ? " on" : ""}`} data-slide>
+            <Image class="slide-bg" src={posterMeta("4")} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
+            <Image class="slide-cutout" src={face(HOST)} alt="" widths={[270, 540]} sizes="270px" loading="lazy" decoding="async" />
             <div class="slide-cap"><span class={`cap-${s.id}`}>{platform.captions.sample}</span></div>
           </div>
         ))}

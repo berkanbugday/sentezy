@@ -23,5 +23,7 @@ export const reels: Reel[] = [
   { file: "2", sector: "Beauty", alt: "A Sentezy reel made for a beauty salon" },
   { file: "1", sector: "Travel", alt: "A Sentezy reel made for a travel agency" },
   { file: "3", sector: "Gym", alt: "A Sentezy reel made for a gym" },
+  { file: "6", sector: "Automotive", alt: "A Sentezy reel made for a car service" },
   { file: "4", sector: "Café", alt: "A Sentezy reel made for a café" },
+  { file: "5", sector: "Cruise", alt: "A Sentezy reel made for a cruise line" },
 ];

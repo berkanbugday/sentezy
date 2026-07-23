@@ -1,6 +1,6 @@
 ---
 import { nav } from "../data/copy";
-import { LOGIN_URL, SIGNUP_URL } from "../data/site";
+import { START_URL } from "../data/site";
 ---
 
 <header class="nav">
@@ -12,8 +12,7 @@ import { LOGIN_URL, SIGNUP_URL } from "../data/site";
       <a href="#platform">{nav.platform}</a>
     </nav>
     <div class="nav-util">
-      <a href={LOGIN_URL} class="nav-login">{nav.login}</a>
-      <a href={SIGNUP_URL} class="btn btn-primary"><span>{nav.cta}</span></a>
+      <a href={START_URL} class="btn btn-primary"><span>{nav.cta}</span></a>
     </div>
   </div>
 </header>

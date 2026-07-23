@@ -79,8 +79,6 @@ a:hover { color: var(--color-ink); }
 .nav-menu a { color: var(--color-slate); font-size: 15px; font-weight: 500; }
 .nav-menu a:hover { color: var(--color-ink); }
 .nav-util { display: flex; align-items: center; gap: 16px; }
-.nav-login { color: var(--color-ink); font-size: 15px; font-weight: 500; }
-.nav-login:hover { color: var(--color-signal); }
 /* Smaller than a page CTA: in a 54px dock it is a label, not the call to action. */
 .nav .btn-primary { padding: 9px 16px; font-size: 14px; }
 
@@ -113,9 +111,14 @@ a:hover { color: var(--color-ink); }
 .faq-item.open .faq-a { max-height: 220px; }
 .faq-a p { margin: 0 0 22px; max-width: 60em; }
 .footer { background: var(--frame); color: rgba(255,255,255,0.62); padding: 72px 0 40px; }
-.foot-grid { display: grid; grid-template-columns: 1.5fr repeat(4,1fr); gap: 32px; }
+.foot-grid { display: grid; grid-template-columns: 1.6fr repeat(3,1fr); gap: 32px; }
 .footer .logo { color: #fff; }
 .foot-brand p { font-size: 14px; color: rgba(255,255,255,0.62); max-width: 20em; margin: 14px 0 18px; }
+.foot-social { display: flex; gap: 12px; }
+.foot-social a { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.16); color: rgba(255,255,255,0.7); transition: color 0.2s, border-color 0.2s, transform 0.2s; }
+.foot-social a:hover { color: #fff; border-color: rgba(255,255,255,0.5); transform: translateY(-2px); }
+.foot-social svg { width: 19px; height: 19px; }
 .foot-col h4 { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: #fff; margin: 0 0 14px; text-transform: uppercase; letter-spacing: 0.06em; }
 .foot-col a { display: block; color: rgba(255,255,255,0.62); font-size: 14px; margin-bottom: 10px; }
 .foot-col a:hover { color: #fff; }
@@ -142,7 +145,7 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
   .reels { height: 380px; }
   .steps { grid-template-columns: 1fr 1fr; }
   .foot-grid { grid-template-columns: 1fr 1fr; }
-  .nav-menu, .nav-login { display: none; }
+  .nav-menu { display: none; }
   .h1x { font-size: 40px; }
   .h2 { font-size: 28px; }
   .hero { padding: 120px 0 64px; }
@@ -345,25 +348,26 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .slide-tag { position: absolute; top: 12px; left: 12px; z-index: 2; font-family: var(--font-mono);
   font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: #fff;
   background: rgba(0,0,0,0.42); backdrop-filter: blur(6px); padding: 4px 9px; border-radius: 999px; }
-.slide.on .slide-foot, .slide.on .slide-cap { animation: liftIn 0.5s 0.14s both cubic-bezier(0.22,1,0.36,1); }
+.slide.on .slide-foot, .slide.on .slide-cap, .slide.on .slide-cutout { animation: liftIn 0.5s 0.14s both cubic-bezier(0.22,1,0.36,1); }
 @keyframes liftIn { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
+/* Reel-style still: the avatar cutout dropped small into a bottom corner over the backdrop.
+   `.slide img` (0,1,1) would stretch it full-bleed, so `.slide .slide-cutout` (0,2,0) restates
+   every dimension to win on specificity. */
+/* A real reel frame, blurred and darkened so it reads as the soft B-roll behind the presenter.
+   Scaled up so the blur bleed never shows a hard edge inside the phone's rounded clip. */
+.slide-bg { z-index: 0; filter: blur(15px) brightness(0.6); transform: scale(1.2); }
+.slide .slide-cutout { position: absolute; inset: auto; bottom: 0; height: 66%; width: auto;
+  z-index: 1; object-fit: contain; object-position: bottom center;
+  filter: drop-shadow(0 12px 26px rgba(0,0,0,0.45)); }
+.side-r .slide-cutout { right: -6%; left: auto; }
+.side-l .slide-cutout { left: -6%; right: auto; }
+.slide-cap.mid { top: 30%; bottom: auto; }
 .slide-foot { position: absolute; left: 16px; right: 16px; bottom: 18px; z-index: 2;
   display: flex; flex-direction: column; align-items: flex-start; gap: 5px; color: #fff; }
+.side-l .slide-foot { left: auto; right: 16px; align-items: flex-end; text-align: right; }
 .slide-foot b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
 .slide-foot em { font-style: normal; font-family: var(--font-mono); font-size: 10.5px;
   color: rgba(255,255,255,0.72); }
-/* The brand row's card is drawn, not photographed — the slide carries the brand colour and the
-   card sits on it, so a colour change repaints the whole phone the way the real card does. */
-.slide[data-brand]::after { display: none; }
-.brandcard { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 10px; text-align: center; padding: 24px; }
-.brandmark { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%;
-  font-family: var(--font-display); font-weight: 700; font-size: 22px; }
-.brandcard b { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
-.brandcard em { font-style: normal; font-family: var(--font-mono); font-size: 11px; opacity: 0.7; }
-.brandcta { margin-top: 8px; padding: 8px 18px; border-radius: 999px; font-family: var(--font-sans);
-  font-size: 12.5px; font-weight: 600; }
-
 /* The caption row prints its sample where a burned-in caption actually sits. */
 .slide-cap { position: absolute; left: 16px; right: 16px; bottom: 40px; z-index: 2; text-align: center;
   font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.15;
