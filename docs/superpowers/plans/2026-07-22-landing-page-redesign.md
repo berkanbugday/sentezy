@@ -1579,7 +1579,7 @@ git commit -m "feat(landing): animated caption-style demo"
 
 ---
 
-### Task 9: Pricing teaser, rewritten FAQ, final CTA
+### Task 9: Pricing teaser, rewritten FAQ, final CTA — SHIPPED 2026-07-23
 
 **Files:**
 - Create: `apps/landing/src/components/PricingTeaser.astro`
@@ -1594,7 +1594,7 @@ git commit -m "feat(landing): animated caption-style demo"
 - Consumes: `.band`, `SIGNUP_URL`, the existing `.faq*` styles.
 - Produces: `<PricingTeaser />`, `<Faq />` rendering `id="faq"`, `<FinalCta />`. After this task `index.astro` contains no raw section markup.
 
-- [ ] **Step 1: Add the copy**
+- [x] **Step 1: Add the copy**
 
 Append to `apps/landing/src/data/copy.ts`. The FAQ is rewritten to four claims that are all true — the SOC 2 and digital-twin answers are gone.
 
@@ -1638,7 +1638,7 @@ export const finalCta = {
 } satisfies Record<string, Copy>;
 ```
 
-- [ ] **Step 2: Add the pricing style**
+- [x] **Step 2: Add the pricing style**
 
 Append to `apps/landing/src/styles/global.css`:
 
@@ -1651,7 +1651,7 @@ Append to `apps/landing/src/styles/global.css`:
 
 Then **delete** the `.final-wash` rule — the final CTA now uses `.band` instead of a periwinkle radial.
 
-- [ ] **Step 3: Create PricingTeaser.astro**
+- [x] **Step 3: Create PricingTeaser.astro**
 
 ```astro
 ---
@@ -1672,7 +1672,7 @@ import { SIGNUP_URL } from "../data/site";
 </section>
 ```
 
-- [ ] **Step 4: Create Faq.astro**
+- [x] **Step 4: Create Faq.astro**
 
 ```astro
 ---
@@ -1700,7 +1700,7 @@ import { faq } from "../data/copy";
 </section>
 ```
 
-- [ ] **Step 5: Create FinalCta.astro**
+- [x] **Step 5: Create FinalCta.astro**
 
 ```astro
 ---
@@ -1721,7 +1721,7 @@ import { SIGNUP_URL } from "../data/site";
 </section>
 ```
 
-- [ ] **Step 6: Finish index.astro**
+- [x] **Step 6: Finish index.astro**
 
 Replace the whole of `apps/landing/src/pages/index.astro` with:
 
@@ -1765,7 +1765,7 @@ import Footer from "../components/Footer.astro";
 </script>
 ```
 
-- [ ] **Step 7: Update the page metadata**
+- [x] **Step 7: Update the page metadata**
 
 In `apps/landing/src/layouts/Base.astro`, replace the `title` and `description` defaults (lines 9-10) with:
 
@@ -1774,15 +1774,24 @@ In `apps/landing/src/layouts/Base.astro`, replace the `title` and `description` 
   description = "Turn a product link or a script into a finished 9:16 reel with an AI presenter, viral captions and your brand kit. No filming, no editing.",
 ```
 
-- [ ] **Step 8: Build and verify — this must now pass clean**
+- [x] **Step 8: Build and verify — this must now pass clean**
 
-Run:
 ```bash
 pnpm --filter @sentezy/landing typecheck && pnpm --filter @sentezy/landing build && pnpm --filter @sentezy/landing verify
 ```
-Expected: all three succeed, and `verify` prints `verify OK — 25 checks passed`. If `href="#"` still trips, grep `apps/landing/src` for it and remove the remaining dead link. If a `periwinkle literal in built CSS` line trips, a hardcoded `#c9a9e9` or `#7c86e8` survived in `global.css` — Task 4 deletes the `.beam-*` rules that hold two of them and Task 9 deletes `.final-wash`, so a failure here means one of those deletions was incomplete.
+Actual: typecheck 0 errors across 27 files, build clean, **`verify OK — 25 checks passed`** —
+green for the first time since the gate was written in Task 2.
 
-- [ ] **Step 9: Commit**
+**Deviations, both forced by deleting `.final-wash`:**
+- The old closer's headline sizing (`.final .h2` 44px / 32px under 900px) lived in the same rules
+  being deleted, so `FinalCta` carries a `final-cta` class and the sizing moves to `.final-cta`.
+  Dropping it would have shrunk the closer to a normal 36px section heading.
+- That 900px override had to be appended in its OWN media block at the end of the file, not added
+  to the existing 900px block — the base `.final-cta .h2` rule is declared after it, and at equal
+  specificity the later rule wins and the mobile size never applies.
+- The plan's inline `style="margin-top:16px"` on the microcopy became `.final-cta .microcopy`.
+
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/landing/src

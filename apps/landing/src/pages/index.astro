@@ -8,46 +8,24 @@ import InstaShowcase from "../components/InstaShowcase.astro";
 import HowItWorks from "../components/HowItWorks.astro";
 import StudioBlocks from "../components/StudioBlocks.astro";
 import CaptionDemo from "../components/CaptionDemo.astro";
+import PricingTeaser from "../components/PricingTeaser.astro";
+import Faq from "../components/Faq.astro";
+import FinalCta from "../components/FinalCta.astro";
 import Footer from "../components/Footer.astro";
 ---
 
 <Base>
   <Nav />
-
   <Hero />
-
   <ProofBar />
   <Sectors />
   <InstaShowcase />
-
   <HowItWorks />
   <StudioBlocks />
   <CaptionDemo />
-
-  <section class="sec mist" id="faq">
-    <div class="wrap">
-      <div class="sec-head reveal">
-        <div class="eyebrow" data-tr="SSS">FAQ</div>
-        <h2 class="disp h2" data-tr="Sık sorulan sorular">Frequently asked questions.</h2>
-      </div>
-      <div class="faq reveal">
-        <div class="faq-item"><button class="faq-q" type="button"><span data-tr="Sentezy ücretsiz mi?">Is Sentezy free?</span><span class="faq-ic">+</span></button><div class="faq-a"><p data-tr="Evet — kredi kartı olmadan ücretsiz planla başlayın. Daha fazla dakika, avatar ya da koltuk gerektiğinde yükseltin.">Yes — start on the free plan with no credit card. Upgrade when you need more minutes, avatars, or seats.</p></div></div>
-        <div class="faq-item"><button class="faq-q" type="button"><span data-tr="Kendi avatarımı oluşturabilir miyim?">Can I create my own avatar?</span><span class="faq-ic">+</span></button><div class="faq-a"><p data-tr="Kısa bir klip çekin, Sentezy her videoda kullanabileceğiniz gerçekçi bir dijital ikiz oluştursun.">Record a short clip and Sentezy builds a photoreal digital twin you can reuse across every video.</p></div></div>
-        <div class="faq-item"><button class="faq-q" type="button"><span data-tr="Hangi dilleri destekliyor?">Which languages are supported?</span><span class="faq-ic">+</span></button><div class="faq-a"><p data-tr="Ses ve çeviri için doğal dudak senkronuyla 175+ dil — tam Türkçe desteği dahil.">175+ languages for voice and translation, with natural lip-sync — including full Turkish support.</p></div></div>
-        <div class="faq-item"><button class="faq-q" type="button"><span data-tr="Verilerim güvende mi? (KVKK)">Is my data safe? (KVKK/GDPR)</span><span class="faq-ic">+</span></button><div class="faq-a"><p data-tr="Veriler aktarım ve saklama sırasında şifrelenir; KVKK, GDPR ve SOC 2 Type II ile uyumlu işlenir.">Data is encrypted in transit and at rest, and handled in line with KVKK, GDPR, and SOC 2 Type II.</p></div></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec final">
-    <div class="final-wash"></div>
-    <div class="final-in reveal">
-      <h2 class="disp h2" data-tr="İlk videonuzu bugün sentezleyin.">Synthesize your first video today.</h2>
-      <a class="btn btn-primary btn-lg" href="#"><span data-tr="Ücretsiz başla">Start free</span></a>
-      <div class="microcopy" style="margin-top:16px" data-tr="Kredi kartı gerekmez">No credit card required</div>
-    </div>
-  </section>
-
+  <PricingTeaser />
+  <Faq />
+  <FinalCta />
   <Footer />
 </Base>
 

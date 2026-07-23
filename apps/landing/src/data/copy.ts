@@ -186,3 +186,44 @@ export const captionDemo = {
     { id: "clean", label: { en: "Clean", tr: "Sade" } },
   ],
 } as const;
+
+export const pricing = {
+  title: { en: "Start free. Upgrade when you scale.", tr: "Ücretsiz başlayın. Büyüdükçe yükseltin." },
+  body: {
+    en: "Your first reels are on us — no card, no trial timer. Move to a paid plan when you need more of them.",
+    tr: "İlk reels'leriniz bizden — kart yok, deneme süresi yok. Daha fazlasına ihtiyacınız olunca ücretli plana geçin.",
+  },
+  cta: { en: "Start free", tr: "Ücretsiz başla" },
+} satisfies Record<string, Copy>;
+
+/** Rewritten to four answers that are all true today. The old SOC 2, digital-twin and
+ *  175-language answers were claims about things that do not exist and are gone for good —
+ *  scripts/verify.mjs fails the build if any of them comes back. */
+export const faq = {
+  eyebrow: { en: "FAQ", tr: "SSS" },
+  title: { en: "Frequently asked questions.", tr: "Sık sorulan sorular." },
+  items: [
+    {
+      q: { en: "Is Sentezy really free to start?", tr: "Sentezy'e başlamak gerçekten ücretsiz mi?" },
+      a: { en: "Yes. You get credits to make your first reels with no card on file. Upgrade only when you need more.", tr: "Evet. Kart bilgisi vermeden ilk reels'lerinizi yapacak kredi alırsınız. Yalnızca daha fazlasına ihtiyacınız olunca yükseltin." },
+    },
+    {
+      q: { en: "Which sectors do the presenters cover?", tr: "Sunucular hangi sektörleri kapsıyor?" },
+      a: { en: "24 sectors, from real estate and beauty to dental, pharmacy, automotive and e-commerce. Each presenter is styled for their line of work.", tr: "Emlaktan güzelliğe, dişten eczaneye, otomotivden e-ticarete 24 sektör. Her sunucu kendi işine göre giydirilmiştir." },
+    },
+    {
+      q: { en: "Do I need a camera or editing skills?", tr: "Kamera ya da kurgu bilgisi gerekiyor mu?" },
+      a: { en: "Neither. You write or paste a script, pick a presenter and a style, and Sentezy renders the finished 9:16 file — voice, captions, music and all.", tr: "İkisi de gerekmiyor. Metni yazın ya da yapıştırın, sunucu ve stil seçin; Sentezy bitmiş 9:16 dosyayı ses, altyazı ve müzikle birlikte üretir." },
+    },
+    {
+      q: { en: "Is my data safe? (KVKK/GDPR)", tr: "Verilerim güvende mi? (KVKK/GDPR)" },
+      a: { en: "Your scripts, uploads and rendered videos are encrypted in transit and at rest, and handled in line with KVKK and GDPR. You can delete your account and all its media at any time from Settings.", tr: "Metinleriniz, yüklemeleriniz ve videolarınız aktarımda ve saklamada şifrelenir; KVKK ve GDPR'a uygun işlenir. Hesabınızı ve tüm medyanızı istediğiniz an Ayarlar'dan silebilirsiniz." },
+    },
+  ],
+} as const;
+
+export const finalCta = {
+  title: { en: "Your next reel is five minutes away.", tr: "Sıradaki reels'iniz beş dakika uzakta." },
+  cta: { en: "Start free", tr: "Ücretsiz başla" },
+  microcopy: { en: "No credit card required", tr: "Kredi kartı gerekmez" },
+} satisfies Record<string, Copy>;
