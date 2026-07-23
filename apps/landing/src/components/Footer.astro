@@ -1,6 +1,7 @@
 ---
 import { footer, nav, sectorNames } from "../data/copy";
 import { INSTAGRAM_URL, SIGNUP_URL } from "../data/site";
+import { HAS_STUDIO } from "../data/shots";
 ---
 
 <footer class="footer">
@@ -16,9 +17,10 @@ import { INSTAGRAM_URL, SIGNUP_URL } from "../data/site";
       </div>
       <div class="foot-col">
         <h4 data-tr={footer.productHead.tr}>{footer.productHead.en}</h4>
-        <a href="#platform" data-tr={footer.presenters.tr}>{footer.presenters.en}</a>
+        {/* Both point at #platform, which exists only when a studio screenshot does. */}
+        {HAS_STUDIO && <a href="#platform" data-tr={footer.presenters.tr}>{footer.presenters.en}</a>}
         <a href="#captions" data-tr={footer.captions.tr}>{footer.captions.en}</a>
-        <a href="#platform" data-tr={footer.brandKit.tr}>{footer.brandKit.en}</a>
+        {HAS_STUDIO && <a href="#platform" data-tr={footer.brandKit.tr}>{footer.brandKit.en}</a>}
       </div>
       <div class="foot-col">
         <h4 data-tr={footer.solutionsHead.tr}>{footer.solutionsHead.en}</h4>

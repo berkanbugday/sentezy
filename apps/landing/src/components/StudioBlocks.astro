@@ -1,0 +1,32 @@
+---
+/* Renders nothing at all when no screenshot has been captured yet — see src/data/shots.ts.
+   The blocks carry no `.inline-cta`: the old ones pointed at href="#". */
+import { Image } from "astro:assets";
+import { studio } from "../data/copy";
+import { studioBlocks } from "../data/shots";
+---
+
+{studioBlocks.length > 0 && (
+  <section class="sec mist" id="platform">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow" data-tr={studio.eyebrow.tr}>{studio.eyebrow.en}</div>
+        <h2 class="disp h2" data-tr={studio.title.tr}>{studio.title.en}</h2>
+      </div>
+      {studioBlocks.map((b, i) => (
+        <div class={`zig reveal${i % 2 === 1 ? " rev" : ""}`}>
+          <div class="zig-copy">
+            <div class="eyebrow" data-tr={b.eyebrow.tr}>{b.eyebrow.en}</div>
+            <h2 class="disp h2" data-tr={b.title.tr}>{b.title.en}</h2>
+            <ul class="blist">
+              {b.bullets.map((li) => <li data-tr={li.tr}>{li.en}</li>)}
+            </ul>
+          </div>
+          <div class="zig-shot">
+            <Image src={b.shot} alt={b.alt} widths={[640, 960, 1280]} sizes="(max-width: 900px) 92vw, 560px" loading="lazy" decoding="async" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}

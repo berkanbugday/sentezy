@@ -93,19 +93,15 @@ a:hover { color: var(--color-ink); }
 
 /* ── zig blocks / steps ─────────────────────────────────────────────────── */
 .zig { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; margin-top: 72px; }
-.zig.rev .zig-media { order: -1; }
-/* Placeholder styling for the three zig-media boxes that still ship in the Product section.
-   Task 7 replaces that markup with real app screenshots and deletes these two rules with it —
-   removing them before the markup goes would leave three unstyled blank boxes on the page. */
-.ph { background: repeating-linear-gradient(135deg, #f4f4f5, #f4f4f5 10px, #eaeaec 10px, #eaeaec 20px); border: 1px solid var(--color-hairline); position: relative; overflow: hidden; }
-.ph-label { position: absolute; top: 12px; left: 12px; font-family: var(--font-mono); font-size: 11px; color: var(--color-muted); background: rgba(255,255,255,0.75); padding: 3px 7px; border-radius: 6px; }
-
-.zig-media { aspect-ratio: 4/3; border-radius: 24px; box-shadow: 0 24px 64px rgba(10,16,36,0.1); }
+.zig.rev .zig-shot { order: -1; }
+/* Real app screenshots — no fixed aspect-ratio box, the image sets its own height. */
+.zig-shot { border-radius: 20px; overflow: hidden; border: 1px solid var(--color-hairline);
+  box-shadow: 0 28px 72px rgba(10,10,12,0.14); background: var(--color-paper); }
+.zig-shot img { display: block; width: 100%; height: auto; }
 .zig .h2 { margin-top: 12px; }
 .blist { list-style: none; padding: 0; margin: 22px 0 0; display: flex; flex-direction: column; gap: 11px; }
 .blist li { display: flex; gap: 11px; font-size: 15px; color: var(--color-slate); line-height: 1.5; }
 .blist li::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--color-signal); margin-top: 7px; flex: none; transform: rotate(45deg); }
-.inline-cta { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--color-signal); font-size: 15px; margin-top: 22px; }
 .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 28px; }
 .step-n { font-family: var(--font-mono); font-size: 56px; font-weight: 500; color: var(--color-signal); line-height: 1; }
 .step .h3 { margin: 18px 0 8px; }
@@ -155,7 +151,7 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
   .final .h2 { font-size: 32px; }
   .hero { padding: 120px 0 64px; }
   .sec { padding: 64px 0; }
-  .zig.rev .zig-media { order: 0; }
+  .zig.rev .zig-shot { order: 0; }
 }
 @media (max-width: 560px) {
   .steps, .foot-grid { grid-template-columns: 1fr; }

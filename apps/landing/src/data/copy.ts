@@ -98,3 +98,68 @@ export const showcase = {
   viewOnInstagram: { en: "View this reel on Instagram", tr: "Bu reels'i Instagram'da izle" },
   empty: { en: "See the latest reels on Instagram", tr: "En yeni reels'leri Instagram'da izleyin" },
 } satisfies Record<string, Copy>;
+
+export const how = {
+  eyebrow: { en: "HOW IT WORKS", tr: "NASIL ÇALIŞIR" },
+  title: { en: "Three steps. About five minutes.", tr: "Üç adım. Yaklaşık beş dakika." },
+  steps: [
+    {
+      n: "01",
+      title: { en: "Paste a link or a script", tr: "Link ya da metin yapıştırın" },
+      body: { en: "Drop in a product URL and Sentezy reads the page and writes the script for you. Or bring your own.", tr: "Bir ürün linki bırakın; Sentezy sayfayı okur ve metni sizin için yazar. Ya da kendi metninizi getirin." },
+    },
+    {
+      n: "02",
+      title: { en: "Pick a presenter and a style", tr: "Sunucu ve stil seçin" },
+      body: { en: "Choose the face, the voice, the caption treatment and the music. Preview before you spend a credit.", tr: "Yüzü, sesi, altyazı stilini ve müziği seçin. Kredi harcamadan önce önizleyin." },
+    },
+    {
+      n: "03",
+      title: { en: "Publish", tr: "Yayınlayın" },
+      body: { en: "Download the finished 9:16 file, or post it straight to your feed.", tr: "Bitmiş 9:16 dosyayı indirin ya da doğrudan paylaşın." },
+    },
+  ],
+} as const;
+
+/** The three studio blocks. `key` is also the screenshot filename: a block ships only if
+ *  `src/assets/app/<key>.png` exists (see src/data/shots.ts). Per the spec, a block whose
+ *  screenshot is missing is cut from the page — it never ships as a gray placeholder. */
+export const studio = {
+  eyebrow: { en: "PLATFORM", tr: "PLATFORM" },
+  title: { en: "The studio behind the reels.", tr: "Reels'lerin arkasındaki stüdyo." },
+  blocks: [
+    {
+      key: "composer",
+      eyebrow: { en: "COMPOSER", tr: "OLUŞTURUCU" },
+      title: { en: "Everything on one screen.", tr: "Her şey tek ekranda." },
+      bullets: [
+        { en: "12 AI presenters across 24 sectors.", tr: "24 sektörde 12 yapay zeka sunucu." },
+        { en: "Shared ElevenLabs voices, auditioned in place.", tr: "Paylaşılan ElevenLabs sesleri, yerinde dinlenir." },
+        { en: "Upload your own footage as B-roll behind the presenter.", tr: "Kendi görüntülerinizi sunucunun arkasına B-roll olarak ekleyin." },
+      ],
+      alt: "The Sentezy media composer with a presenter and voice selected",
+    },
+    {
+      key: "captions",
+      eyebrow: { en: "CAPTIONS", tr: "ALTYAZILAR" },
+      title: { en: "20 caption styles, burned in.", tr: "20 altyazı stili, videoya işlenir." },
+      bullets: [
+        { en: "Word-level timing, so the highlight lands on the beat.", tr: "Kelime seviyesinde zamanlama — vurgu tam yerine oturur." },
+        { en: "Keyword emphasis and emoji picked from the script.", tr: "Metinden seçilen anahtar kelime vurgusu ve emoji." },
+        { en: "14 transitions between B-roll clips.", tr: "B-roll klipleri arasında 14 geçiş efekti." },
+      ],
+      alt: "The Sentezy caption style picker",
+    },
+    {
+      key: "brand-kit",
+      eyebrow: { en: "BRAND KIT", tr: "MARKA KİTİ" },
+      title: { en: "Your logo on every reel.", tr: "Her reels'te sizin logonuz." },
+      bullets: [
+        { en: "Logo, colors and fonts applied automatically.", tr: "Logo, renkler ve fontlar otomatik uygulanır." },
+        { en: "Set it once — every future reel inherits it.", tr: "Bir kez ayarlayın — sonraki tüm reels'ler devralır." },
+        { en: "Preview the result before rendering.", tr: "Render öncesi sonucu önizleyin." },
+      ],
+      alt: "The Sentezy brand kit screen",
+    },
+  ],
+} as const;

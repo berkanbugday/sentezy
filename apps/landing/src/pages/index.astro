@@ -5,6 +5,8 @@ import Hero from "../components/Hero.astro";
 import ProofBar from "../components/ProofBar.astro";
 import Sectors from "../components/Sectors.astro";
 import InstaShowcase from "../components/InstaShowcase.astro";
+import HowItWorks from "../components/HowItWorks.astro";
+import StudioBlocks from "../components/StudioBlocks.astro";
 import Footer from "../components/Footer.astro";
 ---
 
@@ -17,67 +19,8 @@ import Footer from "../components/Footer.astro";
   <Sectors />
   <InstaShowcase />
 
-  <section class="sec" id="solutions">
-    <div class="wrap">
-      <div class="sec-head reveal" style="text-align:left;margin-left:0">
-        <div class="eyebrow" data-tr="ÜRÜN">PRODUCT</div>
-        <h2 class="disp h2" data-tr="Tek platform, uçtan uca">One platform, end to end.</h2>
-      </div>
-      <div class="zig reveal">
-        <div class="zig-copy">
-          <div class="eyebrow" data-tr="AVATARLAR">AVATARS</div>
-          <h2 class="disp h2" data-tr="Kendi dijital ikizinizi oluşturun">Create your own digital twin.</h2>
-          <ul class="blist">
-            <li data-tr="İki dakika çekim yapın, gerçekçi bir avatar edinin.">Record two minutes, get a photoreal avatar.</li>
-            <li data-tr="Yaş ve stillere göre 300+ hazır avatar.">300+ stock avatars across ages and styles.</li>
-            <li data-tr="Senaryonuza uyan jest ve mimikler.">Gestures and expressions that match your script.</li>
-          </ul>
-          <a class="inline-cta" href="#"><span data-tr="Avatarları keşfedin">Explore avatars</span> →</a>
-        </div>
-        <div class="zig-media ph"><span class="ph-label">avatar studio — screenshot</span></div>
-      </div>
-      <div class="zig rev reveal">
-        <div class="zig-copy">
-          <div class="eyebrow" data-tr="ÇEVİRİ">TRANSLATION</div>
-          <h2 class="disp h2" data-tr="Tek videoyu 175+ dile taşıyın">Ship one video in 175+ languages.</h2>
-          <ul class="blist">
-            <li data-tr="Tek tıkla senaryo ve ses otomatik çevrilir.">One click auto-translates script and voice.</li>
-            <li data-tr="Her dilde doğal dudak senkronu.">Natural lip-sync in every language.</li>
-            <li data-tr="Aynı avatar ve marka görünümü korunur.">Keep the same avatar and brand look.</li>
-          </ul>
-          <a class="inline-cta" href="#"><span data-tr="Çeviriyi görün">See translation</span> →</a>
-        </div>
-        <div class="zig-media ph"><span class="ph-label">translation panel — screenshot</span></div>
-      </div>
-      <div class="zig reveal">
-        <div class="zig-copy">
-          <div class="eyebrow" data-tr="AI STUDIO">AI STUDIO</div>
-          <h2 class="disp h2" data-tr="Videoyu metin düzenler gibi kurgulayın">Edit video like editing text.</h2>
-          <ul class="blist">
-            <li data-tr="Bir kelimeyi değiştirin, video yeniden oluşur.">Change a word, the video re-renders.</li>
-            <li data-tr="Sürükle-bırak sahneler, marka kitleri ve müzik.">Drag-and-drop scenes, brand kits, and music.</li>
-            <li data-tr="Zaman çizelgesi ya da kurgu becerisi gerekmez.">No timeline, no editing skills needed.</li>
-          </ul>
-          <a class="inline-cta" href="#"><span data-tr="Stüdyoyu deneyin">Try the studio</span> →</a>
-        </div>
-        <div class="zig-media ph"><span class="ph-label">AI studio editor — screenshot</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec">
-    <div class="wrap">
-      <div class="sec-head reveal">
-        <div class="eyebrow" data-tr="NASIL ÇALIŞIR">HOW IT WORKS</div>
-        <h2 class="disp h2" data-tr="Üç adımda video">Video in three steps.</h2>
-      </div>
-      <div class="steps stagger">
-        <div class="step"><div class="step-n">01</div><h3 class="disp h3" data-tr="Yaz ya da içe aktar">Write or import</h3><p data-tr="Bir senaryo yapıştırın ya da sunum, PDF veya belge getirin.">Paste a script or bring a deck, PDF, or doc.</p></div>
-        <div class="step"><div class="step-n">02</div><h3 class="disp h3" data-tr="Sentezle">Synthesize</h3><p data-tr="Bir avatar ve ses seçin — Sentezy videoyu oluşturur.">Pick an avatar and voice — Sentezy builds the video.</p></div>
-        <div class="step"><div class="step-n">03</div><h3 class="disp h3" data-tr="Yayınla">Publish</h3><p data-tr="Her formatta dışa aktarın ya da API ile gönderin.">Export in any format, or push via API.</p></div>
-      </div>
-    </div>
-  </section>
+  <HowItWorks />
+  <StudioBlocks />
 
   <section class="sec mist" id="faq">
     <div class="wrap">

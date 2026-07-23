@@ -1292,19 +1292,32 @@ git commit -m "feat(landing): instagram showcase on a dark band with lazy-loaded
 
 Replaces the three zig blocks whose media were gray placeholders, and drops the Translation block entirely (that feature does not exist).
 
+**SHIPPED VARIANT (2026-07-23).** Two deviations from the original text below, both forced:
+1. Screenshots live in `src/assets/app/`, not `public/app/` — the Task 1 binding (astro:assets
+   optimizes; `public/` ships bytes untouched).
+2. **No screenshot has been captured** — no agent here can drive a logged-in browser. Rather than
+   block the whole task, the block list is discovered from the filesystem at build time
+   (`src/data/shots.ts`), so the page honors the spec's cut-not-placeholder rule *today* (the
+   section and its nav/footer links are simply absent) and lights up with no code change the
+   moment a PNG lands. Step 1 is therefore still open, and Task 10 must re-check `#platform`.
+
 **Files:**
-- Create: `apps/landing/public/app/{composer,captions,brand-kit}.png`
+- Create: `apps/landing/src/assets/app/{composer,captions,brand-kit}.png` (**still pending — user**)
+- Create: `apps/landing/src/data/shots.ts`
 - Create: `apps/landing/src/components/HowItWorks.astro`
 - Create: `apps/landing/src/components/StudioBlocks.astro`
 - Modify: `apps/landing/src/data/copy.ts` (append `how`, `studio`)
+- Modify: `apps/landing/src/components/{Nav,Footer}.astro` (guard the `#platform` links)
 - Modify: `apps/landing/src/styles/global.css`
 - Modify: `apps/landing/src/pages/index.astro`
 
 **Interfaces:**
 - Consumes: `Copy`, `SIGNUP_URL`.
-- Produces: `<HowItWorks />` rendering `id="how"`, `<StudioBlocks />` rendering `id="platform"`. Both are linked from the nav and footer.
+- Produces: `<HowItWorks />` rendering `id="how"`, `<StudioBlocks />` rendering `id="platform"`
+  **when at least one screenshot exists**, and `HAS_STUDIO` from `src/data/shots.ts`, which Nav
+  and Footer use so a link never points at a section that did not render.
 
-- [ ] **Step 1: Capture the three screenshots**
+- [ ] **Step 1: Capture the three screenshots** — OPEN, blocked on the user
 
 Start the web app and capture. From the repo root:
 
@@ -1316,189 +1329,80 @@ Then in a browser at `http://localhost:3000`, log in and capture these three vie
 
 | View | Route | Save as |
 |---|---|---|
-| Media composer with a presenter and voice selected | `/dashboard` | `apps/landing/public/app/composer.png` |
-| Caption style picker, open | `/dashboard` (open the caption picker) | `apps/landing/public/app/captions.png` |
-| Brand kit | `/brand-kit` | `apps/landing/public/app/brand-kit.png` |
+| Media composer with a presenter and voice selected | `/dashboard` | `apps/landing/src/assets/app/composer.png` |
+| Caption style picker, open | `/dashboard` (open the caption picker) | `apps/landing/src/assets/app/captions.png` |
+| Brand kit | `/brand-kit` | `apps/landing/src/assets/app/brand-kit.png` |
 
-Save as PNG at 2x device pixel ratio.
+Save as PNG at 2x device pixel ratio. The filename **is** the key: `shots.ts` matches
+`src/assets/app/<key>.png` against `studio.blocks[].key`, so a typo silently drops the block.
 
-**If a view cannot be captured** (app will not start, no seeded data, credentials unavailable): stop and report which one. Per the spec, a block whose screenshot is unavailable is **cut from the page** — it does not ship as a placeholder. Do not substitute a mockup or a stock image.
+**If a view cannot be captured** (app will not start, no seeded data, credentials unavailable): per the spec that block is **cut from the page** — it does not ship as a placeholder. Do not substitute a mockup or a stock image. Dropping fewer than three files is fine; the rest render.
 
 Verify:
 ```bash
-ls -la apps/landing/public/app/
+ls -la apps/landing/src/assets/app/
+pnpm --filter @sentezy/landing build   # blocks appear, #platform + its nav/footer links return
 ```
-Expected: three PNGs, each between 100 KB and 2 MB.
 
-- [ ] **Step 2: Add the copy**
+- [x] **Step 2: Add the copy**
 
-Append to `apps/landing/src/data/copy.ts`:
+Appended to `apps/landing/src/data/copy.ts` — `how` (3 steps) and `studio` (3 blocks). Shipped
+shape differs from the draft in two details: the third block's `key` is `"brand-kit"` (it names
+the file), and there is no `img` field at all — the image is resolved from `key` by `shots.ts`.
+
+- [x] **Step 2b: Create shots.ts**
 
 ```ts
-export const how = {
-  eyebrow: { en: "HOW IT WORKS", tr: "NASIL ÇALIŞIR" },
-  title: { en: "Three steps. About five minutes.", tr: "Üç adım. Yaklaşık beş dakika." },
-  steps: [
-    {
-      n: "01",
-      title: { en: "Paste a link or a script", tr: "Link ya da metin yapıştırın" },
-      body: { en: "Drop in a product URL and Sentezy reads the page and writes the script for you. Or bring your own.", tr: "Bir ürün linki bırakın; Sentezy sayfayı okur ve metni sizin için yazar. Ya da kendi metninizi getirin." },
-    },
-    {
-      n: "02",
-      title: { en: "Pick a presenter and a style", tr: "Sunucu ve stil seçin" },
-      body: { en: "Choose the face, the voice, the caption treatment and the music. Preview before you spend a credit.", tr: "Yüzü, sesi, altyazı stilini ve müziği seçin. Kredi harcamadan önce önizleyin." },
-    },
-    {
-      n: "03",
-      title: { en: "Publish", tr: "Yayınlayın" },
-      body: { en: "Download the finished 9:16 file, or post it straight to your feed.", tr: "Bitmiş 9:16 dosyayı indirin ya da doğrudan paylaşın." },
-    },
-  ],
-} as const;
-
-export const studio = {
-  eyebrow: { en: "PLATFORM", tr: "PLATFORM" },
-  title: { en: "The studio behind the reels.", tr: "Reels'lerin arkasındaki stüdyo." },
-  blocks: [
-    {
-      key: "composer",
-      eyebrow: { en: "COMPOSER", tr: "OLUŞTURUCU" },
-      title: { en: "Everything on one screen.", tr: "Her şey tek ekranda." },
-      bullets: [
-        { en: "12 AI presenters across 24 sectors.", tr: "24 sektörde 12 yapay zeka sunucu." },
-        { en: "Shared ElevenLabs voices, auditioned in place.", tr: "Paylaşılan ElevenLabs sesleri, yerinde dinlenir." },
-        { en: "Upload your own footage as B-roll behind the presenter.", tr: "Kendi görüntülerinizi sunucunun arkasına B-roll olarak ekleyin." },
-      ],
-      img: "/app/composer.png",
-      alt: "The Sentezy media composer with a presenter and voice selected",
-    },
-    {
-      key: "captions",
-      eyebrow: { en: "CAPTIONS", tr: "ALTYAZILAR" },
-      title: { en: "20 caption styles, burned in.", tr: "20 altyazı stili, videoya işlenir." },
-      bullets: [
-        { en: "Word-level timing, so the highlight lands on the beat.", tr: "Kelime seviyesinde zamanlama — vurgu tam yerine oturur." },
-        { en: "Keyword emphasis and emoji picked from the script.", tr: "Metinden seçilen anahtar kelime vurgusu ve emoji." },
-        { en: "14 transitions between B-roll clips.", tr: "B-roll klipleri arasında 14 geçiş efekti." },
-      ],
-      img: "/app/captions.png",
-      alt: "The Sentezy caption style picker",
-    },
-    {
-      key: "brand",
-      eyebrow: { en: "BRAND KIT", tr: "MARKA KİTİ" },
-      title: { en: "Your logo on every reel.", tr: "Her reels'te sizin logonuz." },
-      bullets: [
-        { en: "Logo, colors and fonts applied automatically.", tr: "Logo, renkler ve fontlar otomatik uygulanır." },
-        { en: "Set it once — every future reel inherits it.", tr: "Bir kez ayarlayın — sonraki tüm reels'ler devralır." },
-        { en: "Preview the result before rendering.", tr: "Render öncesi sonucu önizleyin." },
-      ],
-      img: "/app/brand-kit.png",
-      alt: "The Sentezy brand kit screen",
-    },
-  ],
-} as const;
+const shots = import.meta.glob<{ default: ImageMetadata }>("../assets/app/*.png", { eager: true });
+export const studioBlocks = studio.blocks.flatMap((b) => {
+  const mod = shots[`../assets/app/${b.key}.png`];
+  return mod ? [{ ...b, shot: mod.default }] : [];
+});
+export const HAS_STUDIO = studioBlocks.length > 0;
 ```
 
-- [ ] **Step 3: Add the styles**
-
-Append to `apps/landing/src/styles/global.css`:
+- [x] **Step 3: Add the styles**
 
 ```css
-/* ── studio blocks ──────────────────────────────────────────────────────── */
 .zig-shot { border-radius: 20px; overflow: hidden; border: 1px solid var(--color-hairline);
   box-shadow: 0 28px 72px rgba(10,10,12,0.14); background: var(--color-paper); }
 .zig-shot img { display: block; width: 100%; height: auto; }
 ```
 
-Then **delete** the `.zig-media`, `.ph` and `.ph-label` rules — every zig block now uses `.zig-shot`, and this task removes the last markup that referenced the placeholder styles. (They are deliberately kept alive through Tasks 4-6: deleting them earlier would leave three unstyled blank boxes on the page.)
+`.ph`, `.ph-label` and `.zig-media` are deleted with the markup that used them, and the two
+`.zig.rev .zig-media { order }` rules (base + 900px breakpoint) now target `.zig-shot`.
+`.inline-cta` is deleted too — its only consumers were the three `href="#"` arrows that went
+with the old blocks.
 
-- [ ] **Step 4: Create HowItWorks.astro**
+- [x] **Step 4: Create HowItWorks.astro** — as drafted; renders `id="how"` from `how`.
 
-```astro
----
-import { how } from "../data/copy";
----
+- [x] **Step 5: Create StudioBlocks.astro**
 
-<section class="sec" id="how">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow" data-tr={how.eyebrow.tr}>{how.eyebrow.en}</div>
-      <h2 class="disp h2" data-tr={how.title.tr}>{how.title.en}</h2>
-    </div>
-    <div class="steps stagger">
-      {how.steps.map((s) => (
-        <div class="step">
-          <div class="step-n">{s.n}</div>
-          <h3 class="disp h3" data-tr={s.title.tr}>{s.title.en}</h3>
-          <p data-tr={s.body.tr}>{s.body.en}</p>
-        </div>
-      ))}
-    </div>
-  </div>
-</section>
-```
+As drafted, with the whole `<section>` wrapped in `{studioBlocks.length > 0 && (…)}`, iterating
+`studioBlocks` (not `studio.blocks`), and the `<img>` replaced by astro:assets
+`<Image src={b.shot} widths={[640,960,1280]} sizes="(max-width: 900px) 92vw, 560px" />`.
+No `.inline-cta` link on these blocks — the old ones pointed at `#`.
 
-- [ ] **Step 5: Create StudioBlocks.astro**
+- [x] **Step 6: Swap into index.astro**
 
-```astro
----
-import { studio } from "../data/copy";
----
+`<HowItWorks />` then `<StudioBlocks />` replace both the `id="solutions"` zig section and the
+old hand-written how-it-works section, sitting between `<InstaShowcase />` and the FAQ.
 
-<section class="sec mist" id="platform">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow" data-tr={studio.eyebrow.tr}>{studio.eyebrow.en}</div>
-      <h2 class="disp h2" data-tr={studio.title.tr}>{studio.title.en}</h2>
-    </div>
-    {studio.blocks.map((b, i) => (
-      <div class={`zig reveal${i % 2 === 1 ? " rev" : ""}`}>
-        <div class="zig-copy">
-          <div class="eyebrow" data-tr={b.eyebrow.tr}>{b.eyebrow.en}</div>
-          <h2 class="disp h2" data-tr={b.title.tr}>{b.title.en}</h2>
-          <ul class="blist">
-            {b.bullets.map((li) => <li data-tr={li.tr}>{li.en}</li>)}
-          </ul>
-        </div>
-        <div class="zig-shot">
-          <img src={b.img} alt={b.alt} loading="lazy" decoding="async" />
-        </div>
-      </div>
-    ))}
-  </div>
-</section>
-```
+- [x] **Step 7: Build and check**
 
-Note there is no `.inline-cta` link on these blocks — the old ones pointed at `#`.
-
-- [ ] **Step 6: Swap into index.astro**
-
-Add to the frontmatter:
-
-```astro
-import HowItWorks from "../components/HowItWorks.astro";
-import StudioBlocks from "../components/StudioBlocks.astro";
-```
-
-Delete the entire `<section class="sec" id="solutions">…</section>` block (the three zig blocks) and the entire `<section class="sec">` block containing `class="steps"` (the old how-it-works). Place `<HowItWorks />` then `<StudioBlocks />` after `<InstaShowcase />`.
-
-- [ ] **Step 7: Build and check**
-
-Run:
 ```bash
 pnpm --filter @sentezy/landing typecheck && pnpm --filter @sentezy/landing build && pnpm --filter @sentezy/landing verify
 ```
-Expected: typecheck and build succeed. `verify` should now report only the `href="#"` forbidden hit (from the remaining FAQ / final CTA sections), fixed in Task 9.
+Actual: typecheck 0 errors, build clean, `dist/_astro` still 1.6 MB. `verify` stays at the same
+6 failures as after Task 6 — `175+`, `SOC 2`, `digital twin`, `dijital ikiz`, `href="#"` and the
+`.final-wash` periwinkle, all owned by Task 9. The three `href="#"` arrows this task removed were
+not the last ones; the final CTA still has one.
 
-In the browser: three zig blocks alternate left/right, each showing a real screenshot with a soft shadow. No `.inline-cta` arrows. Nothing gray.
-
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
-git add apps/landing/src apps/landing/public/app
-git commit -m "feat(landing): how-it-works and studio blocks with real app screenshots"
+git add apps/landing/src docs .superpowers
+git commit -m "feat(landing): how-it-works section and screenshot-gated studio blocks"
 ```
 
 ---
