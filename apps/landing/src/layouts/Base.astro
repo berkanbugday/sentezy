@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import Posthog from "../components/Posthog.astro";
 
 interface Props {
   title?: string;
@@ -29,6 +30,7 @@ const {
     />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <Posthog />
   </head>
   <body>
     <slot />
