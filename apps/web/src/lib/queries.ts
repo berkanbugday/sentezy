@@ -58,7 +58,7 @@ export function useProfile() {
 /** The name/initials/email to show in the account chrome. The profile's displayName is the
  *  single source of truth once it loads — the server layout only has the auth-derived name
  *  (email prefix or metadata), so without this the sidebar shows "Berkan / BE" while the
- *  settings screen shows the saved "Berkan Buğday / BB". Falls back to the passed-in auth
+ *  settings screen shows the saved display name and initials. Falls back to the passed-in auth
  *  identity until the profile arrives, and updates instantly when the name is saved (the
  *  mutation seeds this same cache). */
 export function useIdentity(fallback: { name: string; email: string; initials: string }) {
@@ -147,7 +147,7 @@ export function useMusic(mood = "", enabled = true) {
     queryFn: () => apiFetch<{ music: MusicTrack[]; moods: MusicMood[] }>(`/music${mood ? `?mood=${encodeURIComponent(mood)}` : ""}`),
     enabled,
     // Changing `mood` changes the query key, so without this the mood chip row (and the
-    // track list) would collapse to empty/"Tümü" for a beat on every click. Keeping the
+    // track list) would collapse to empty/"All" for a beat on every click. Keeping the
     // previous page's data visible until the new one lands is a one-line fix — smaller
     // than giving moods their own unfiltered query — and `moods` is identical across
     // mood filters anyway (only `music` actually varies).

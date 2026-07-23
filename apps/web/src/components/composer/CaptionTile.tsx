@@ -8,7 +8,7 @@ import { type CaptionPreset } from "@/lib/captionStyles";
 import { LoopingPreview } from "./LoopingPreview";
 
 // Short punchy sample shared by every tile (module-level so it's built once).
-const WORDS = previewWords("büyük indirim başlıyor bugün");
+const WORDS = previewWords("big sale starts today");
 const FPS = 30;
 const W = 1080; // 1:1 square tile
 const H = 1080;

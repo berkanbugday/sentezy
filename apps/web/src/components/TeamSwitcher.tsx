@@ -41,7 +41,7 @@ export function TeamSwitcher({ user: authUser, collapsed }: { user: UserInfo; co
 
   if (collapsed) {
     return (
-      <Tooltip label={`${user.name} — çalışma alanı`}>
+      <Tooltip label={`${user.name} — your workspace`}>
         <button className="flex items-center justify-center rounded-xl p-1.5 hover:bg-white/10">{avatar}</button>
       </Tooltip>
     );
@@ -77,7 +77,7 @@ export function TeamSwitcher({ user: authUser, collapsed }: { user: UserInfo; co
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <path d="m16 17 5-5-5-5M21 12H9" />
             </svg>
-            Çıkış yap
+            Log out
           </button>
         </div>
       )}

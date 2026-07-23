@@ -35,12 +35,12 @@ export function VoicePicker({ open, onClose, selectedId, onSelect, script, emoti
   const voicePreview = useVoicePreview();
 
   const voiceFilterGroups = [
-    { title: "Cinsiyet", value: voiceGender, set: setVoiceGender, options: V_GENDER },
-    { title: "Yaş", value: voiceAge, set: setVoiceAge, options: V_AGE },
-    { title: "Dil", value: voiceLang, set: setVoiceLang, options: V_LANG },
-    { title: "Aksan", value: voiceAccent, set: setVoiceAccent, options: V_ACCENT },
-    { title: "Kullanım", value: voiceUseCase, set: setVoiceUseCase, options: V_USECASE },
-    { title: "Tür", value: voiceCategory, set: setVoiceCategory, options: V_CATEGORY },
+    { title: "Gender", value: voiceGender, set: setVoiceGender, options: V_GENDER },
+    { title: "Age", value: voiceAge, set: setVoiceAge, options: V_AGE },
+    { title: "Language", value: voiceLang, set: setVoiceLang, options: V_LANG },
+    { title: "Accent", value: voiceAccent, set: setVoiceAccent, options: V_ACCENT },
+    { title: "Best for", value: voiceUseCase, set: setVoiceUseCase, options: V_USECASE },
+    { title: "Type", value: voiceCategory, set: setVoiceCategory, options: V_CATEGORY },
   ];
   const activeVoiceFilters = voiceFilterGroups.filter((g) => g.value !== "").length;
   function clearVoiceFilters() {
@@ -76,7 +76,7 @@ export function VoicePicker({ open, onClose, selectedId, onSelect, script, emoti
         url = `data:${mime};base64,${audio}`;
       } catch (e) {
         setTtsLoading(null);
-        setTtsError(e instanceof Error && e.message ? e.message : "Ses üretilemedi — API'yi yeniden başlat ve ElevenLabs anahtarını kontrol et.");
+        setTtsError("That voice could not read your script just now. Try again, or play the sample instead.");
         return;
       }
       setTtsLoading(null);
@@ -87,7 +87,7 @@ export function VoicePicker({ open, onClose, selectedId, onSelect, script, emoti
     const a = new Audio(url);
     audioRef.current = a;
     a.onended = () => setPlayingVoice(null);
-    a.play().catch(() => setTtsError("Tarayıcı otomatik oynatmayı engelledi — tekrar dokun."));
+    a.play().catch(() => setTtsError("Your browser blocked playback. Tap play again."));
     setPlayingVoice(id);
   }
   useEffect(() => {
@@ -120,7 +120,7 @@ export function VoicePicker({ open, onClose, selectedId, onSelect, script, emoti
           <div className="flex-none px-5 pt-5">
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
             <div className="mb-1 flex items-start justify-between gap-3">
-              <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Ses seç</h3>
+              <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Choose a voice</h3>
               <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
                 <Icon.close width={18} height={18} className="block" />
               </button>
@@ -154,7 +154,7 @@ export function VoicePicker({ open, onClose, selectedId, onSelect, script, emoti
                 ))}
               </div>
             ) : filteredVoices.length === 0 ? (
-              <div className="py-10 text-center text-[14px] text-muted">Ses bulunamadı</div>
+              <div className="py-10 text-center text-[14px] text-muted">No voice matches those filters.</div>
             ) : (
               filteredVoices.map((v) => {
                 const sel = selectedId === v.id;
@@ -175,7 +175,7 @@ export function VoicePicker({ open, onClose, selectedId, onSelect, script, emoti
                         type="button"
                         onClick={() => playVoice(v.id, v.previewUrl)}
                         disabled={ttsLoading === v.id}
-                        aria-label="Önizle"
+                        aria-label="Play sample"
                         className={`flex h-11 w-11 flex-none items-center justify-center rounded-full border transition disabled:opacity-50 sm:h-9 sm:w-9 ${playingVoice === v.id ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist hover:text-ink"}`}
                       >
                         {ttsLoading === v.id ? <Spinner size={16} /> : playingVoice === v.id ? <Icon.pause width={17} height={17} /> : <Icon.play width={17} height={17} />}
@@ -206,7 +206,7 @@ export function VoicePicker({ open, onClose, selectedId, onSelect, script, emoti
                 <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${realTts ? "bg-ink" : "bg-hairline"}`}>
                   <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${realTts ? "left-[18px]" : "left-0.5"}`} />
                 </span>
-                Yazdığım metni oku
+                Read my script
               </button>
             ) : (
               <span />
@@ -239,7 +239,7 @@ export function VoicePicker({ open, onClose, selectedId, onSelect, script, emoti
                   <div className="flex flex-wrap gap-1.5">
                     {g.options.map((o) => (
                       <button key={o.v} type="button" onClick={() => g.set(o.v)} className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${g.value === o.v ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist"}`}>
-                        {o.v === "" ? "Tümü" : o.label}
+                        {o.v === "" ? "All" : o.label}
                       </button>
                     ))}
                   </div>

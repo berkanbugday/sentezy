@@ -1,6 +1,6 @@
 import type { CaptionWord } from "@sentezy/remotion";
 
-const SAMPLE = "Bu hafta sonu büyük indirim başlıyor yüzde elli fırsatı kaçırma";
+const SAMPLE = "Our biggest sale starts this weekend fifty percent off everything";
 const PER_WORD = 0.42; // synthetic seconds per word (~143 wpm; preview has no real TTS timing)
 
 /** Build synthetic word timings from a script (or a sample) for the live caption preview.

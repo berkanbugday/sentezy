@@ -22,7 +22,7 @@ type Live = { status: VideoStatus; stage: VideoStage; progress: number };
 export function VideoDetail({ id }: { id: string }) {
   const { data: detail, isError } = useVideo(id);
   // Gated: only fires when this video actually has music, to resolve its raw R2 track key
-  // into a human name for the "Müzik" row below (never fetched unconditionally here).
+  // into a human name for the "Music" row below (never fetched unconditionally here).
   const trackKey = (detail?.video.options as { music?: { trackKey?: string } } | null | undefined)?.music?.trackKey;
   const musicQuery = useMusic("", Boolean(trackKey));
   const queryClient = useQueryClient();
@@ -61,14 +61,14 @@ export function VideoDetail({ id }: { id: string }) {
     };
   }, [id, queryClient]);
 
-  if (isError) return <p className="text-[14px] text-muted">Video bulunamadı.</p>;
+  if (isError) return <p className="text-[14px] text-muted">That video no longer exists.</p>;
   if (!detail) {
     return (
       <div className="mx-auto max-w-4xl">
-        <Link href="/library" className="text-[13.5px] font-medium text-signal">← Videolarım</Link>
+        <Link href="/library" className="text-[13.5px] font-medium text-signal">← Your videos</Link>
 
         <div role="status" aria-live="polite">
-          <span className="sr-only">Yükleniyor…</span>
+          <span className="sr-only">Loading…</span>
           <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="h-7 w-64 max-w-full animate-pulse rounded bg-black/5" />
@@ -115,19 +115,19 @@ export function VideoDetail({ id }: { id: string }) {
   };
   // Videos created before the settings cleanup stored avatarLayout+avatarSide; the shared
   // reader maps those forward, so old and new videos both display correctly.
-  const AVATAR_POS_LABEL: Record<string, string> = { left: "Sol", center: "Orta", right: "Sağ" };
+  const AVATAR_POS_LABEL: Record<string, string> = { left: "left", center: "middle", right: "right" };
   const avatarPos = AVATAR_POS_LABEL[readAvatarPosition(opts.layout)];
   // Captions are opt-in: `enabled: false` means no captions, even though the persisted blob
   // still carries zod-defaulted style/font/color fields (see reuse.ts's `optionsToComposerState`,
   // which treats `enabled !== false` the same way). Only show a style when actually enabled.
   const captionsEnabled = opts.captions?.enabled !== false;
   // The detail screen wants a human label, not a preset id — look the family up directly
-  // and append the font, e.g. "Vurgu · Poppins".
+  // and append the font, e.g. "Highlight · Poppins".
   const fam = captionsEnabled ? CAPTION_FAMILIES.find((f) => f.key === opts.captions?.style) : undefined;
   const captionName = fam ? [fam.label, opts.captions?.font].filter(Boolean).join(" · ") : null;
   // No stored captionPosition means the video predates the setting, or never wrote one —
   // either way, the real default is "top" everywhere else (zod, composer, worker).
-  const captionPosLabel = (opts.layout?.captionPosition ?? "top") === "top" ? "üstte" : "altta";
+  const captionPosLabel = (opts.layout?.captionPosition ?? "top") === "top" ? "top" : "bottom";
   const emotionLabel = opts.voice
     ? VOICE_EMOTIONS.find((e) => e.value === (opts.voice?.emotion ?? ""))?.label ?? null
     : null;
@@ -140,12 +140,12 @@ export function VideoDetail({ id }: { id: string }) {
   const wordCount = scriptText ? scriptText.split(" ").length : 0;
   const brollCount = detail.brollMedia?.length ?? 0;
   const brollSummary = brollCount
-    ? `${detail.brollMedia!.filter((m) => m.kind === "image").length} görsel, ${detail.brollMedia!.filter((m) => m.kind === "video").length} video`
+    ? `${detail.brollMedia!.filter((m) => m.kind === "image").length} photos, ${detail.brollMedia!.filter((m) => m.kind === "video").length} clips`
     : "";
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Link href="/library" className="text-[13.5px] font-medium text-signal">← Videolarım</Link>
+      <Link href="/library" className="text-[13.5px] font-medium text-signal">← Your videos</Link>
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -178,15 +178,15 @@ export function VideoDetail({ id }: { id: string }) {
                 <button
                   type="button"
                   onClick={() => setEditing(false)}
-                  aria-label="Vazgeç"
-                  title="Vazgeç"
+                  aria-label="Cancel"
+                  title="Cancel"
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-hairline text-muted transition hover:bg-mist"
                 >
                   <Icon.close width={16} height={16} />
                 </button>
               </div>
               {rename.isError && (
-                <p className="mt-1 text-[12.5px] text-red-600">Başlık kaydedilemedi — video silinmiş olabilir.</p>
+                <p className="mt-1 text-[12.5px] text-red-600">The title did not save — this video may have been deleted.</p>
               )}
             </div>
           ) : (
@@ -211,7 +211,7 @@ export function VideoDetail({ id }: { id: string }) {
             items={[
               {
                 key: "edit",
-                label: "Başlığı düzenle",
+                label: "Rename",
                 icon: Icon.pencil,
                 onClick: () => {
                   setDraftTitle(title);
@@ -256,7 +256,7 @@ export function VideoDetail({ id }: { id: string }) {
             /* Failed is terminal — it gets a still message, never the working animation. */
             <div className="flex h-full w-full items-center justify-center bg-mist">
               {live.status === "failed" ? (
-                <span className="p-6 text-center text-[13px] text-red-600">Üretim başarısız oldu.</span>
+                <span className="p-6 text-center text-[13px] text-red-600">This video failed to render. Your credits were refunded.</span>
               ) : (
                 <RenderStage stage={live.stage} progress={live.progress} />
               )}
@@ -268,7 +268,7 @@ export function VideoDetail({ id }: { id: string }) {
           {processing && (
             <div className="card p-5">
               <div className="mb-2 flex items-center justify-between text-[13px]">
-                <span className="font-medium text-ink">{STAGE_LABEL[live.stage ?? ""] ?? "Sıraya alındı"}</span>
+                <span className="font-medium text-ink">{STAGE_LABEL[live.stage ?? ""] ?? "In the queue"}</span>
                 <span className="mono text-muted">{live.progress}%</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-mist">
@@ -296,20 +296,20 @@ export function VideoDetail({ id }: { id: string }) {
                       </span>
                     ) : null,
                   ],
-                  ["Ses", detail.voice?.label ?? null],
-                  ["Alt yazı", captionName],
-                  ["Duygu", emotionLabel],
-                  ["En-boy oranı", formatRatio(v.aspectRatio)],
-                  ["Süre", formatDuration(v.durationS) || "—"],
+                  ["Voice", detail.voice?.label ?? null],
+                  ["Captions", captionName],
+                  ["Tone", emotionLabel],
+                  ["Shape", formatRatio(v.aspectRatio)],
+                  ["Length", formatDuration(v.durationS) || "—"],
                   [
-                    "Yerleşim",
+                    "Layout",
                     detail.avatar
-                      ? `Avatar ${avatarPos} · alt yazı ${captionPosLabel}`
-                      : `Alt yazı ${captionPosLabel}`,
+                      ? `Presenter ${avatarPos} · captions ${captionPosLabel}`
+                      : `Captions ${captionPosLabel}`,
                   ],
-                  ["Müzik", musicTrackName ? `${musicTrackName} · %${Math.round((opts.music?.volume ?? 0) * 100)}` : null],
-                  ["Kredi", v.status !== "draft" && v.creditsCost ? String(v.creditsCost) : null],
-                  ["Oluşturuldu", new Date(v.createdAt).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" })],
+                  ["Music", musicTrackName ? `${musicTrackName} · %${Math.round((opts.music?.volume ?? 0) * 100)}` : null],
+                  ["Credits", v.status !== "draft" && v.creditsCost ? String(v.creditsCost) : null],
+                  ["Made", new Date(v.createdAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })],
                 ] as [string, ReactNode][]
               )
                 .filter((row): row is [string, ReactNode] => row[1] !== null)
@@ -329,7 +329,7 @@ export function VideoDetail({ id }: { id: string }) {
           )}
 
           {detail.brollMedia && detail.brollMedia.length > 0 && (
-            <CollapsibleCard title="Görseller" summary={brollSummary}>
+            <CollapsibleCard title="Your media" summary={brollSummary}>
               <div className="flex flex-wrap gap-2">
                 {detail.brollMedia.map((m, i) => (
                   <div key={`${m.ref}-${i}`} className="h-16 w-16 overflow-hidden rounded-lg bg-mist">
@@ -347,14 +347,14 @@ export function VideoDetail({ id }: { id: string }) {
           {detail.downloadUrl && (
             <div className="flex flex-wrap gap-2">
               {/* fileDownloadUrl carries Content-Disposition: attachment → the browser saves it. */}
-              <a href={detail.fileDownloadUrl ?? detail.downloadUrl} className="btn btn-primary w-fit">İndir</a>
+              <a href={detail.fileDownloadUrl ?? detail.downloadUrl} className="btn btn-primary w-fit">Download</a>
               <a
                 href={detail.downloadUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex w-fit items-center rounded-full border border-hairline bg-paper px-4 py-2 text-[14px] font-medium text-ink transition hover:bg-mist"
               >
-                Yeni sekmede aç
+                Open in a new tab
               </a>
             </div>
           )}

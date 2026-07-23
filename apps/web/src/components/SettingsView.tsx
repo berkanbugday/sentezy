@@ -13,7 +13,7 @@ const INPUT =
 /** Plan → Turkish label. Only "free" and "max" exist today; an unknown value shows as-is
  *  rather than a wrong guess. */
 function planLabel(plan: string): string {
-  if (plan === "free") return "Ücretsiz plan";
+  if (plan === "free") return "Free plan";
   if (plan === "max") return "MAX plan";
   return plan;
 }
@@ -43,12 +43,12 @@ export function SettingsView() {
     <div className="mx-auto max-w-3xl pb-16">
       <div className="mb-7">
         <h1 className="disp text-[28px] font-semibold text-ink">Ayarlar</h1>
-        <p className="mt-1 text-[14.5px] text-slate">Hesabını ve planını yönet.</p>
+        <p className="mt-1 text-[14.5px] text-slate">Your account, your plan and your password.</p>
       </div>
 
       {profileQ.isLoading ? (
         <div role="status" aria-live="polite" className="flex flex-col gap-5">
-          <span className="sr-only">Yükleniyor…</span>
+          <span className="sr-only">Loading…</span>
           {Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="card p-5">
               <div className="h-4 w-24 rounded bg-black/5" />
@@ -58,7 +58,7 @@ export function SettingsView() {
         </div>
       ) : profileQ.isError ? (
         <div className="card p-10 text-center">
-          <p className="text-[14px] text-muted">Ayarlar yüklenemedi</p>
+          <p className="text-[14px] text-muted">Your settings could not be loaded. Refresh the page.</p>
           <button type="button" onClick={() => profileQ.refetch()} className="mt-2 text-[13px] font-medium text-signal">
             Tekrar dene
           </button>
@@ -79,7 +79,7 @@ export function SettingsView() {
 
             <div className="mt-5">
               <label htmlFor="displayName" className="mb-1.5 block text-[13px] text-slate">
-                Görünen ad
+                Display name
               </label>
               <div className="flex gap-2">
                 <input
@@ -87,7 +87,7 @@ export function SettingsView() {
                   value={name ?? ""}
                   onChange={(e) => setName(e.target.value)}
                   maxLength={80}
-                  placeholder={p.email ?? "Adın"}
+                  placeholder={p.email ?? "Your name"}
                   className={INPUT}
                 />
                 <button
@@ -105,7 +105,7 @@ export function SettingsView() {
             <div className="mt-5 flex items-center justify-between gap-4 border-t border-hairline pt-4">
               <div>
                 <div className="text-[13.5px] font-medium text-ink">E-posta</div>
-                <div className="mt-0.5 text-[12.5px] text-muted">Giriş için kullandığın adres</div>
+                <div className="mt-0.5 text-[12.5px] text-muted">The address you log in with</div>
               </div>
               <span className="min-w-0 truncate text-[13.5px] text-slate">{p.email}</span>
             </div>
@@ -120,21 +120,21 @@ export function SettingsView() {
                   {planLabel(p.plan)}
                 </div>
                 <div className="mt-1 text-[13px] text-slate">
-                  <span className="mono">{p.credits}</span> kredi kaldı
+                  <span className="mono">{p.credits}</span> credits left
                 </div>
               </div>
               {p.plan !== "max" && (
                 <button type="button" className="btn btn-primary">
-                  MAX&apos;e geç
+                  Upgrade to MAX
                 </button>
               )}
             </div>
           </SettingsCard>
 
-          {/* ── Güvenlik ── */}
+          {/* ── Security ── */}
           <SecurityCard email={p.email} />
 
-          {/* ── Tehlikeli bölge ── */}
+          {/* ── Danger zone ── */}
           <DangerZoneCard email={p.email} />
         </div>
       ) : null}

@@ -37,7 +37,7 @@ export function SecurityCard({ email }: { email: string | null }) {
       return;
     }
     if (!email) {
-      setError("Hesap e-postası okunamadı. Sayfayı yenile.");
+      setError("We could not read your account email. Refresh the page.");
       return;
     }
     setBusy(true);
@@ -49,7 +49,7 @@ export function SecurityCard({ email }: { email: string | null }) {
     const { error: reauth } = await supabase.auth.signInWithPassword({ email, password: current });
     if (reauth) {
       setBusy(false);
-      setError("Mevcut şifre yanlış");
+      setError("That is not your current password");
       return;
     }
 
@@ -58,8 +58,8 @@ export function SecurityCard({ email }: { email: string | null }) {
     if (authError) {
       setError(
         /different/i.test(authError.message)
-          ? "Yeni şifre eskisinden farklı olmalı"
-          : "Şifre güncellenemedi. Tekrar dene.",
+          ? "Your new password has to be different from the old one"
+          : "The password could not be changed. Try again.",
       );
       return;
     }
@@ -70,11 +70,11 @@ export function SecurityCard({ email }: { email: string | null }) {
   };
 
   return (
-    <SettingsCard title="Güvenlik">
+    <SettingsCard title="Password">
       <form onSubmit={submit} className="space-y-3">
         <div>
           <label htmlFor="current-pw" className="mb-1.5 block text-[13px] text-slate">
-            Mevcut şifre
+            Current password
           </label>
           <PasswordInput
             id="current-pw"
@@ -84,13 +84,13 @@ export function SecurityCard({ email }: { email: string | null }) {
               clearStatus();
             }}
             autoComplete="current-password"
-            placeholder="Şu anki şifren"
+            placeholder="Your current password"
             className={INPUT}
           />
         </div>
         <div>
           <label htmlFor="new-pw" className="mb-1.5 block text-[13px] text-slate">
-            Yeni şifre
+            New password
           </label>
           <PasswordInput
             id="new-pw"
@@ -106,7 +106,7 @@ export function SecurityCard({ email }: { email: string | null }) {
         </div>
         <div>
           <label htmlFor="confirm-pw" className="mb-1.5 block text-[13px] text-slate">
-            Yeni şifre (tekrar)
+            New password again
           </label>
           <PasswordInput
             id="confirm-pw"
@@ -116,7 +116,7 @@ export function SecurityCard({ email }: { email: string | null }) {
               clearStatus();
             }}
             autoComplete="new-password"
-            placeholder="Şifreyi tekrar gir"
+            placeholder="Type it once more"
             className={INPUT}
           />
         </div>
@@ -129,11 +129,11 @@ export function SecurityCard({ email }: { email: string | null }) {
             disabled={busy || !current || !pw || !confirm}
             className="btn btn-primary disabled:opacity-35"
           >
-            {busy ? "Güncelleniyor…" : "Şifreyi güncelle"}
+            {busy ? "Saving…" : "Change password"}
           </button>
           {done && (
             <span role="status" className="text-[13px] text-muted">
-              Şifre güncellendi
+              Password changed
             </span>
           )}
         </div>

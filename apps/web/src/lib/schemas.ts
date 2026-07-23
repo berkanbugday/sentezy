@@ -7,22 +7,22 @@ import { z } from "zod";
  */
 
 export const loginSchema = z.object({
-  email: z.string().min(1, "E-posta gerekli").email("Geçerli bir e-posta girin"),
-  password: z.string().min(6, "Şifre en az 6 karakter olmalı"),
+  email: z.string().min(1, "Enter your email").email("That email does not look right"),
+  password: z.string().min(6, "Use at least 6 characters"),
 });
 export type LoginValues = z.infer<typeof loginSchema>;
 
 export const signupSchema = loginSchema.extend({
-  name: z.string().min(2, "Adını gir"),
+  name: z.string().min(2, "Enter your name"),
 });
 export type SignupValues = z.infer<typeof signupSchema>;
 
 // ── create-reel wizard ──
 export const createReelSchema = z.object({
-  title: z.string().min(1, "Başlık gerekli").max(120, "Başlık çok uzun"),
-  script: z.string().min(1, "Senaryo gerekli").max(5000, "Senaryo 5000 karakteri aşamaz"),
-  avatarId: z.string().uuid("Bir avatar seç"),
-  voiceId: z.string().uuid("Bir ses seç"),
+  title: z.string().min(1, "Give it a title").max(120, "That title is too long"),
+  script: z.string().min(1, "Write what the video should say").max(5000, "Keep the script under 5000 characters"),
+  avatarId: z.string().uuid("Choose a presenter"),
+  voiceId: z.string().uuid("Choose a voice"),
   captions: z.boolean().default(true),
   // Caption look — one of the 20 canonical effect ids (see @sentezy/types CAPTION_STYLE_META).
   captionStyle: z.enum(CAPTION_STYLE_IDS).default("karaoke"),
@@ -52,6 +52,6 @@ export type CreateReelValues = z.infer<typeof createReelSchema>;
 
 // name for the "add avatar" mini-form
 export const avatarNameSchema = z.object({
-  name: z.string().min(1, "İsim gerekli").max(80),
+  name: z.string().min(1, "Enter a name").max(80),
 });
 export type AvatarNameValues = z.infer<typeof avatarNameSchema>;

@@ -33,10 +33,10 @@ export function groupVideosByDay(videos: ApiVideo[], now: Date): VideoGroup[] {
       const diffDays = Math.round((today.getTime() - day.getTime()) / 86_400_000);
       const label =
         diffDays === 0
-          ? "Bugün"
+          ? "Today"
           : diffDays === 1
-            ? "Dün"
-            : day.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+            ? "Yesterday"
+            : day.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
       group = { key, label, videos: [] };
       byKey.set(key, group);

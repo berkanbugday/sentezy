@@ -7,7 +7,7 @@ import { CaptionTile } from "./CaptionTile";
 
 /** Caption-style picker — owns the local catalog filters + incremental reveal. Each tile is a
  *  live self-animating preview of the real caption component. `onSelect(id)` sets the preset;
- *  `onSelect(null)` clears it (captions are opt-in — "Alt yazı yok" is a first-class choice,
+ *  `onSelect(null)` clears it (captions are opt-in — "No captions" is a first-class choice,
  *  not just the absence of one, so a user who picked a style can turn captions back off). */
 export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: boolean; onClose: () => void; selectedId: string | null; onSelect: (id: string | null) => void }) {
   const [captionQ, setCaptionQ] = useState("");
@@ -23,7 +23,7 @@ export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: b
       (!captionFamily || p.family === captionFamily) &&
       (!captionFontF || p.font === captionFontF) &&
       (!captionColorF || p.color === captionColorF) &&
-      (!captionQ.trim() || p.name.toLocaleLowerCase("tr").includes(captionQ.trim().toLocaleLowerCase("tr"))),
+      (!captionQ.trim() || p.name.toLowerCase().includes(captionQ.trim().toLowerCase())),
   );
   const activeCaptionFilters = [captionFamily, captionFontF, captionColorF].filter(Boolean).length;
   useEffect(() => { setCaptionShown(60); }, [captionQ, captionFamily, captionFontF, captionColorF]);
@@ -44,7 +44,7 @@ export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: b
         <div className="flex-none px-5 pt-5">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
           <div className="mb-1 flex items-start justify-between gap-3">
-            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Alt yazı stili</h3>
+            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Caption style</h3>
             <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
               <Icon.close width={18} height={18} className="block" />
             </button>
@@ -73,14 +73,14 @@ export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: b
           >
             <span className="flex items-center gap-2">
               <Icon.close width={15} height={15} />
-              Alt yazı yok
+              No captions
             </span>
             {selectedId === null && (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7" /></svg>
             )}
           </button>
           {filteredCaptions.length === 0 ? (
-            <div className="py-10 text-center text-[14px] text-muted">Stil bulunamadı</div>
+            <div className="py-10 text-center text-[14px] text-muted">No style matches those filters.</div>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -115,7 +115,7 @@ export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: b
             </div>
             <div className="no-scrollbar flex flex-col gap-4 overflow-y-auto px-5 py-4">
               <div>
-                <div className="mb-2 text-[13px] font-semibold text-ink">Tür</div>
+                <div className="mb-2 text-[13px] font-semibold text-ink">Style</div>
                 <div className="flex flex-wrap gap-1.5">
                   {CAPTION_FAMILIES.map((f) => (
                     <button key={f.key} type="button" onClick={() => setCaptionFamily(captionFamily === f.label ? "" : f.label)} className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${captionFamily === f.label ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist"}`}>{f.label}</button>
@@ -123,7 +123,7 @@ export function CaptionPicker({ open, onClose, selectedId, onSelect }: { open: b
                 </div>
               </div>
               <div>
-                <div className="mb-2 text-[13px] font-semibold text-ink">Yazı tipi</div>
+                <div className="mb-2 text-[13px] font-semibold text-ink">Font</div>
                 <div className="flex flex-wrap gap-1.5">
                   {CAPTION_FONTS.map((f) => (
                     <button key={f} type="button" onClick={() => setCaptionFontF(captionFontF === f ? "" : f)} style={{ fontFamily: `"${f}", sans-serif` }} className={`rounded-full border px-3 py-1.5 text-[13px] transition ${captionFontF === f ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist"}`}>{f}</button>

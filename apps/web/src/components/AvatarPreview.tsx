@@ -22,7 +22,7 @@ export function AvatarPreview({ avatar, onClose }: { avatar: Avatar | null; onCl
 
   if (!avatar) return null;
   const ageLabel = AGE_OPTS.find((o) => o.v === avatar.age)?.label ?? avatar.age;
-  const meta = [avatar.sectorLabel, ageLabel, avatar.hijab ? "Başörtülü" : null].filter(Boolean).join(" · ");
+  const meta = [avatar.sectorLabel, ageLabel, avatar.hijab ? "Hijab" : null].filter(Boolean).join(" · ");
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
@@ -52,7 +52,7 @@ export function AvatarPreview({ avatar, onClose }: { avatar: Avatar | null; onCl
             onClick={() => router.push(`/dashboard?avatar=${encodeURIComponent(avatar.id)}`)}
             className="btn btn-primary w-full justify-center"
           >
-            Bu avatarla video oluştur
+            Make a video with this presenter
           </button>
         </div>
       </div>

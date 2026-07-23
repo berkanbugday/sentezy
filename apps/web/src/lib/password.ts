@@ -5,7 +5,7 @@ export const MIN_PASSWORD = 6;
 export type PasswordError = "too_short" | "mismatch";
 
 /** Validate a new-password + confirmation pair. Pure, so it is tested without a DOM.
- *  Order matters: check length before match, so "6 karakter" wins over "eşleşmiyor" while
+ *  Order matters: check length before match, so the length hint wins over the match hint while
  *  the user is still typing the first field. */
 export function validateNewPassword(password: string, confirm: string): PasswordError | null {
   if (password.length < MIN_PASSWORD) return "too_short";
@@ -14,6 +14,6 @@ export function validateNewPassword(password: string, confirm: string): Password
 }
 
 export function passwordErrorMessage(e: PasswordError): string {
-  if (e === "too_short") return `Şifre en az ${MIN_PASSWORD} karakter olmalı`;
-  return "Şifreler eşleşmiyor";
+  if (e === "too_short") return `Use at least ${MIN_PASSWORD} characters`;
+  return "Both passwords must match";
 }

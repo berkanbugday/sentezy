@@ -40,10 +40,10 @@ assert.ok(render({ color: "#FFFF00" }).includes("color:#0a0a0b"), "light brand g
 
 // Empty state: a brand-new kit must prompt rather than render an empty coloured box.
 const empty = render({ brandName: "", handle: "", outroCta: "", logoUrl: null });
-assert.ok(empty.includes("Logo ya da marka adı ekle"));
+assert.ok(empty.includes("Add a logo or a brand name"));
 assert.ok(!empty.includes("@sentezy"));
 // ...and the prompt disappears as soon as there is anything to show.
-assert.ok(!render({ brandName: "", logoUrl: "https://r2/l.png" }).includes("Logo ya da marka adı ekle"));
+assert.ok(!render({ brandName: "", logoUrl: "https://r2/l.png" }).includes("Add a logo or a brand name"));
 
 // ── Watermark ───────────────────────────────────────────────────────────────
 // The watermark sits over the reel, so its frame is the reel's dark backdrop, NOT the

@@ -29,7 +29,7 @@ export function DangerZoneCard({ email }: { email: string | null }) {
     } catch {
       // The data may be gone but the auth identity survived (502) — or the network failed.
       // Either way the account is not cleanly removed, so say so rather than signing out.
-      setError("Hesap silinemedi. Lütfen tekrar dene ya da destekle iletişime geç.");
+      setError("The account could not be deleted. Try again, or contact support.");
       return;
     }
     // Account is gone — end the local session and leave.
@@ -40,8 +40,8 @@ export function DangerZoneCard({ email }: { email: string | null }) {
 
   return (
     <SettingsCard
-      title="Tehlikeli bölge"
-      description="Hesabını silmek videolarını, avatarlarını ve marka kitini kalıcı olarak kaldırır. Bu işlem geri alınamaz."
+      title="Danger zone"
+      description="Deleting your account permanently removes your videos, presenters and brand kit. This cannot be undone."
       tone="danger"
     >
       {!expanded ? (
@@ -50,13 +50,13 @@ export function DangerZoneCard({ email }: { email: string | null }) {
           onClick={() => setExpanded(true)}
           className="rounded-full border border-red-300 px-4 py-2 text-[13.5px] font-semibold text-red-600 transition hover:bg-red-50"
         >
-          Hesabı sil
+          Delete account
         </button>
       ) : (
         <div className="space-y-3">
           <div>
             <label htmlFor="confirm-email" className="mb-1.5 block text-[13px] text-slate">
-              Onaylamak için e-postanı yaz: <span className="font-medium text-ink">{email}</span>
+              Type your email to confirm: <span className="font-medium text-ink">{email}</span>
             </label>
             <input
               id="confirm-email"
@@ -78,7 +78,7 @@ export function DangerZoneCard({ email }: { email: string | null }) {
               disabled={!confirmed || del.isPending}
               className="rounded-full bg-red-600 px-4 py-2 text-[13.5px] font-semibold text-white transition hover:bg-red-700 disabled:opacity-35"
             >
-              {del.isPending ? "Siliniyor…" : "Hesabı kalıcı olarak sil"}
+              {del.isPending ? "Deleting…" : "Delete my account permanently"}
             </button>
             <button
               type="button"
@@ -90,7 +90,7 @@ export function DangerZoneCard({ email }: { email: string | null }) {
               disabled={del.isPending}
               className="text-[13px] font-medium text-muted transition hover:text-ink disabled:opacity-35"
             >
-              Vazgeç
+              Cancel
             </button>
           </div>
         </div>

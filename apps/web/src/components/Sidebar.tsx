@@ -12,7 +12,7 @@ import { Tooltip } from "./Tooltip";
 
 const NAV = [
   { href: "/dashboard", label: "Ana sayfa", icon: Icon.home, ready: true },
-  { href: "/library", label: "Videolarım", icon: Icon.video, ready: true },
+  { href: "/library", label: "Your videos", icon: Icon.video, ready: true },
   { href: "/avatars", label: "Avatarlar", icon: Icon.users, ready: true },
   { href: "/brand-kit", label: "Marka Kiti", icon: Icon.box, ready: true },
 ];
@@ -57,12 +57,12 @@ export function Sidebar({ user, mobile = false, onNavigate }: { user: UserInfo; 
         </Tooltip>
         {!isCollapsed && <span className="disp flex-1 text-[19px] font-bold tracking-tight text-white">Sentezy</span>}
         {mobile ? (
-          <button onClick={onNavigate} aria-label="Menüyü kapat" className="flex h-8 w-8 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white">
+          <button onClick={onNavigate} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white">
             <Icon.close width={18} height={18} />
           </button>
         ) : (
           !collapsed && (
-            <Tooltip label="Menüyü daralt">
+            <Tooltip label="Collapse menu">
               <button onClick={toggle} className="flex h-7 w-7 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white">
                 <Icon.panelLeft width={18} height={18} />
               </button>
@@ -71,7 +71,7 @@ export function Sidebar({ user, mobile = false, onNavigate }: { user: UserInfo; 
         )}
       </div>
       {!mobile && collapsed && (
-        <Tooltip label="Menüyü genişlet">
+        <Tooltip label="Expand menu">
           <button onClick={toggle} className="mx-auto mb-1 flex h-8 w-8 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white">
             <Icon.panelLeft width={18} height={18} />
           </button>
@@ -93,12 +93,12 @@ export function Sidebar({ user, mobile = false, onNavigate }: { user: UserInfo; 
               {!isCollapsed && <span>{n.label}</span>}
               {!isCollapsed && !n.ready && (
                 <span className="ml-auto rounded-full bg-white/12 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/70">
-                  yakında
+                  soon
                 </span>
               )}
             </>
           );
-          const title = n.ready ? n.label : `${n.label} — yakında`;
+          const title = n.ready ? n.label : `${n.label} — coming soon`;
           const cls = `nav-item ${isCollapsed ? "justify-center" : ""}`;
           const item = n.ready ? (
             <Link href={n.href} onClick={onNavigate} className={cls} data-active={active ? "true" : "false"}>
@@ -117,7 +117,7 @@ export function Sidebar({ user, mobile = false, onNavigate }: { user: UserInfo; 
 
       {/* footer: credits + help (pinned) */}
       <div className={`mt-auto flex ${isCollapsed ? "flex-col items-center gap-2" : "items-center gap-2 px-1"}`}>
-        <Tooltip label={credits === undefined ? "Krediler" : `${credits} kredi kaldı`}>
+        <Tooltip label={credits === undefined ? "Credits" : `${credits} credits left`}>
           <span
             className={`flex items-center gap-1.5 rounded-full border border-white/20 text-[13px] font-semibold text-white ${
               isCollapsed ? "h-9 w-9 justify-center" : "px-3 py-1.5"
@@ -132,7 +132,7 @@ export function Sidebar({ user, mobile = false, onNavigate }: { user: UserInfo; 
             )}
           </span>
         </Tooltip>
-        <Tooltip label="Yardım & destek">
+        <Tooltip label="Help">
           <button
             className={`flex h-9 w-9 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white ${isCollapsed ? "" : "ml-auto"}`}
           >

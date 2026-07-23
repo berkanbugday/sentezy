@@ -95,7 +95,7 @@ export function PreviewModal({
         <div className="flex-none px-5 pt-5">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
           <div className="flex items-start justify-between gap-3">
-            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Önizleme</h3>
+            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Preview</h3>
             <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
               <Icon.close width={18} height={18} className="block" />
             </button>
@@ -119,7 +119,7 @@ export function PreviewModal({
             />
           </div>
         </div>
-        <div className="px-5 py-3 text-[12px] text-muted">Sesi duymak için oynat&apos;a bas — seslendirme render sırasında eklenir</div>
+        <div className="px-5 py-3 text-[12px] text-muted">Press play to hear it — the voiceover is added when the video is made</div>
       </div>
     </div>
   );

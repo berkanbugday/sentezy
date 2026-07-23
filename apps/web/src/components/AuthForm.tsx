@@ -46,7 +46,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       return;
     }
     if (isSignup && !res.data.session) {
-      setInfo("Hesabını doğrulamak için e-postanı kontrol et.");
+      setInfo("Check your email to confirm your account.");
       return;
     }
     router.push("/dashboard");
@@ -69,10 +69,10 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       </div>
 
       <h1 className="disp text-[25px] font-semibold text-ink">
-        {isSignup ? "Hesap oluştur" : "Tekrar hoş geldin"}
+        {isSignup ? "Create your account" : "Welcome back"}
       </h1>
       <p className="mb-6 mt-1.5 text-[14px] text-slate">
-        {isSignup ? "Dakikalar içinde ilk videonu üret." : "Devam etmek için giriş yap."}
+        {isSignup ? "Your first videos are free — no card needed." : "Log in to pick up where you left off."}
       </p>
 
       <button type="button" onClick={google} className="btn btn-ghost w-full">
@@ -98,7 +98,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <div>
           <PasswordInput
             className={field}
-            placeholder="Şifre"
+            placeholder="Password"
             autoComplete={isSignup ? "new-password" : "current-password"}
             {...register("password")}
           />
@@ -109,15 +109,15 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         {info && <p className="text-[12.5px] text-slate">{info}</p>}
 
         <button type="submit" disabled={isSubmitting} className="btn btn-primary mt-1 w-full disabled:opacity-60">
-          {isSubmitting ? "…" : isSignup ? "Kayıt ol" : "Giriş yap"}
+          {isSubmitting ? "…" : isSignup ? "Create account" : "Log in"}
         </button>
       </form>
 
       <p className="mt-5 text-center text-[13.5px] text-slate">
         {isSignup ? (
-          <>Zaten hesabın var mı? <Link href="/login" className="font-semibold text-signal">Giriş yap</Link></>
+          <>Already have an account? <Link href="/login" className="font-semibold text-signal">Log in</Link></>
         ) : (
-          <>Hesabın yok mu? <Link href="/signup" className="font-semibold text-signal">Kayıt ol</Link></>
+          <>New here? <Link href="/signup" className="font-semibold text-signal">Create an account</Link></>
         )}
       </p>
     </div>

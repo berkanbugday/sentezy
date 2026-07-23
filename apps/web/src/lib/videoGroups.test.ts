@@ -17,21 +17,21 @@ const now = new Date(2026, 6, 20, 10, 0, 0);
 // Empty input → empty output, not a group with no videos.
 assert.deepStrictEqual(groupVideosByDay([], now), []);
 
-// A video created today lands under "Bugün".
+// A video created today lands under "Today".
 {
   const v = video("today", new Date(2026, 6, 20, 8, 0, 0).toISOString());
   const groups = groupVideosByDay([v], now);
   assert.strictEqual(groups.length, 1);
-  assert.strictEqual(groups[0].label, "Bugün");
+  assert.strictEqual(groups[0].label, "Today");
   assert.deepStrictEqual(groups[0].videos, [v]);
 }
 
-// A video created yesterday lands under "Dün".
+// A video created yesterday lands under "Yesterday".
 {
   const v = video("yesterday", new Date(2026, 6, 19, 20, 0, 0).toISOString());
   const groups = groupVideosByDay([v], now);
   assert.strictEqual(groups.length, 1);
-  assert.strictEqual(groups[0].label, "Dün");
+  assert.strictEqual(groups[0].label, "Yesterday");
 }
 
 // Anything older gets a readable absolute Turkish date.
@@ -39,7 +39,7 @@ assert.deepStrictEqual(groupVideosByDay([], now), []);
   const v = video("older", new Date(2026, 6, 15, 12, 0, 0).toISOString());
   const groups = groupVideosByDay([v], now);
   assert.strictEqual(groups.length, 1);
-  assert.strictEqual(groups[0].label, "15 Temmuz 2026");
+  assert.strictEqual(groups[0].label, "15 July 2026");
 }
 
 // Two videos on the same calendar day land in ONE group, newest first within it.
@@ -57,7 +57,7 @@ assert.deepStrictEqual(groupVideosByDay([], now), []);
   const yesterdayV = video("y", new Date(2026, 6, 19, 8, 0, 0).toISOString());
   const olderV = video("o", new Date(2026, 6, 10, 8, 0, 0).toISOString());
   const groups = groupVideosByDay([todayV, yesterdayV, olderV], now);
-  assert.deepStrictEqual(groups.map((g) => g.label), ["Bugün", "Dün", "10 Temmuz 2026"]);
+  assert.deepStrictEqual(groups.map((g) => g.label), ["Today", "Yesterday", "10 July 2026"]);
 }
 
 // Two videos an hour apart that straddle local midnight land in DIFFERENT groups — the

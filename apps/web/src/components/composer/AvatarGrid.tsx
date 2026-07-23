@@ -74,7 +74,7 @@ export function AvatarGrid({
 
       {avatarsQ.isLoading ? (
         <div role="status" aria-live="polite">
-          <span className="sr-only">Yükleniyor…</span>
+          <span className="sr-only">Loading…</span>
           <div className={gridCls}>
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i}>
@@ -87,14 +87,14 @@ export function AvatarGrid({
       ) : avatarsQ.isError ? (
         /* A failed request is NOT an empty result — never blame the user's filters for it. */
         <div className="py-10 text-center">
-          <p className="text-[14px] text-muted">Avatarlar yüklenemedi</p>
+          <p className="text-[14px] text-muted">Presenters could not be loaded. Try again.</p>
           <button type="button" onClick={() => avatarsQ.refetch()} className="mt-2 text-[13px] font-medium text-signal">
             Tekrar dene
           </button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-10 text-center">
-          <p className="text-[14px] text-muted">Avatar bulunamadı</p>
+          <p className="text-[14px] text-muted">No presenter matches those filters.</p>
           {hasFilters && (
             <button type="button" onClick={clearFilters} className="mt-2 text-[13px] font-medium text-signal">
               Filtreleri temizle
@@ -107,10 +107,10 @@ export function AvatarGrid({
             /* Faceless option — no avatar; the reel is B-roll + captions + voice only. */
             <button type="button" onClick={() => onSelect(null)} className="text-left">
               <div className={`relative flex aspect-[3/4] flex-col items-center justify-center gap-1 overflow-hidden rounded-xl border bg-mist px-2 text-center transition ${selectedId === null ? "border-ink ring-2 ring-ink" : "border-hairline hover:border-slate"}`}>
-                <span className="disp text-[15px] font-semibold text-ink">Avatarsız</span>
-                <span className="text-[10px] leading-tight text-muted">yüzsüz video</span>
+                <span className="disp text-[15px] font-semibold text-ink">No presenter</span>
+                <span className="text-[10px] leading-tight text-muted">your media only</span>
               </div>
-              <div className="mt-1.5 truncate px-0.5 text-[12px] font-medium text-slate">İsimsiz</div>
+              <div className="mt-1.5 truncate px-0.5 text-[12px] font-medium text-slate">No face</div>
             </button>
           )}
           {filtered.map((a) => {
