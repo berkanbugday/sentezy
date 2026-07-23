@@ -1,6 +1,8 @@
 ---
-/* All 24 sectors as one horizontal rail. A 24-card grid would be a wall of text; a rail reads
-   as a catalog you can flick through, and on a phone it is one thumb movement. */
+/* All 24 sectors on a rail that slides by itself. A 24-card grid is a wall of text; a moving
+   rail reads as a catalog you can flick through, and on a phone it costs no vertical space.
+   The list is rendered twice so the track can translate exactly -50% and loop seamlessly — the
+   copy is aria-hidden so a screen reader hears the 24 once. */
 import { sectors } from "../data/copy";
 ---
 
@@ -12,13 +14,15 @@ import { sectors } from "../data/copy";
       <p class="lead">{sectors.lead}</p>
     </div>
   </div>
-  <div class="rail reveal" data-rail>
-    {sectors.items.map((s) => (
-      <div class="sector">
-        <div class="sector-bar"></div>
-        <h3 class="disp h3">{s.name}</h3>
-        <p>{s.body}</p>
-      </div>
-    ))}
+  <div class="rail marquee reveal">
+    <div class="marquee-track">
+      {[0, 1].map((pass) => sectors.items.map((s) => (
+        <div class="sector" aria-hidden={pass === 1 ? "true" : undefined}>
+          <div class="sector-bar"></div>
+          <h3 class="disp h3">{s.name}</h3>
+          <p>{s.body}</p>
+        </div>
+      )))}
+    </div>
   </div>
 </section>

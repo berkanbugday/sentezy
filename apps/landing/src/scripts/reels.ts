@@ -5,9 +5,9 @@
  *  In view: load once, play muted, loop. Out of view: pause, so four videos are never
  *  decoding behind the reader's back.
  *
- *  Click toggles sound, and only one reel is ever audible: turning one on mutes the rest.
- *  Under reduced motion nothing autoplays; the posters stand until a card is clicked, which
- *  then plays it with sound, because a click is a request.
+ *  Click toggles sound, stops the slider, and mutes every other reel — only one is ever
+ *  audible. Under reduced motion nothing autoplays; the posters stand until a card is clicked,
+ *  which then plays it with sound, because a click is a request.
  */
 /** Every lazy video on the page — the showcase cards AND the phones in the platform demos.
  *  One policy: load on approach, play while visible, pause when it leaves. */
@@ -61,6 +61,8 @@ if (cards.length) {
         other.classList.remove("loud");
       }
 
+      // A moving card cannot be watched: the first tap stops the slide for good.
+      card.closest(".marquee")?.classList.add("paused");
       video.muted = !turningOn;
       // Both hint labels ship in the markup with their own data-tr, so the class swap keeps
       // working after a language switch and no string lives outside copy.ts.
@@ -68,25 +70,6 @@ if (cards.length) {
       void video.play().catch(() => {});
     });
   }
-}
-
-/** The slider advances itself so the row is visibly a row, not a static wall — but only until
- *  someone touches it, after which it is theirs. Native scrolling does the rest: snap points on
- *  the cards mean a thumb-flick lands on a reel, not between two. */
-const wall = document.querySelector<HTMLElement>("[data-wall]");
-if (wall && !reduce) {
-  let auto = 0;
-  const stop = () => { if (auto) { clearInterval(auto); auto = 0; } };
-  for (const ev of ["pointerdown", "wheel", "keydown"] as const) {
-    wall.addEventListener(ev, stop, { passive: true });
-  }
-  auto = window.setInterval(() => {
-    const card = wall.querySelector<HTMLElement>(".reel");
-    if (!card) return;
-    const step = card.offsetWidth + 14;
-    const atEnd = wall.scrollLeft + wall.clientWidth >= wall.scrollWidth - 4;
-    wall.scrollTo({ left: atEnd ? 0 : wall.scrollLeft + step, behavior: "smooth" });
-  }, 4000);
 }
 
 export {};

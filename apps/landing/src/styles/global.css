@@ -84,6 +84,13 @@ a:hover { color: var(--color-ink); }
 
 /* ── hero ────────────────────────────────────────────────────────────────── */
 .hero { padding: 150px 0 96px; background: var(--hero); }
+/* Phone-only: faces before prose. Hidden on desktop, where the vertical marquee does this job
+   beside the copy — the two never both render. */
+.hero-strip { display: none; }
+.striptile { position: relative; width: 110px; aspect-ratio: 9/16; border-radius: 14px;
+  overflow: hidden; box-shadow: 0 10px 26px rgba(10,10,12,0.14); }
+.striptile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  object-position: top center; }
 .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; }
 .hero-cta { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
 .microcopy { font-size: 14px; color: var(--color-muted); margin-top: 14px; }
@@ -132,6 +139,9 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 
 @media (max-width: 900px) {
   .hero-grid { grid-template-columns: 1fr; }
+  .hero { padding-top: 96px; }
+  .hero-strip { display: block; --speed: 42s; --space: 12px; margin-bottom: 30px; }
+  .hero-visual { display: none; }
   .steps { grid-template-columns: 1fr 1fr; }
   .foot-grid { grid-template-columns: 1fr 1fr; }
   .nav-menu, .nav-login { display: none; }
@@ -216,13 +226,10 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .proof-l { display: block; margin-top: 8px; font-size: 13.5px; color: var(--color-muted); }
 
 /* ── sector cards ───────────────────────────────────────────────────────── */
-/* 24 sectors as a rail. It breaks out of .wrap on purpose so the row runs to both edges and
-   reads as scrollable; the cards inside keep the gutter with scroll-padding. */
-.rail { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x proximity;
-  padding: 4px 24px 10px; scroll-padding-inline: 24px; scrollbar-width: none;
-  -webkit-overflow-scrolling: touch; }
-.rail::-webkit-scrollbar { display: none; }
-.sector { flex: 0 0 268px; scroll-snap-align: start; padding: 24px; border-radius: 20px;
+/* 24 sectors, sliding on their own. Full-bleed on purpose: a rail that stops at the container
+   edge looks like a grid that ran out of room. */
+.rail { --speed: 90s; --space: 16px; padding: 4px 0 10px; }
+.sector { width: 268px; padding: 24px; border-radius: 20px;
   border: 1px solid var(--color-hairline); background: var(--color-paper);
   transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s; }
 .sector:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(10,10,12,0.07); }
@@ -239,7 +246,7 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .sector p { font-size: 14.5px; color: var(--color-slate); line-height: 1.55; }
 
 @media (max-width: 900px) { .proof { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 560px) { .proof-n { font-size: 32px; } .rail { padding-inline: 18px; scroll-padding-inline: 18px; } .sector { flex-basis: 78vw; } }
+@media (max-width: 560px) { .proof-n { font-size: 32px; } .rail { --speed: 70s; --space: 12px; } .sector { width: 74vw; padding: 20px; } }
 
 /* ── platform demos ─────────────────────────────────────────────────────── */
 /* Four rows, one shape: a phone that plays through a catalog, and the copy plus chips beside
@@ -248,12 +255,12 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 /* Phone at one edge, copy at the other, alternating down the section. The numbered spine that
    used to run between them is gone: these four are choices you make, not a sequence you
    complete, and on a phone it was furniture stacked between two thumb-scrolls. */
-.demo-row { display: grid; grid-template-columns: 300px 1fr; gap: 72px; align-items: center;
-  margin-top: 96px; }
-.stage { position: relative; justify-self: start; order: 1; }
-.demo-copy { max-width: 30em; justify-self: end; order: 3; }
-.demo-row.rev .stage { order: 3; justify-self: end; }
-.demo-row.rev .demo-copy { order: 1; justify-self: start; }
+.demo-row { display: grid; grid-template-columns: auto auto; justify-content: center; gap: 56px;
+  align-items: center; margin-top: 88px; }
+.stage { position: relative; order: 1; }
+.demo-copy { width: min(30em, 46vw); order: 3; }
+.demo-row.rev .stage { order: 3; }
+.demo-row.rev .demo-copy { order: 1; }
 
 /* The accent wash behind the phone — the only color in an otherwise monochrome section, one hue
    per step, breathing slowly so the section is never completely still. */
@@ -377,13 +384,10 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
    and cost 12px of picture on every card; a reel already looks like a reel. Cards are small
    enough that four fit on a laptop and the row still scrolls with a thumb on a handset, which
    is where this page is actually read. */
-.wall { display: flex; gap: 14px; margin-top: 40px; overflow-x: auto; scroll-snap-type: x mandatory;
-  justify-content: safe center; padding: 4px 0 8px; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; }
-.wall::-webkit-scrollbar { display: none; }
-.reel { position: relative; flex: 0 0 200px; aspect-ratio: 9/16; padding: 0; border: 0;
-  border-radius: 18px; overflow: hidden; cursor: pointer; background: #000;
-  scroll-snap-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.42);
+.wall { --speed: 44s; --space: 14px; margin-top: 40px; }
+.reel { position: relative; width: 168px; aspect-ratio: 9/16; padding: 0; border: 0;
+  border-radius: 16px; overflow: hidden; cursor: pointer; background: #000;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.42);
   transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s; }
 .reel:hover { transform: translateY(-4px); box-shadow: 0 28px 70px rgba(0,0,0,0.55); }
 .reel-v { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -401,167 +405,9 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .reel.loud .reel-x { display: none; }
 .reel.loud .reel-on, .reel.loud .s-on { display: inline; }
 
-@media (max-width: 900px) { .reel { flex-basis: 190px; } }
-@media (max-width: 560px) { .wall { gap: 10px; justify-content: flex-start; } }
 
-/* ── platform demos ─────────────────────────────────────────────────────── */
-/* Four rows, one shape: a phone that plays through a catalog, and the copy plus chips beside
-   it. The phone alternates sides so the eye moves down the section instead of straight down
-   one column. */
-/* Phone at one edge, copy at the other, alternating down the section. The numbered spine that
-   used to run between them is gone: these four are choices you make, not a sequence you
-   complete, and on a phone it was furniture stacked between two thumb-scrolls. */
-.demo-row { display: grid; grid-template-columns: 300px 1fr; gap: 72px; align-items: center;
-  margin-top: 96px; }
-.stage { position: relative; justify-self: start; order: 1; }
-.demo-copy { max-width: 30em; justify-self: end; order: 3; }
-.demo-row.rev .stage { order: 3; justify-self: end; }
-.demo-row.rev .demo-copy { order: 1; justify-self: start; }
+@media (max-width: 560px) { .wall { --speed: 34s; --space: 10px; } .reel { width: 144px; } }
 
-/* The accent wash behind the phone — the only color in an otherwise monochrome section, one hue
-   per step, breathing slowly so the section is never completely still. */
-.glow { position: absolute; inset: -16% -22%; border-radius: 50%; opacity: 0.24; filter: blur(48px);
-  background: radial-gradient(closest-side, var(--accent), transparent 72%);
-  animation: breathe 7s ease-in-out infinite alternate; }
-@keyframes breathe { from { transform: scale(0.94); opacity: 0.22; } to { transform: scale(1.06); opacity: 0.36; } }
-
-.demo-copy .h3 { margin: 12px 0 12px; }
-.demo-copy p { font-size: 15.5px; line-height: 1.6; color: var(--color-slate); }
-.demo-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
-/* Each half enters from the edge it lives on, so the row assembles toward the spine. */
-.demo-row .stage, .demo-row .demo-copy { opacity: 0; transition: opacity 0.6s, translate 0.6s cubic-bezier(0.22,1,0.36,1); }
-.demo-row .stage { translate: -28px 0; }
-.demo-row .demo-copy { translate: 28px 0; }
-.demo-row.rev .stage { translate: 28px 0; }
-.demo-row.rev .demo-copy { translate: -28px 0; }
-.demo-row.in .stage, .demo-row.in .demo-copy { opacity: 1; translate: 0 0; }
-.demo-row.in .demo-copy { transition-delay: 0.1s; }
-/* The active chip runs a hairline timer for exactly this row's interval, so the cycling reads
-   as deliberate rather than random. It stops once a click hands the row over. */
-.chip.on::after { content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: 2px;
-  background: var(--accent); transform-origin: left; animation: chipfill var(--dur, 2400ms) linear forwards; }
-@keyframes chipfill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.demo-row.manual .chip.on::after { animation: none; opacity: 0; }
-
-.phone { position: relative; width: 300px; aspect-ratio: 9/16; border-radius: 26px;
-  overflow: hidden; border: 6px solid #0a0a0b; background: #0a0a0b;
-  box-shadow: 0 30px 80px rgba(10,10,12,0.28);
-  transform: perspective(1100px) rotateY(5deg) rotateX(1.5deg);
-  animation: float 7s ease-in-out infinite alternate; }
-.demo-row.rev .phone { transform: perspective(1100px) rotateY(-5deg) rotateX(1.5deg); }
-@keyframes float { from { translate: 0 -7px; } to { translate: 0 7px; } }
-.demo-row:nth-of-type(odd) .phone { animation-delay: -3s; }
-/* Slides stack and the incoming one WIPES in over the outgoing, fully opaque the whole way. A
-   cross-fade double-exposes two faces and two labels through each other for half a second — the
-   one thing a presenter picker must never look like.
-   The outgoing slide is held visible for exactly the wipe duration by delaying its visibility
-   change; otherwise it would vanish on the same frame and the wipe would reveal bare black. */
-.slide { position: absolute; inset: 0; z-index: 1; visibility: hidden;
-  transition: visibility 0s linear 0.55s; }
-.slide.on { visibility: visible; z-index: 2; transition: none;
-  animation: wipe 0.55s cubic-bezier(0.65, 0, 0.35, 1); }
-@keyframes wipe { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
-.slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-  object-position: top center; }
-/* Rows whose choice is an overlay (voice, music) play a real reel underneath instead of a
-   still — the same files the showcase serves, so the browser has them cached. */
-.phone-v { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
-.slide::after { content: ""; position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 30%, rgba(0,0,0,0.62) 100%); }
-.slide-tag { position: absolute; top: 12px; left: 12px; z-index: 2; font-family: var(--font-mono);
-  font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: #fff;
-  background: rgba(0,0,0,0.42); backdrop-filter: blur(6px); padding: 4px 9px; border-radius: 999px; }
-.slide.on .slide-foot, .slide.on .slide-cap { animation: liftIn 0.5s 0.14s both cubic-bezier(0.22,1,0.36,1); }
-@keyframes liftIn { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
-.slide-foot { position: absolute; left: 16px; right: 16px; bottom: 18px; z-index: 2;
-  display: flex; flex-direction: column; align-items: flex-start; gap: 5px; color: #fff; }
-.slide-foot b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
-.slide-foot em { font-style: normal; font-family: var(--font-mono); font-size: 10.5px;
-  color: rgba(255,255,255,0.72); }
-/* The caption row prints its sample where a burned-in caption actually sits. */
-.slide-cap { position: absolute; left: 16px; right: 16px; bottom: 40px; z-index: 2; text-align: center;
-  font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.15;
-  text-transform: uppercase; color: #fff; }
-
-/* Voice: bars ride the read. Music: a fixed silhouette per track, so the four moods look
-   different standing still and only breathe when their slide is up. */
-.wave, .eq { display: flex; align-items: flex-end; gap: 3px; height: 22px; margin-bottom: 2px; }
-.wave i { width: 3px; height: 5px; border-radius: 2px; background: rgba(255,255,255,0.9); }
-.slide.on .wave i { animation: wave 900ms ease-in-out infinite alternate;
-  animation-delay: calc(var(--b) * 60ms); }
-@keyframes wave { from { height: 5px; } to { height: 21px; } }
-.eq { height: 26px; gap: 4px; }
-.eq i { width: 4px; border-radius: 2px; background: rgba(255,255,255,0.9);
-  height: calc(var(--h) * 0.26); }
-.slide.on .eq i { animation: eq 1.15s ease-in-out infinite alternate;
-  animation-delay: calc(var(--b) * 80ms); }
-@keyframes eq { from { transform: scaleY(0.55); } to { transform: scaleY(1); } }
-
-@media (max-width: 900px) {
-  .demo-row { grid-template-columns: 1fr; justify-items: center; gap: 26px; text-align: center;
-    margin-top: 72px; }
-  /* Phone first on a phone: the thing that moves earns the scroll, the copy explains it after. */
-  .stage, .demo-row.rev .stage { justify-self: center; order: 1; }
-  .demo-copy, .demo-row.rev .demo-copy { justify-self: center; order: 2; }
-  .demo-copy p { margin-inline: auto; }
-  .demo-chips { justify-content: center; }
-  .phone { width: 260px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .slide.on, .slide.on .slide-foot, .slide.on .slide-cap { animation: none; }
-  .slide.on .wave i, .slide.on .eq i, .glow, .phone { animation: none; }
-  .chip.on::after { animation: none; opacity: 0; }
-  .demo-row .stage, .demo-row .demo-copy { opacity: 1; translate: 0 0; transition: none; }
-}
-
-/* ── pricing teaser / final CTA ─────────────────────────────────────────── */
-.price-band { text-align: center; max-width: 44em; margin: 0 auto; }
-.price-band .h2 { margin-bottom: 16px; }
-.price-band .lead { margin: 0 auto 28px; }
-/* The closer keeps the old final section's larger headline; only its periwinkle wash is gone. */
-.final-cta .h2 { font-size: 44px; max-width: 16em; margin-left: auto; margin-right: auto; }
-.final-cta .microcopy { margin-top: 16px; }
-
-/* Lives here, not in the shared 900px block above: that block is declared earlier in the file,
-   and at equal specificity the later rule would win and cancel the override. */
-@media (max-width: 900px) { .final-cta .h2 { font-size: 32px; } }
-
-/* ── chips ──────────────────────────────────────────────────────────────── */
-/* Shared by every demo row: the option you can click, lit when its slide is up. */
-.chip { position: relative; overflow: hidden; font-family: var(--font-mono); font-size: 12.5px;
-  padding: 8px 14px; border-radius: 999px; border: 1px solid var(--color-hairline);
-  background: var(--color-paper); color: var(--color-slate); cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s; }
-.chip:hover { border-color: var(--color-muted); color: var(--color-ink); transform: translateY(-1px); }
-.chip.on { background: var(--color-ink); border-color: var(--color-ink); color: #fff; }
-
-/* ── reel wall ──────────────────────────────────────────────────────────── */
-/* Four finished reels on the dark band, framed as phones. Sits on .band, so the copy above
-   is already light — only the frames and their chips are styled here. */
-.wall { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 44px; }
-.reel { position: relative; display: block; width: 100%; aspect-ratio: 9/16; padding: 0;
-  border: 6px solid #0a0a0b; border-radius: 26px; overflow: hidden; cursor: pointer;
-  background: #0a0a0b; box-shadow: 0 30px 80px rgba(0,0,0,0.45);
-  transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s; }
-.reel:hover { transform: translateY(-4px); box-shadow: 0 40px 100px rgba(0,0,0,0.55); }
-.reel-v { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.reel-sector { position: absolute; top: 10px; left: 10px; z-index: 2; font-family: var(--font-mono);
-  font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: #fff;
-  background: rgba(0,0,0,0.42); backdrop-filter: blur(6px); padding: 4px 8px; border-radius: 999px; }
-.reel-sound { position: absolute; right: 10px; bottom: 10px; z-index: 2; display: inline-flex;
-  align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10.5px; color: #fff;
-  background: rgba(0,0,0,0.46); backdrop-filter: blur(6px); padding: 5px 9px; border-radius: 999px; }
-.reel-sound em { font-style: normal; }
-/* One icon, two states: the slash and the arcs swap, and so do the two labels — both ship in
-   the markup, so the class swap is the whole state change. */
-.reel-on, .s-on { display: none; }
-.reel.loud .reel-x, .reel.loud .s-off { display: none; }
-.reel.loud .reel-on { display: inline; }
-.reel.loud .s-on { display: inline; }
-.wall-cta { display: flex; justify-content: center; margin-top: 40px; }
-
-@media (max-width: 900px) { .wall { grid-template-columns: 1fr 1fr; gap: 16px; } }
-@media (max-width: 560px) { .wall { grid-template-columns: 1fr; max-width: 300px; margin-inline: auto; } }
 
 /* ── mobile ─────────────────────────────────────────────────────────────── */
 /* This page is read on a phone. Everything below is the handset pass: tighter gutters and
@@ -575,19 +421,6 @@ html { scroll-behavior: smooth; }
 
 @media (max-width: 560px) {
   .wrap { padding: 0 18px; }
-  /* A floating pill lets the page scroll past on both sides of it — at this width the headline
-     ran out from under the dock. On a phone the nav is a full-width bar that the content
-     genuinely disappears behind. */
-  .nav { top: 0; }
-  .nav-in { width: 100%; max-width: none; border-radius: 0; border-width: 0 0 1px;
-    background: rgba(255,255,255,0.92); box-shadow: none; }
-  .nav.scrolled .nav-in { background: rgba(255,255,255,0.96); box-shadow: 0 6px 20px rgba(11,11,13,0.06); }
-  /* Faces first. Someone landing here should meet the presenters before a paragraph about them. */
-  .hero-grid { display: flex; flex-direction: column; gap: 28px; }
-  .hero-visual { order: -1; }
-  .reels { height: 340px; }
-  .reel { flex-basis: 44vw; }
-  .wall { scroll-padding-inline: 18px; }
   .sec { padding: 56px 0; }
   .hero { padding: 104px 0 52px; }
   .h1x { font-size: 34px; letter-spacing: -0.015em; }
