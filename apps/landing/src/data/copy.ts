@@ -133,11 +133,22 @@ export const studio = {
       eyebrow: { en: "COMPOSER", tr: "OLUŞTURUCU" },
       title: { en: "Everything on one screen.", tr: "Her şey tek ekranda." },
       bullets: [
-        { en: "12 AI presenters across 24 sectors.", tr: "24 sektörde 12 yapay zeka sunucu." },
-        { en: "Shared ElevenLabs voices, auditioned in place.", tr: "Paylaşılan ElevenLabs sesleri, yerinde dinlenir." },
-        { en: "Upload your own footage as B-roll behind the presenter.", tr: "Kendi görüntülerinizi sunucunun arkasına B-roll olarak ekleyin." },
+        { en: "Paste a product link — the media and the script come back written.", tr: "Ürün linkini yapıştırın — görseller ve metin yazılmış olarak gelsin." },
+        { en: "Avatar, voice, music and captions from a single menu.", tr: "Avatar, ses, müzik ve altyazı tek menüden." },
+        { en: "Preview the whole reel before you spend a credit.", tr: "Kredi harcamadan önce reels'in tamamını önizleyin." },
       ],
-      alt: "The Sentezy media composer with a presenter and voice selected",
+      alt: "The Sentezy composer with imported product media, a written script and the avatar, voice, music and caption menu open",
+    },
+    {
+      key: "avatars",
+      eyebrow: { en: "PRESENTERS", tr: "SUNUCULAR" },
+      title: { en: "A presenter dressed for your sector.", tr: "Sektörünüze göre giyinmiş bir sunucu." },
+      bullets: [
+        { en: "12 AI presenters across 24 sectors, styled for the job.", tr: "24 sektörde 12 yapay zeka sunucu — işine göre giydirilmiş." },
+        { en: "Filter by gender, age or hijab.", tr: "Cinsiyet, yaş ya da başörtüsüne göre filtreleyin." },
+        { en: "Or go faceless — the reel works without a presenter too.", tr: "Ya da yüzsüz gidin — reels sunucusuz da çalışır." },
+      ],
+      alt: "The Sentezy presenter library, filtered by gender, age and hijab",
     },
     {
       key: "captions",
@@ -145,10 +156,12 @@ export const studio = {
       title: { en: "20 caption styles, burned in.", tr: "20 altyazı stili, videoya işlenir." },
       bullets: [
         { en: "Word-level timing, so the highlight lands on the beat.", tr: "Kelime seviyesinde zamanlama — vurgu tam yerine oturur." },
-        { en: "Keyword emphasis and emoji picked from the script.", tr: "Metinden seçilen anahtar kelime vurgusu ve emoji." },
+        /* 20 x 13 x 12 → apps/web/src/lib/captionStyles.ts: CAPTION_STYLE_META families,
+           CAPTION_FONTS, CAPTION_COLORS. The four non-accent families are white-only. */
+        { en: "20 styles across 13 fonts and 12 accent colors.", tr: "13 font ve 12 vurgu rengiyle 20 stil." },
         { en: "14 transitions between B-roll clips.", tr: "B-roll klipleri arasında 14 geçiş efekti." },
       ],
-      alt: "The Sentezy caption style picker",
+      alt: "Finished Sentezy reels with burned-in keyword captions",
     },
     {
       key: "brand-kit",
