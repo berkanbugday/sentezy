@@ -20,7 +20,7 @@ export const footer = {
   productHead: { en: "Product", tr: "Ürün" },
   presenters: { en: "AI presenters", tr: "Yapay zeka sunucular" },
   captions: { en: "Captions", tr: "Altyazılar" },
-  brandKit: { en: "Brand kit", tr: "Marka kiti" },
+  music: { en: "Music", tr: "Müzik" },
   solutionsHead: { en: "Solutions", tr: "Çözümler" },
   legalHead: { en: "Legal", tr: "Yasal" },
   privacy: { en: "Privacy", tr: "Gizlilik" },
@@ -121,60 +121,43 @@ export const how = {
   ],
 } as const;
 
-/** The three studio blocks. `key` is also the screenshot filename: a block ships only if
- *  `src/assets/app/<key>.png` exists (see src/data/shots.ts). Per the spec, a block whose
- *  screenshot is missing is cut from the page — it never ships as a gray placeholder. */
+/** The three studio blocks. Each one is a LIVE demo of the matching picker in the app —
+ *  filters that filter, a list that plays through — not a screenshot of it. The row data
+ *  lives in src/data/studio.ts and traces back to the API's own catalogs. */
 export const studio = {
   eyebrow: { en: "PLATFORM", tr: "PLATFORM" },
   title: { en: "The studio behind the reels.", tr: "Reels'lerin arkasındaki stüdyo." },
-  blocks: [
-    {
-      key: "composer",
-      eyebrow: { en: "COMPOSER", tr: "OLUŞTURUCU" },
-      title: { en: "Everything on one screen.", tr: "Her şey tek ekranda." },
-      bullets: [
-        { en: "Paste a product link — the media and the script come back written.", tr: "Ürün linkini yapıştırın — görseller ve metin yazılmış olarak gelsin." },
-        { en: "Avatar, voice, music and captions from a single menu.", tr: "Avatar, ses, müzik ve altyazı tek menüden." },
-        { en: "Preview the whole reel before you spend a credit.", tr: "Kredi harcamadan önce reels'in tamamını önizleyin." },
-      ],
-      alt: "The Sentezy composer with imported product media, a written script and the avatar, voice, music and caption menu open",
-    },
-    {
-      key: "avatars",
-      eyebrow: { en: "PRESENTERS", tr: "SUNUCULAR" },
-      title: { en: "A presenter dressed for your sector.", tr: "Sektörünüze göre giyinmiş bir sunucu." },
-      bullets: [
-        { en: "12 AI presenters across 24 sectors, styled for the job.", tr: "24 sektörde 12 yapay zeka sunucu — işine göre giydirilmiş." },
-        { en: "Filter by gender, age or hijab.", tr: "Cinsiyet, yaş ya da başörtüsüne göre filtreleyin." },
-        { en: "Or go faceless — the reel works without a presenter too.", tr: "Ya da yüzsüz gidin — reels sunucusuz da çalışır." },
-      ],
-      alt: "The Sentezy presenter library, filtered by gender, age and hijab",
-    },
-    {
-      key: "captions",
-      eyebrow: { en: "CAPTIONS", tr: "ALTYAZILAR" },
-      title: { en: "20 caption styles, burned in.", tr: "20 altyazı stili, videoya işlenir." },
-      bullets: [
-        { en: "Word-level timing, so the highlight lands on the beat.", tr: "Kelime seviyesinde zamanlama — vurgu tam yerine oturur." },
-        /* 20 x 13 x 12 → apps/web/src/lib/captionStyles.ts: CAPTION_STYLE_META families,
-           CAPTION_FONTS, CAPTION_COLORS. The four non-accent families are white-only. */
-        { en: "20 styles across 13 fonts and 12 accent colors.", tr: "13 font ve 12 vurgu rengiyle 20 stil." },
-        { en: "14 transitions between B-roll clips.", tr: "B-roll klipleri arasında 14 geçiş efekti." },
-      ],
-      alt: "Finished Sentezy reels with burned-in keyword captions",
-    },
-    {
-      key: "brand-kit",
-      eyebrow: { en: "BRAND KIT", tr: "MARKA KİTİ" },
-      title: { en: "Your logo on every reel.", tr: "Her reels'te sizin logonuz." },
-      bullets: [
-        { en: "Logo, colors and fonts applied automatically.", tr: "Logo, renkler ve fontlar otomatik uygulanır." },
-        { en: "Set it once — every future reel inherits it.", tr: "Bir kez ayarlayın — sonraki tüm reels'ler devralır." },
-        { en: "Preview the result before rendering.", tr: "Render öncesi sonucu önizleyin." },
-      ],
-      alt: "The Sentezy brand kit screen",
-    },
-  ],
+  lead: {
+    en: "Every choice below is the real catalog. Filter it here the same way you would inside the app.",
+    tr: "Aşağıdaki her seçim gerçek katalog. Uygulamanın içindeki gibi burada da filtreleyin.",
+  },
+  presenters: {
+    eyebrow: { en: "PRESENTERS", tr: "SUNUCULAR" },
+    title: { en: "Twelve faces, dressed for the sector.", tr: "On iki yüz, sektörüne göre giyinmiş." },
+    bullets: [
+      { en: "A pharmacist in a lab coat, a realtor in a blazer — the wardrobe does the positioning.", tr: "Önlüklü eczacı, blazer'lı emlakçı — kıyafet konumlandırmayı yapar." },
+      { en: "Filter by gender or hijab, the way the picker does.", tr: "Seçicideki gibi cinsiyete ya da başörtüsüne göre filtreleyin." },
+      { en: "Or go faceless — a reel works without a presenter too.", tr: "Ya da yüzsüz gidin — reels sunucusuz da çalışır." },
+    ],
+  },
+  voices: {
+    eyebrow: { en: "VOICES", tr: "SESLER" },
+    title: { en: "A read, not a recital.", tr: "Okuma değil, anlatım." },
+    bullets: [
+      { en: "Shared ElevenLabs voices, auditioned before you spend a credit.", tr: "Paylaşılan ElevenLabs sesleri — kredi harcamadan önce dinlenir." },
+      { en: "Pacing and emphasis marked up per sentence, so it lands like speech.", tr: "Cümle cümle tempo ve vurgu işaretlenir; konuşma gibi düşer." },
+      { en: "Turkish first — including the words other tools mangle.", tr: "Önce Türkçe — diğer araçların yamulttuğu kelimeler dahil." },
+    ],
+  },
+  music: {
+    eyebrow: { en: "MUSIC", tr: "MÜZİK" },
+    title: { en: "A bed under every reel.", tr: "Her reels'in altında bir müzik." },
+    bullets: [
+      { en: "11 license-free beds across four moods.", tr: "Dört ruh halinde 11 telifsiz müzik." },
+      { en: "The bed ducks automatically under the voice — no mixing on your side.", tr: "Müzik sesin altında otomatik kısılır — sizin miksleme yapmanız gerekmez." },
+      { en: "Or leave it silent. Some reels land harder dry.", tr: "Ya da sessiz bırakın. Bazı reels'ler müziksiz daha çok tutar." },
+    ],
+  },
 } as const;
 
 /** Six of the twenty caption styles, shown live. `id` is both the real style id and the

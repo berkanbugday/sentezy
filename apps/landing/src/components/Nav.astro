@@ -1,7 +1,6 @@
 ---
 import { nav } from "../data/copy";
 import { LOGIN_URL, SIGNUP_URL } from "../data/site";
-import { HAS_STUDIO } from "../data/shots";
 ---
 
 <header class="nav">
@@ -10,8 +9,7 @@ import { HAS_STUDIO } from "../data/shots";
     <nav class="nav-menu">
       <a href="#showcase" data-tr={nav.showcase.tr}>{nav.showcase.en}</a>
       <a href="#how" data-tr={nav.how.tr}>{nav.how.en}</a>
-      {/* Linked only when the platform section renders — see src/data/shots.ts. */}
-      {HAS_STUDIO && <a href="#platform" data-tr={nav.platform.tr}>{nav.platform.en}</a>}
+      <a href="#platform" data-tr={nav.platform.tr}>{nav.platform.en}</a>
     </nav>
     <div class="nav-util">
       <div class="switch">
