@@ -144,7 +144,12 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
   .hero-grid { gap: 32px; }
   .reels { height: 380px; }
   .steps { grid-template-columns: 1fr 1fr; }
-  .foot-grid { grid-template-columns: 1fr 1fr; }
+  /* Brand full width, then the three link lists side by side. minmax(0,1fr) lets the tracks
+     shrink to share the row instead of overflowing on their content's intrinsic width. */
+  .foot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .foot-brand { grid-column: 1 / -1; }
+  .foot-col { min-width: 0; }
+  .foot-col a { overflow-wrap: anywhere; }
   .nav-menu { display: none; }
   .h1x { font-size: 40px; }
   .h2 { font-size: 28px; }
@@ -153,9 +158,11 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 }
 @media (max-width: 560px) {
   .steps { grid-template-columns: 1fr; }
-  /* Four short link lists stacked is a very long footer; two columns halve it. */
-  .foot-grid { grid-template-columns: 1fr 1fr; gap: 24px 20px; }
+  /* Three link lists side by side under the full-width brand. */
+  .foot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 12px; }
   .foot-brand { grid-column: 1 / -1; }
+  .foot-col h4 { font-size: 11px; letter-spacing: 0.04em; }
+  .foot-col a { font-size: 13px; }
   .btn-lg { flex: 1; justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) {
