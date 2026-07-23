@@ -1,26 +1,13 @@
 ---
-/* Desktop leads with the vertical marquee beside the copy. A phone leads with faces: the strip
-   above the headline slides horizontally, so the first thing on screen is presenters, not a
-   paragraph about them. The two are exclusive — only one is ever displayed. */
-import { Image } from "astro:assets";
+/* Same vertical marquee at every width. On a phone it moves above the copy — faces first, then
+   the pitch — which is a grid `order` change and nothing else: the component lays out exactly
+   as it does on desktop. */
 import { hero } from "../data/copy";
 import { SIGNUP_URL } from "../data/site";
-import { stills } from "../data/stills";
 import ReelMarquee from "./ReelMarquee.astro";
-
-const faces = import.meta.glob<{ default: ImageMetadata }>("../assets/avatars/*.png", { eager: true });
 ---
 
 <section class="hero">
-  <div class="hero-strip marquee" aria-hidden="true">
-    <div class="marquee-track">
-      {[0, 1].map(() => stills.map((s) => (
-        <div class={`striptile tile-${s.tint}`}>
-          <Image src={faces[`../assets/avatars/${s.slug}.png`]!.default} alt="" widths={[120, 240]} sizes="110px" loading="lazy" decoding="async" />
-        </div>
-      )))}
-    </div>
-  </div>
   <div class="wrap hero-grid">
     <div class="hero-copy reveal">
       <div class="eyebrow">{hero.eyebrow}</div>

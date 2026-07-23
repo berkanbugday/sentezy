@@ -7,8 +7,10 @@
    card. No follow button either — the footer already links the account, and a second one here
    interrupted the row.
 
-   The row slides by itself. Cards are rendered twice so the track loops seamlessly; the second
-   pass is aria-hidden and unfocusable, so the reels are announced once. A tap stops the slide
+   The row slides by itself. Four reels are not enough to fill a desktop with a seamless loop —
+   the track has to stay wider than the viewport after it has scrolled one pass — so the list is
+   rendered four times and the animation translates -25%. Every pass after the first is
+   aria-hidden and unfocusable, so the reels are announced once. A tap stops the slide
    and turns that reel's sound on — you cannot read a card that is moving away from your thumb.
 
    Muted autoplay once a card scrolls into view. The file is only fetched at that point
@@ -40,14 +42,14 @@ const cards = await Promise.all(
 
     <div class="wall marquee reveal">
       <div class="marquee-track">
-      {[0, 1].map((pass) => cards.map((r) => (
+      {[0, 1, 2, 3].map((pass) => cards.map((r) => (
         <button
           class="reel"
           type="button"
           aria-label={r.alt}
           data-reel
-          aria-hidden={pass === 1 ? "true" : undefined}
-          tabindex={pass === 1 ? -1 : undefined}
+          aria-hidden={pass > 0 ? "true" : undefined}
+          tabindex={pass > 0 ? -1 : undefined}
         >
           <video class="reel-v" data-src={`/reels/${r.file}.mp4`} poster={r.poster} muted loop playsinline preload="none"></video>
           <span class="reel-sector">{r.sector}</span>
