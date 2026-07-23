@@ -43,8 +43,13 @@ if (lazyVideos.length && !reduce) {
 }
 
 if (cards.length) {
+  // A swipe ends in a click event. Without this guard, dragging the slider unmutes whatever
+  // card your finger happened to land on.
+  let downX = 0;
   for (const card of cards) {
-    card.addEventListener("click", () => {
+    card.addEventListener("pointerdown", (e) => { downX = e.clientX; });
+    card.addEventListener("click", (e) => {
+      if (Math.abs((e as PointerEvent).clientX - downX) > 8) return;
       const video = videoOf(card);
       load(video);
       const turningOn = video.muted;
@@ -63,6 +68,25 @@ if (cards.length) {
       void video.play().catch(() => {});
     });
   }
+}
+
+/** The slider advances itself so the row is visibly a row, not a static wall — but only until
+ *  someone touches it, after which it is theirs. Native scrolling does the rest: snap points on
+ *  the cards mean a thumb-flick lands on a reel, not between two. */
+const wall = document.querySelector<HTMLElement>("[data-wall]");
+if (wall && !reduce) {
+  let auto = 0;
+  const stop = () => { if (auto) { clearInterval(auto); auto = 0; } };
+  for (const ev of ["pointerdown", "wheel", "keydown"] as const) {
+    wall.addEventListener(ev, stop, { passive: true });
+  }
+  auto = window.setInterval(() => {
+    const card = wall.querySelector<HTMLElement>(".reel");
+    if (!card) return;
+    const step = card.offsetWidth + 14;
+    const atEnd = wall.scrollLeft + wall.clientWidth >= wall.scrollWidth - 4;
+    wall.scrollTo({ left: atEnd ? 0 : wall.scrollLeft + step, behavior: "smooth" });
+  }, 4000);
 }
 
 export {};

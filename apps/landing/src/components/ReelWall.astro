@@ -3,13 +3,16 @@
    Instagram's embed chrome — that embed wrapped our best work in a white card with a "0 likes"
    counter, an "Add a comment" field and a letterboxed player.
 
+   No phone bezel: the frame competed with the reels' own framing and ate 12px of picture per
+   card. No follow button either — the footer already links the account, and a second one here
+   interrupted the row.
+
    Muted autoplay once a card scrolls into view. The file is only fetched at that point
    (preload="none" plus a data-src the script promotes), so the initial payload is four posters,
    not five megabytes of video. */
 import { getImage } from "astro:assets";
 import { showcase } from "../data/copy";
 import { reels } from "../data/reels";
-import { INSTAGRAM_URL } from "../data/site";
 
 const posters = import.meta.glob<{ default: ImageMetadata }>("../assets/posters/*.jpg", { eager: true });
 const cards = await Promise.all(
@@ -31,7 +34,7 @@ const cards = await Promise.all(
       <p class="lead">{showcase.lead}</p>
     </div>
 
-    <div class="wall reveal">
+    <div class="wall reveal" data-wall>
       {cards.map((r) => (
         <button class="reel" type="button" aria-label={r.alt} data-reel>
           <video class="reel-v" data-src={`/reels/${r.file}.mp4`} poster={r.poster} muted loop playsinline preload="none"></video>
@@ -49,10 +52,6 @@ const cards = await Promise.all(
       ))}
     </div>
 
-    <div class="wall-cta reveal">
-      <a class="btn btn-ghost btn-lg" href={INSTAGRAM_URL} target="_blank" rel="noopener">
-        <span>{showcase.follow}</span>
-      </a>
-    </div>
+
   </div>
 </section>
