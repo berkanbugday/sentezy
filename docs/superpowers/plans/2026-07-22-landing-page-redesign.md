@@ -1800,7 +1800,7 @@ git commit -m "feat(landing): pricing teaser, honest FAQ, final CTA; index is no
 
 ---
 
-### Task 10: Full verification sweep
+### Task 10: Full verification sweep — SHIPPED 2026-07-23
 
 **Files:**
 - Modify: `apps/landing/package.json` (chain verify into build)
@@ -1810,104 +1810,47 @@ git commit -m "feat(landing): pricing teaser, honest FAQ, final CTA; index is no
 - Consumes: everything.
 - Produces: a page that satisfies every item in the spec's Testing section.
 
-- [ ] **Step 1: Chain verify into the build**
+- [x] **Step 1: Chain verify into the build** — `build` is now
+  `astro build && node scripts/verify.mjs`. Confirmed it fires from the ROOT `pnpm build` too
+  (turbo runs build in 3 packages; landing prints `verify OK — 25 checks passed`), not only from
+  the filtered invocation.
 
-In `apps/landing/package.json`, change the `build` script so a bad claim can never ship:
+- [x] **Step 2: Full-repo build and typecheck** — `pnpm typecheck` 6/6 tasks pass,
+  `pnpm build` 3/3 pass. `apps/web` and `apps/api` are unaffected.
 
-```json
-    "build": "astro build && node scripts/verify.mjs",
-```
+- [x] **Step 3: Source-level grep** — clean, after rewording two comments that documented the
+  deletions by quoting the forbidden strings verbatim (`StudioBlocks.astro`, `copy.ts`). They were
+  never shipped content, but a grep that reports its own documentation is a grep nobody will trust.
 
-Run `pnpm --filter @sentezy/landing build`. Expected: build succeeds and ends with `verify OK`.
+- [x] **Step 4: Confirm every string is bilingual** — the plan's `grep -c data-tr` is useless here:
+  the built HTML is one line, so it prints `1`. Counted occurrences instead: **136**.
+  Stronger check performed in place of the manual TR click-through: parsed `dist/index.html`,
+  stripped `<script>`/`<style>`, and listed every text node with no `data-tr` ancestor. Result is
+  exactly the intended allow-list and nothing else — the `<title>`, `Sentezy`, the `TR`/`EN`
+  switch, `▶`, the four proof numbers, the three step numbers, the four FAQ `+` icons, `KVKK`,
+  `@sentezy.ai`, `© 2026 Sentezy`. **No component hardcodes a translatable string.**
 
-- [ ] **Step 2: Full-repo build and typecheck**
+- [x] **Step 5-7: static equivalents only — the rendered page is still UNVERIFIED.**
+  No browser is available (the user declined the Chrome extension), so these were checked by
+  reading the built CSS/JS, not by looking at the page:
+  - Breakpoints exist and cascade at 900px and 560px; the only fixed width is `.cap-phone`
+    (300px, 260px under 900px), which fits a 390px viewport inside `.wrap`'s 24px padding.
+  - Reduced motion covers all four animated things: `.reel-col`, `.ig-skeleton`,
+    `.cap-demo-slide`, and `.reveal`/`.stagger` (both a CSS rule and a JS branch).
+  - `embed.js` appears in the bundle only as `t.src=` inside the IntersectionObserver injector
+    (400px rootMargin), so it cannot be in the initial payload.
+  What a browser would still catch and this cannot: actual layout overlap, font fallback, the
+  real TR swap, the accordion, and whether the Instagram embeds load at all.
 
-Run:
-```bash
-pnpm build && pnpm typecheck
-```
-Expected: every workspace passes. The landing changes must not have broken `apps/web` or `apps/api`.
+- [x] **Step 8: Commit** — `9c2c6cb`.
 
-- [ ] **Step 3: Source-level grep for anything the dist check can miss**
+- [x] **Step 9: Assert the delivered image payload** — `dist` 1.7 MB, `dist/_astro` 1.6 MB
+  (gate: under 3 MB), 38 WebP variants from 12 source PNGs, no `dist/avatars/`. The ~22 MB of
+  raw cutouts never reach the output.
 
-Run:
-```bash
-grep -rnE '147M|122M|175\+|SOC 2|Northwind|Vertex|LUMEN|Kavis|Orbita|Meridian|Aster|Polar|digital twin|dijital ikiz|href="#"|ph-label|beam-stage|zig-media' apps/landing/src apps/landing/public 2>/dev/null
-```
-Expected: **no output**. Any hit is a leftover from an incomplete deletion — remove it.
-
-- [ ] **Step 4: Confirm every string is bilingual**
-
-Run:
-```bash
-grep -c 'data-tr' apps/landing/dist/index.html
-```
-Expected: a count above 90.
-
-Then open `http://localhost:4321` (`pnpm --filter @sentezy/landing dev`), click `TR`, and scroll the whole page. Expected: no English text remains anywhere except the brand name `Sentezy`, `@sentezy.ai`, `KVKK`, `TikTok`, `Hormozi`, `Instagram` and the Instagram embeds' own chrome. Any English left over means a component hardcoded a string instead of reading `copy.ts` — fix it there.
-
-- [ ] **Step 5: Responsive pass**
-
-In DevTools, check the page at 1440px, 1024px, 768px and 390px widths.
-
-Expected at every width:
-- No horizontal scrollbar on `<body>`.
-- The reel marquee stays inside its column and does not overflow.
-- The Instagram embeds collapse to a single centred column below 900px.
-- The nav menu hides below 900px (existing behaviour) and the CTA stays reachable.
-- Text never overlaps an image.
-
-- [ ] **Step 6: Reduced-motion pass**
-
-In DevTools → Rendering → "Emulate CSS media feature prefers-reduced-motion: reduce", reload.
-
-Expected: the reel columns are frozen, the caption demo is frozen on its first style, the Instagram skeleton shimmer is static, and every `.reveal` section is visible immediately rather than faded in.
-
-- [ ] **Step 7: Confirm the third-party script stays lazy**
-
-Reload with DevTools → Network open, filter `embed.js`, and do not scroll.
-
-Expected: zero requests to `instagram.com/embed.js` until the showcase approaches the viewport.
-
-- [ ] **Step 8: Commit**
-
-```bash
-git add apps/landing
-git commit -m "chore(landing): gate the build on the claim-verification check"
-```
-
-- [ ] **Step 9: Assert the delivered image payload**
-
-The source cutouts total ~22 MB. `astro:assets` must have downscaled them and emitted WebP.
-
-Run:
-```bash
-du -sh apps/landing/dist
-du -sh apps/landing/dist/_astro
-ls apps/landing/dist/_astro | grep -cE '\.(webp|avif)$'
-ls -1 apps/landing/src/assets/avatars/*.png | wc -l
-```
-
-Expected:
-- `dist/_astro` is **under 3 MB** — if it is anywhere near 22 MB, the images are being copied
-  unoptimized and something still references them by URL rather than through `<Image>`.
-- The WebP/AVIF count is at least 12 (one or more variants per avatar).
-- No `dist/avatars/` directory exists at all:
-  ```bash
-  test -d apps/landing/dist/avatars && echo "REGRESSION: avatars served unoptimized from public/" || echo "ok"
-  ```
-  Expected: `ok`.
-
-If any of these fail, find the component still using a `src="/avatars/…"` string and convert it
-to `astro:assets`.
-
-- [ ] **Step 10: Report**
-
-Summarise for the user:
-- The verify output.
-- Which of the three app screenshots were captured, and whether any block had to be cut.
-- The final `dist/` page weight (`du -sh apps/landing/dist`).
-- The open item: `PUBLIC_APP_URL` still defaults to `http://localhost:3000` and must be set in the Cloudflare Pages build before this goes live.
+- [x] **Step 10: Report** — delivered in-session. Open items: the three app screenshots
+  (`#platform` stays cut until they land) and `PUBLIC_APP_URL`, still defaulting to
+  `http://localhost:3000` and required in the Cloudflare Pages build environment before launch.
 
 ---
 
