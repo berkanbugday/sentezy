@@ -1,5 +1,7 @@
 ---
-import { sectorNames, sectors } from "../data/copy";
+/* All 24 sectors as one horizontal rail. A 24-card grid would be a wall of text; a rail reads
+   as a catalog you can flick through, and on a phone it is one thumb movement. */
+import { sectors } from "../data/copy";
 ---
 
 <section class="sec mist" id="sectors">
@@ -7,15 +9,16 @@ import { sectorNames, sectors } from "../data/copy";
     <div class="sec-head reveal">
       <div class="eyebrow">{sectors.eyebrow}</div>
       <h2 class="disp h2">{sectors.title}</h2>
+      <p class="lead">{sectors.lead}</p>
     </div>
-    <div class="sector-grid stagger">
-      {sectors.items.map((s) => (
-        <div class="sector">
-          <div class="sector-bar"></div>
-          <h3 class="disp h3">{sectorNames[s.key]}</h3>
-          <p>{s.body}</p>
-        </div>
-      ))}
-    </div>
+  </div>
+  <div class="rail reveal" data-rail>
+    {sectors.items.map((s) => (
+      <div class="sector">
+        <div class="sector-bar"></div>
+        <h3 class="disp h3">{s.name}</h3>
+        <p>{s.body}</p>
+      </div>
+    ))}
   </div>
 </section>

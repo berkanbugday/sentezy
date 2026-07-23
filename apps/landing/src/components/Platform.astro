@@ -4,7 +4,8 @@
    other three were built to match it and it moved in here rather than living next door.
 
    Every row is the same object: one phone cycling slides, and a row of chips lighting in step
-   that you can also click to take over. */
+   that you can also click to take over. No step numbers: the four are things you choose, not a
+   sequence you complete, and on a phone the numbered rail was furniture between two thumbs. */
 import { Image, getImage } from "astro:assets";
 import { platform } from "../data/copy";
 import { captionStyles, mmss, presenters, tracks, voices } from "../data/studio";
@@ -52,7 +53,6 @@ const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
         ))}
         </div>
       </div>
-      <div class="spine"><span class="node">01</span></div>
       <div class="demo-copy">
         <div class="eyebrow">{platform.presenters.eyebrow}</div>
         <h3 class="disp h3">{platform.presenters.title}</h3>
@@ -81,7 +81,6 @@ const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
         ))}
         </div>
       </div>
-      <div class="spine"><span class="node">02</span></div>
       <div class="demo-copy">
         <div class="eyebrow">{platform.voices.eyebrow}</div>
         <h3 class="disp h3">{platform.voices.title}</h3>
@@ -110,7 +109,6 @@ const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
         ))}
         </div>
       </div>
-      <div class="spine"><span class="node">03</span></div>
       <div class="demo-copy">
         <div class="eyebrow">{platform.music.eyebrow}</div>
         <h3 class="disp h3">{platform.music.title}</h3>
@@ -135,7 +133,6 @@ const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
         ))}
         </div>
       </div>
-      <div class="spine"><span class="node">04</span></div>
       <div class="demo-copy">
         <div class="eyebrow">{platform.captions.eyebrow}</div>
         <h3 class="disp h3">{platform.captions.title}</h3>

@@ -1,5 +1,5 @@
 ---
-import { footer, nav, sectorNames } from "../data/copy";
+import { footer, nav, sectors } from "../data/copy";
 import { INSTAGRAM_URL, SIGNUP_URL } from "../data/site";
 ---
 
@@ -18,10 +18,10 @@ import { INSTAGRAM_URL, SIGNUP_URL } from "../data/site";
       </div>
       <div class="foot-col">
         <h4>{footer.solutionsHead}</h4>
-        <a href="#sectors">{sectorNames.travel}</a>
-        <a href="#sectors">{sectorNames.beauty}</a>
-        <a href="#sectors">{sectorNames.realestate}</a>
-        <a href="#sectors">{sectorNames.gym}</a>
+        {/* Four of the 24, linking to the rail that holds all of them. */}
+        {["beauty", "realestate", "fitness", "ecommerce"].map((k) => (
+          <a href="#sectors">{sectors.items.find((s) => s.key === k)!.name}</a>
+        ))}
       </div>
       <div class="foot-col">
         <h4>{footer.legalHead}</h4>

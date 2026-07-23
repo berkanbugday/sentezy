@@ -26,13 +26,6 @@ export const footer = {
   instagramHead: "Instagram",
 };
 
-export const sectorNames = {
-  travel: "Travel",
-  beauty: "Beauty",
-  realestate: "Real Estate",
-  gym: "Gym",
-};
-
 export const hero = {
   eyebrow: "AI PRESENTER REELS",
   title: "Reels that sell — without filming a thing.",
@@ -54,14 +47,38 @@ export const proof = [
   { n: "14", label: "Transitions" },
 ];
 
+/** All 24 sectors, in the order apps/api/src/data/avatars.json declares them — the same 24 the
+ *  proof bar counts, so the claim and the list can never drift apart. The line under each says
+ *  what that business posts, not what Sentezy does. */
 export const sectors = {
   eyebrow: "BUILT FOR",
   title: "Made for the businesses that live on reels.",
+  lead: "Twenty-four sectors, each with presenters dressed for the job.",
   items: [
-    { key: "travel", body: "Fill tours and hotel nights with reels that show the place, not a brochure." },
-    { key: "beauty", body: "Before-and-afters, price drops and open slots — posted daily, filmed never." },
-    { key: "realestate", body: "Every new listing gets its own presenter-led reel the day it goes live." },
-    { key: "gym", body: "Class schedules, transformations and campaigns, on a weekly drumbeat." },
+    { key: "beauty", name: "Beauty & Hair", body: "Before-and-afters, price drops and open slots." },
+    { key: "tech", name: "Tech & Software", body: "Feature launches explained in fifteen seconds." },
+    { key: "realestate", name: "Real Estate", body: "Every new listing gets a reel the day it lists." },
+    { key: "fitness", name: "Fitness & Gym", body: "Class schedules, transformations, campaigns." },
+    { key: "restaurant", name: "Restaurant & Café", body: "Today's menu, tonight's table, this week's special." },
+    { key: "fashion", name: "Fashion & Boutique", body: "New arrivals on the shelf and on the feed." },
+    { key: "dental", name: "Dental", body: "Treatments explained without the waiting-room brochure." },
+    { key: "health", name: "Health & Clinic", body: "Appointments, check-ups and what to expect." },
+    { key: "pharmacy", name: "Pharmacy", body: "Seasonal advice and what is in stock now." },
+    { key: "education", name: "Education & Courses", body: "Enrolment windows and what the course covers." },
+    { key: "legal", name: "Legal & Consulting", body: "One question answered clearly, once a week." },
+    { key: "finance", name: "Finance & Accounting", body: "Deadlines, incentives and plain-language answers." },
+    { key: "automotive", name: "Automotive", body: "New arrivals, test drives and service offers." },
+    { key: "travel", name: "Travel & Tourism", body: "Tours and hotel nights shown, not described." },
+    { key: "jewelry", name: "Jewellery", body: "New pieces, close up, with the light on them." },
+    { key: "optics", name: "Optics", body: "Frames of the season and second-pair offers." },
+    { key: "petshop", name: "Pet Shop", body: "Food, grooming and the week's new arrivals." },
+    { key: "construction", name: "Construction", body: "Projects in progress and finished handovers." },
+    { key: "wedding", name: "Weddings & Events", body: "Venues, packages and dates still open." },
+    { key: "cosmetics", name: "Cosmetics & Skincare", body: "Routines, ingredients and what actually changed." },
+    { key: "corporate", name: "Corporate", body: "Announcements that do not read like a press release." },
+    { key: "influencer", name: "Lifestyle & Creators", body: "A daily post without a daily shoot." },
+    { key: "ecommerce", name: "E-commerce", body: "A reel per product, straight from the link." },
+    { key: "coaching", name: "Coaching", body: "One idea per reel, on a weekly rhythm." },
   ],
 } as const;
 

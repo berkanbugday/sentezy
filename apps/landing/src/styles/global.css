@@ -216,50 +216,44 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .proof-l { display: block; margin-top: 8px; font-size: 13.5px; color: var(--color-muted); }
 
 /* ── sector cards ───────────────────────────────────────────────────────── */
-.sector-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-.sector { padding: 26px; border-radius: 20px; border: 1px solid var(--color-hairline);
-  background: var(--color-paper); transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s; }
+/* 24 sectors as a rail. It breaks out of .wrap on purpose so the row runs to both edges and
+   reads as scrollable; the cards inside keep the gutter with scroll-padding. */
+.rail { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x proximity;
+  padding: 4px 24px 10px; scroll-padding-inline: 24px; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch; }
+.rail::-webkit-scrollbar { display: none; }
+.sector { flex: 0 0 268px; scroll-snap-align: start; padding: 24px; border-radius: 20px;
+  border: 1px solid var(--color-hairline); background: var(--color-paper);
+  transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s; }
 .sector:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(10,10,12,0.07); }
 .sector-bar { width: 34px; height: 4px; border-radius: 999px; margin-bottom: 18px; }
-.sector:nth-child(1) .sector-bar { background: linear-gradient(90deg, #2e74c4, #28c4c0); }
-.sector:nth-child(2) .sector-bar { background: linear-gradient(90deg, #d67096, #e89260); }
-.sector:nth-child(3) .sector-bar { background: linear-gradient(90deg, #7f5ad0, #2e74c4); }
-.sector:nth-child(4) .sector-bar { background: linear-gradient(90deg, #d8a13c, #d67096); }
-.sector .h3 { font-size: 19px; margin-bottom: 8px; }
+/* Six gradients cycling, so neighbours never repeat and the rail keeps changing colour as it
+   scrolls without needing 24 hand-picked pairs. */
+.sector:nth-child(6n+1) .sector-bar { background: linear-gradient(90deg, #2e74c4, #28c4c0); }
+.sector:nth-child(6n+2) .sector-bar { background: linear-gradient(90deg, #d67096, #e89260); }
+.sector:nth-child(6n+3) .sector-bar { background: linear-gradient(90deg, #7f5ad0, #2e74c4); }
+.sector:nth-child(6n+4) .sector-bar { background: linear-gradient(90deg, #d8a13c, #d67096); }
+.sector:nth-child(6n+5) .sector-bar { background: linear-gradient(90deg, #28c4c0, #7f5ad0); }
+.sector:nth-child(6n+6) .sector-bar { background: linear-gradient(90deg, #e89260, #d8a13c); }
+.sector .h3 { font-size: 18px; margin-bottom: 8px; }
 .sector p { font-size: 14.5px; color: var(--color-slate); line-height: 1.55; }
 
-@media (max-width: 900px) { .proof, .sector-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 560px) { .sector-grid { grid-template-columns: 1fr; } .proof-n { font-size: 32px; } }
+@media (max-width: 900px) { .proof { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .proof-n { font-size: 32px; } .rail { padding-inline: 18px; scroll-padding-inline: 18px; } .sector { flex-basis: 78vw; } }
 
 /* ── platform demos ─────────────────────────────────────────────────────── */
 /* Four rows, one shape: a phone that plays through a catalog, and the copy plus chips beside
    it. The phone alternates sides so the eye moves down the section instead of straight down
    one column. */
-/* Three columns: phone at one edge, copy at the other, and a spine down the middle carrying
-   the step number. The four rows ARE a sequence — you pick a presenter, then a voice, then
-   music, then captions — so numbering them says something true, and the spine fills the empty
-   middle the two-column version left behind. */
-.demo-row { display: grid; grid-template-columns: 1fr 96px 1fr; gap: 32px; align-items: center;
-  margin-top: 104px; }
-/* Every column states its order. Leaving the spine to default meant `order: 0` — it sorted
-   BEFORE the reordered copy on reversed rows, so the copy landed in the 96px spine column and
-   collapsed to one word per line. */
+/* Phone at one edge, copy at the other, alternating down the section. The numbered spine that
+   used to run between them is gone: these four are choices you make, not a sequence you
+   complete, and on a phone it was furniture stacked between two thumb-scrolls. */
+.demo-row { display: grid; grid-template-columns: 300px 1fr; gap: 72px; align-items: center;
+  margin-top: 96px; }
 .stage { position: relative; justify-self: start; order: 1; }
-.spine { position: relative; align-self: stretch; justify-self: center; width: 96px; order: 2; }
 .demo-copy { max-width: 30em; justify-self: end; order: 3; }
 .demo-row.rev .stage { order: 3; justify-self: end; }
 .demo-row.rev .demo-copy { order: 1; justify-self: start; }
-/* The line overshoots by half the row gap at both ends, so consecutive rows join into one
-   continuous rail rather than four floating segments. */
-.spine::before { content: ""; position: absolute; left: 50%; top: -52px; bottom: -52px; width: 1px;
-  background: linear-gradient(180deg, transparent, var(--color-hairline) 12%, var(--color-hairline) 88%, transparent); }
-.node { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.6);
-  display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
-  background: var(--color-paper); border: 1px solid var(--color-hairline);
-  font-family: var(--font-mono); font-size: 13px; color: var(--color-ink);
-  opacity: 0; transition: transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s, opacity 0.5s 0.1s, box-shadow 0.5s; }
-.demo-row.in .node { opacity: 1; transform: translate(-50%, -50%) scale(1);
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 16%, transparent); }
 
 /* The accent wash behind the phone — the only color in an otherwise monochrome section, one hue
    per step, breathing slowly so the section is never completely still. */
@@ -343,11 +337,9 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 @media (max-width: 900px) {
   .demo-row { grid-template-columns: 1fr; justify-items: center; gap: 26px; text-align: center;
     margin-top: 72px; }
-  .stage, .demo-row.rev .stage, .demo-copy, .demo-row.rev .demo-copy { justify-self: center; order: 0; }
-  .spine { order: -1; align-self: auto; height: 46px; }
-  .spine::before { display: none; }
-  .node { position: static; transform: none; }
-  .demo-row.in .node { transform: none; }
+  /* Phone first on a phone: the thing that moves earns the scroll, the copy explains it after. */
+  .stage, .demo-row.rev .stage { justify-self: center; order: 1; }
+  .demo-copy, .demo-row.rev .demo-copy { justify-self: center; order: 2; }
   .demo-copy p { margin-inline: auto; }
   .demo-chips { justify-content: center; }
   .phone { width: 260px; }
@@ -410,41 +402,21 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .reel.loud .reel-on, .reel.loud .s-on { display: inline; }
 
 @media (max-width: 900px) { .reel { flex-basis: 190px; } }
-@media (max-width: 560px) {
-  /* One card centred with its neighbours peeking, so the row obviously swipes. */
-  .wall { gap: 12px; scroll-padding-inline: 22vw; }
-  .reel { flex-basis: 56vw; }
-}
+@media (max-width: 560px) { .wall { gap: 10px; justify-content: flex-start; } }
 
 /* ── platform demos ─────────────────────────────────────────────────────── */
 /* Four rows, one shape: a phone that plays through a catalog, and the copy plus chips beside
    it. The phone alternates sides so the eye moves down the section instead of straight down
    one column. */
-/* Three columns: phone at one edge, copy at the other, and a spine down the middle carrying
-   the step number. The four rows ARE a sequence — you pick a presenter, then a voice, then
-   music, then captions — so numbering them says something true, and the spine fills the empty
-   middle the two-column version left behind. */
-.demo-row { display: grid; grid-template-columns: 1fr 96px 1fr; gap: 32px; align-items: center;
-  margin-top: 104px; }
-/* Every column states its order. Leaving the spine to default meant `order: 0` — it sorted
-   BEFORE the reordered copy on reversed rows, so the copy landed in the 96px spine column and
-   collapsed to one word per line. */
+/* Phone at one edge, copy at the other, alternating down the section. The numbered spine that
+   used to run between them is gone: these four are choices you make, not a sequence you
+   complete, and on a phone it was furniture stacked between two thumb-scrolls. */
+.demo-row { display: grid; grid-template-columns: 300px 1fr; gap: 72px; align-items: center;
+  margin-top: 96px; }
 .stage { position: relative; justify-self: start; order: 1; }
-.spine { position: relative; align-self: stretch; justify-self: center; width: 96px; order: 2; }
 .demo-copy { max-width: 30em; justify-self: end; order: 3; }
 .demo-row.rev .stage { order: 3; justify-self: end; }
 .demo-row.rev .demo-copy { order: 1; justify-self: start; }
-/* The line overshoots by half the row gap at both ends, so consecutive rows join into one
-   continuous rail rather than four floating segments. */
-.spine::before { content: ""; position: absolute; left: 50%; top: -52px; bottom: -52px; width: 1px;
-  background: linear-gradient(180deg, transparent, var(--color-hairline) 12%, var(--color-hairline) 88%, transparent); }
-.node { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.6);
-  display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
-  background: var(--color-paper); border: 1px solid var(--color-hairline);
-  font-family: var(--font-mono); font-size: 13px; color: var(--color-ink);
-  opacity: 0; transition: transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s, opacity 0.5s 0.1s, box-shadow 0.5s; }
-.demo-row.in .node { opacity: 1; transform: translate(-50%, -50%) scale(1);
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 16%, transparent); }
 
 /* The accent wash behind the phone — the only color in an otherwise monochrome section, one hue
    per step, breathing slowly so the section is never completely still. */
@@ -528,11 +500,9 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 @media (max-width: 900px) {
   .demo-row { grid-template-columns: 1fr; justify-items: center; gap: 26px; text-align: center;
     margin-top: 72px; }
-  .stage, .demo-row.rev .stage, .demo-copy, .demo-row.rev .demo-copy { justify-self: center; order: 0; }
-  .spine { order: -1; align-self: auto; height: 46px; }
-  .spine::before { display: none; }
-  .node { position: static; transform: none; }
-  .demo-row.in .node { transform: none; }
+  /* Phone first on a phone: the thing that moves earns the scroll, the copy explains it after. */
+  .stage, .demo-row.rev .stage { justify-self: center; order: 1; }
+  .demo-copy, .demo-row.rev .demo-copy { justify-self: center; order: 2; }
   .demo-copy p { margin-inline: auto; }
   .demo-chips { justify-content: center; }
   .phone { width: 260px; }
@@ -605,6 +575,19 @@ html { scroll-behavior: smooth; }
 
 @media (max-width: 560px) {
   .wrap { padding: 0 18px; }
+  /* A floating pill lets the page scroll past on both sides of it — at this width the headline
+     ran out from under the dock. On a phone the nav is a full-width bar that the content
+     genuinely disappears behind. */
+  .nav { top: 0; }
+  .nav-in { width: 100%; max-width: none; border-radius: 0; border-width: 0 0 1px;
+    background: rgba(255,255,255,0.92); box-shadow: none; }
+  .nav.scrolled .nav-in { background: rgba(255,255,255,0.96); box-shadow: 0 6px 20px rgba(11,11,13,0.06); }
+  /* Faces first. Someone landing here should meet the presenters before a paragraph about them. */
+  .hero-grid { display: flex; flex-direction: column; gap: 28px; }
+  .hero-visual { order: -1; }
+  .reels { height: 340px; }
+  .reel { flex-basis: 44vw; }
+  .wall { scroll-padding-inline: 18px; }
   .sec { padding: 56px 0; }
   .hero { padding: 104px 0 52px; }
   .h1x { font-size: 34px; letter-spacing: -0.015em; }
