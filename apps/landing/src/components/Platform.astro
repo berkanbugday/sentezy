@@ -21,6 +21,15 @@ const face = (slug: string): ImageMetadata => {
  *  treatment, so the face stays put and the eye watches the thing that changes. */
 const HOST = "kevser";
 
+/** The closing card, drawn in CSS rather than screenshotted — the same stand-in approach the
+ *  caption treatments use. Three brands, because the point of the row is that the card takes
+ *  the colour, the mark and the name of whoever set it up. */
+const brandCards = [
+  { name: "Ada Kuaför", handle: "@adakuafor", initial: "A", bg: "#1f2a44", ink: "#f4d7a1" },
+  { name: "Vera Estate", handle: "@veraestate", initial: "V", bg: "#f4f1ea", ink: "#1b1b1f" },
+  { name: "Kaf Coffee", handle: "@kafcoffee", initial: "K", bg: "#2f1d16", ink: "#e8a06a" },
+];
+
 /** Voice and music are overlays on a finished reel, so those two phones play a real one instead
  *  of holding a still — the same files the showcase serves, already in the browser's cache.
  *  Reels 1 and 3 were picked because their own burned captions sit high in the frame, clear of
@@ -116,6 +125,34 @@ const [voicePoster, musicPoster] = await Promise.all([still("3"), still("1")]);
         <div class="demo-chips">
           {tracks.map((t, i) => (
             <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{t.mood}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-row rev reveal" data-demo data-interval="2600" style="--dur:2600ms;--accent:#7f5ad0">
+      <div class="stage">
+        <div class="glow"></div>
+        <div class="phone">
+          {brandCards.map((b, i) => (
+            <div class={`slide${i === 0 ? " on" : ""}`} data-slide style={`background:${b.bg}`} data-brand>
+              <div class="brandcard" style={`color:${b.ink}`}>
+                <span class="brandmark" style={`background:${b.ink};color:${b.bg}`}>{b.initial}</span>
+                <b>{b.name}</b>
+                <em>{b.handle}</em>
+                <span class="brandcta" style={`background:${b.ink};color:${b.bg}`}>{platform.brand.closing}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div class="demo-copy">
+        <div class="eyebrow">{platform.brand.eyebrow}</div>
+        <h3 class="disp h3">{platform.brand.title}</h3>
+        <p>{platform.brand.body}</p>
+        <div class="demo-chips">
+          {brandCards.map((b, i) => (
+            <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{b.name}</button>
           ))}
         </div>
       </div>

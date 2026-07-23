@@ -32,10 +32,12 @@ export const footer = {
 export const hero = {
   eyebrow: "INSTAGRAM REELS, WITHOUT A CAMERA",
   title: "Post a reel a day without filming one.",
-  lead: "Paste a product link or write two sentences. Sentezy writes the script, picks a presenter, records the voice, adds captions and music, and gives you a finished vertical video in about five minutes. Ready to post.",
+  lead: "Paste a product link and Sentezy pulls the photos and writes the script. Or upload your own clips and type two sentences. Choose a presenter, a voice, captions and music, watch the whole thing preview, then download it. About five minutes.",
   ctaPrimary: "Make your first reel",
   ctaSecondary: "See real examples",
-  microcopy: "Free to start. No card.",
+  /* 30 credits on signup (profile default), 1 credit per video (CREDIT_COST in
+   * apps/api/src/routes/videos.ts) — so this is literal, not a rounding of "some". */
+  microcopy: "Your first 30 videos are free. No card.",
 };
 
 /** Every number here traces to source. Do not add one that does not.
@@ -102,18 +104,18 @@ export const how = {
   steps: [
     {
       n: "01",
-      title: "Say what the reel is about",
-      body: "Paste the product link and Sentezy reads the page and writes the script. Or type it yourself — two sentences is enough.",
+      title: "Paste a link, or bring your own clips",
+      body: "Give Sentezy a product link and it pulls the photos and videos off the page and writes the script. Or upload your own footage and type two sentences.",
     },
     {
       n: "02",
       title: "Choose how it looks and sounds",
-      body: "Pick the presenter, the voice, the caption style and the music. You see the whole reel before it is made, and before it costs you anything.",
+      body: "Presenter, voice, captions, music, and the cut between each clip. Play the whole reel back before it is rendered — nothing is charged until you are happy with it.",
     },
     {
       n: "03",
-      title: "Download and post",
-      body: "You get an MP4 sized for Reels, TikTok and Shorts. Nothing to edit afterwards.",
+      title: "Download it and post it",
+      body: "You get a finished 9:16 MP4 with the captions burned in. You post it yourself, on whichever account you want — Sentezy does not touch your Instagram login.",
     },
   ],
 } as const;
@@ -122,7 +124,7 @@ export const how = {
  *  options instead of describing them. The rows themselves live in src/data/studio.ts. */
 export const platform = {
   eyebrow: "WHAT YOU CHOOSE",
-  title: "Four choices. One finished reel.",
+  title: "Five choices. One finished reel.",
   lead: "Everything below is the actual catalogue you pick from inside Sentezy.",
   presenters: {
     eyebrow: "THE PRESENTER",
@@ -131,19 +133,25 @@ export const platform = {
   },
   voices: {
     eyebrow: "THE VOICE",
-    title: "It sounds like someone talking, not reading.",
-    body: "Listen to the voices before you use one. Sentezy marks the pauses and the emphasis sentence by sentence, so it sounds like a person — including in Turkish, where most tools get the words wrong.",
+    title: "Hear your own words before you spend anything.",
+    body: "Type your script, press play, and the voice reads your actual sentences back to you — not a stock sample. Six tones to pick from, and the pauses and emphasis are marked up line by line, including in Turkish, where most tools get the words wrong.",
   },
   music: {
     eyebrow: "THE MUSIC",
     title: "Music that stays under the voice.",
-    body: "Eleven royalty-free tracks in four moods. The music turns itself down whenever the presenter speaks, so you never have to mix anything. You can also leave it silent.",
+    body: "Eleven royalty-free tracks in four moods, with a level you control. The music turns itself down whenever the presenter speaks, so you never have to mix anything. Silence is fine too.",
   },
   captions: {
     eyebrow: "THE CAPTIONS",
     title: "Captions people can read with the sound off.",
-    body: "They are part of the video, so they show up wherever you post it. Twenty styles, in thirteen fonts and twelve colours — the word being spoken lights up as it is said.",
+    body: "They are burned into the video, so they survive wherever you post it. Twenty styles across thirteen fonts and twelve colours — the word being spoken lights up as it is said.",
     sample: "THIS REEL SELLS",
+  },
+  brand: {
+    eyebrow: "YOUR BRAND",
+    title: "Set your brand once. Every video wears it.",
+    body: "Your logo, colour and font become the opening and closing cards, and a watermark in the corner. Swap either card for your own photo or clip. Set it up once and you never think about it again.",
+    closing: "Book now",
   },
 };
 
@@ -156,7 +164,7 @@ export const faq = {
   items: [
     {
       q: "What does it cost to try?",
-      a: "Nothing. You get credits when you sign up, with no card on file, and you only pay when you need more than that.",
+      a: "Nothing, and no card. You get 30 credits when you sign up and a video costs one credit, so your first 30 videos are on us.",
     },
     {
       q: "How long does one reel take?",
@@ -165,6 +173,10 @@ export const faq = {
     {
       q: "Do I need a camera, a studio or editing skills?",
       a: "No. You describe the reel and choose how it looks; Sentezy does the voice, the captions, the music and the cuts, and gives you a file ready to post.",
+    },
+    {
+      q: "Does it post to Instagram for me?",
+      a: "No — and it never asks for your Instagram password. You download the finished MP4 and post it yourself, from whichever account you want.",
     },
     {
       q: "Is my data safe? (KVKK/GDPR)",
@@ -178,7 +190,7 @@ export const faq = {
  *  survives as the lead line here. */
 export const finalCta = {
   title: "Make one and see.",
-  lead: "Your first reels are free — no card, no trial countdown. Pay only when you want more of them.",
+  lead: "Thirty videos on us — no card, no trial countdown. Pay only when you want more than that.",
   cta: "Make your first reel",
   microcopy: "Takes about five minutes.",
 };
