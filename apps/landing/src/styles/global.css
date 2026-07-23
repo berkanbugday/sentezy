@@ -171,6 +171,30 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .band .btn-primary:hover { color: var(--color-ink); }
 .band a { color: #fff; }
 
+/* ── auto-slide rail ────────────────────────────────────────────────────── */
+/* One primitive for every horizontal auto-slider: the hero face strip, the sector rail and the
+   showcase. The track holds its items TWICE and translates exactly -50%, so the loop has no
+   seam.
+   Spacing is a per-item margin, never `gap`: gap renders only BETWEEN children, so a doubled
+   list of n items gets 2n-1 gaps, -50% lands half a gap short, and the row jumps every cycle.
+   Same trap the vertical hero marquee hit. */
+.marquee { overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); }
+.marquee-track { display: flex; flex-wrap: nowrap; width: max-content; will-change: transform;
+  animation: slide var(--speed, 48s) linear infinite; }
+.marquee-track > * { flex: none; margin-right: var(--space, 16px); }
+/* Hover pauses it on a desktop; a tap pauses it for good on a phone, which is the only way to
+   read a card sliding away from your thumb. */
+.marquee:hover .marquee-track, .marquee.paused .marquee-track { animation-play-state: paused; }
+@keyframes slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .marquee { overflow-x: auto; scrollbar-width: none; }
+  .marquee::-webkit-scrollbar { display: none; }
+  .marquee-track { animation: none; }
+}
+
+
 /* ── reel marquee ───────────────────────────────────────────────────────── */
 .reels { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; height: 620px; overflow: hidden;
   -webkit-mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);

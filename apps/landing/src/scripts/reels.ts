@@ -23,23 +23,33 @@ function load(video: HTMLVideoElement) {
 }
 
 if (lazyVideos.length && !reduce) {
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        const video = e.target as HTMLVideoElement;
-        if (e.isIntersecting) {
-          load(video);
-          void video.play().catch(() => {
-            /* A browser that refuses muted autoplay keeps the poster. Nothing to recover. */
-          });
-        } else {
-          video.pause();
+  // Observed against the slider it lives in, not the viewport: a card translated past the
+  // container edge is clipped but still inside the window, and a viewport-rooted observer
+  // would keep decoding video nobody can see.
+  const byRoot = new Map<Element | null, HTMLVideoElement[]>();
+  for (const v of lazyVideos) {
+    const root = v.closest(".marquee");
+    byRoot.set(root, [...(byRoot.get(root) ?? []), v]);
+  }
+  for (const [root, videos] of byRoot) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const video = e.target as HTMLVideoElement;
+          if (e.isIntersecting) {
+            load(video);
+            void video.play().catch(() => {
+              /* A browser that refuses muted autoplay keeps the poster. Nothing to recover. */
+            });
+          } else {
+            video.pause();
+          }
         }
-      }
-    },
-    { threshold: 0.35 },
-  );
-  for (const video of lazyVideos) io.observe(video);
+      },
+      { root, threshold: 0.2 },
+    );
+    for (const video of videos) io.observe(video);
+  }
 }
 
 if (cards.length) {
