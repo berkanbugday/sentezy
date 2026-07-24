@@ -5,7 +5,7 @@ import type { BrandKit } from "@/lib/queries";
  *  URL to preview it, and how it is framed. */
 export type BrandDraftClip = { key: string; ms: number; url: string | null; crop: BrandCrop } | null;
 
-/** The Marka Kiti form's working copy. */
+/** The Brand Kit form's working copy. */
 export type BrandDraft = {
   brandName: string;
   handle: string;
@@ -42,7 +42,7 @@ export function toBrandDraft(k: BrandKit): BrandDraft {
  *
  * Deliberately EXCLUDES the signed preview URLs. The API mints a fresh signature on every
  * response, so comparing whole objects would see the kit as modified the instant it was
- * saved — leaving Kaydet enabled forever and "Kaydedildi" never appearing. Only values
+ * saved — leaving Save enabled forever and "Saved" never appearing. Only values
  * that actually get persisted count.
  *
  * Text is trimmed here because it is trimmed on save too: typing a trailing space is not

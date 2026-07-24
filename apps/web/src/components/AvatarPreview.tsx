@@ -22,16 +22,16 @@ export function AvatarPreview({ avatar, onClose }: { avatar: Avatar | null; onCl
 
   if (!avatar) return null;
   const ageLabel = AGE_OPTS.find((o) => o.v === avatar.age)?.label ?? avatar.age;
-  const meta = [avatar.sectorLabel, ageLabel, avatar.hijab ? "Başörtülü" : null].filter(Boolean).join(" · ");
+  const meta = [avatar.sectorLabel, ageLabel, avatar.hijab ? "Hijab" : null].filter(Boolean).join(" · ");
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
       <div className="sheet-in no-scrollbar relative z-10 flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px] sm:border sm:border-hairline">
         <div className="flex-none px-5 pt-5">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
           <div className="mb-1 flex items-start justify-end gap-3">
-            <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
+            <button type="button" onClick={onClose} aria-label="Close" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
               <Icon.close width={18} height={18} className="block" />
             </button>
           </div>
@@ -52,7 +52,7 @@ export function AvatarPreview({ avatar, onClose }: { avatar: Avatar | null; onCl
             onClick={() => router.push(`/dashboard?avatar=${encodeURIComponent(avatar.id)}`)}
             className="btn btn-primary w-full justify-center"
           >
-            Bu avatarla video oluştur
+            Make a video with this presenter
           </button>
         </div>
       </div>

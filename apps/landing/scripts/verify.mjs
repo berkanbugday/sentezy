@@ -39,13 +39,13 @@ const FORBIDDEN_WORDS = [
 const FORBIDDEN_CSS = ["c9a9e9", "201,169,233", "7c86e8", "124,134,232"];
 
 // Claims that are true and must be present. Verified against source at plan time:
-//   12 avatars with a displayImageId  → apps/api/src/data/avatars.json
+//   126 catalogue presenters          → apps/api/src/data/avatars.json (total entries)
 //   24 distinct sectors               → same file
 //   20 caption styles                 → CAPTION_STYLE_META, packages/types/src/index.ts
 //   14 b-roll effects                 → BROLL_EFFECT_META, packages/types/src/index.ts
 const REQUIRED = [
-  ">12<", ">24<", ">20<", ">14<",           // the four verified proof numbers
-  "Reels that sell",                         // hero headline
+  ">126<", ">24<", ">20<", ">14<",         // the four verified proof numbers
+  "Post every day without filming a thing.", // hero headline
   "instagram.com/sentezy.ai",                // the real account is linked
 ];
 

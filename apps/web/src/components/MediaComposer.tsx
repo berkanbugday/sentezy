@@ -34,7 +34,7 @@ import { Tooltip } from "./Tooltip";
 function deriveVideoTitle(script: string, productTitle?: string): string {
   const fromProduct = productTitle?.trim();
   if (fromProduct) return fromProduct;
-  return cleanTitleText(script) || "Yeni video";
+  return cleanTitleText(script) || "Untitled video";
 }
 
 export type { ComposerSeed } from "@/lib/composerSeed";
@@ -50,7 +50,7 @@ export function MediaComposer({
   /** Persists changes made in the settings modal. If absent, the modal still opens but
    *  simply doesn't persist changes. */
   onSettingsChange?: (s: ComposerSettings) => void;
-  /** "Yeniden kullan" seed: hydrates avatar/voice/music/caption once per source video. */
+  /** "Use these settings again" seed: hydrates presenter/voice/music/captions per source video. */
   seed?: ComposerSeed;
 }) {
   const router = useRouter();
@@ -90,7 +90,7 @@ export function MediaComposer({
   // drives the preview, so it is fetched here rather than only inside the settings modal.
   const brandKit = useBrandKit().data;
 
-  // "Yeniden kullan" / avatar seeding. Applied once per seed key: the user may change any
+  // Reuse / presenter seeding. Applied once per seed key: the user may change any
   // of these straight after, and a re-render must not undo that. Script and media stay
   // empty by design. Only the keys the seed actually carries are written — an avatar-only
   // seed must not clear the voice, music or caption the user already has.
@@ -107,7 +107,7 @@ export function MediaComposer({
     }
     // A reuse seed (?reuse=) carries a whole configuration and has no product link of its
     // own, so it belongs on the upload tab. An avatar-only seed (?avatar=) carries just the
-    // avatar — switching tabs would hide "Ürün linki", the app's headline flow, behind
+    // avatar — switching tabs would hide "Product link", the app's headline flow, behind
     // upload for no reason. `length > 1` tells the two apart without naming either seed shape.
     if (seedKeys(seed).length > 1) setMode("upload");
   }, [seed]);
@@ -189,7 +189,7 @@ export function MediaComposer({
         serverUrl: m.url,
         ref: m.ref,
         kind: m.kind,
-        name: result.product.title || `Ürün görseli ${idx + 1}`,
+        name: result.product.title || `Product image ${idx + 1}`,
         status: "done" as const,
         transition: "slide", // product slides use the shutter-modern slide (BROLL_SFX_MAP.slide)
       })),
@@ -207,12 +207,12 @@ export function MediaComposer({
     } catch (e) {
       const code = e instanceof Error ? e.message : "";
       const messages: Record<string, string> = {
-        invalid_url: "Geçerli bir ürün bağlantısı gir.",
-        scrape_failed: "Sayfa okunamadı, bağlantıyı kontrol et.",
-        no_product_found: "Bu bağlantıda ürün bulunamadı.",
-        no_media_found: "Bu üründe kullanılabilir görsel bulunamadı.",
+        invalid_url: "That does not look like a product link. Paste the full address, starting with https://",
+        scrape_failed: "The page would not open. Check the link, or upload your photos instead.",
+        no_product_found: "No product on that page. Link straight to the product, not the category.",
+        no_media_found: "That product has no images we can use. Upload your own instead.",
       };
-      setImportError(messages[code] ?? "Ürün alınamadı, lütfen tekrar dene.");
+      setImportError(messages[code] ?? "Could not read that page. Try again, or upload your media instead.");
     }
   }
 
@@ -224,9 +224,9 @@ export function MediaComposer({
   const canCreate = hasScript && !!selectedVoice && (!!selectedAvatar || hasMedia);
   // Every unmet requirement, not just the first — so fixing one still shows what's left.
   const createHints = [
-    !hasScript && "Önce konuşma metnini yaz",
-    !selectedVoice && "Bir ses seç",
-    !selectedAvatar && !hasMedia && "Avatar seç ya da görsel yükle (yüzsüz video)",
+    !hasScript && "Write what the video should say first",
+    !selectedVoice && "Choose a voice",
+    !selectedAvatar && !hasMedia && "Choose a presenter, or upload media for a video with no face",
   ].filter((h): h is string => Boolean(h));
   const createHint = createHints.length > 0 ? createHints.join(" · ") : undefined;
   const selectedCount = [selectedAvatar, selectedVoice, selectedMusic, captionId].filter(Boolean).length;
@@ -311,13 +311,13 @@ export function MediaComposer({
     } catch (e) {
       const code = e instanceof Error ? e.message : "";
       const messages: Record<string, string> = {
-        insufficient_credits: "Yeterli krediniz yok.",
-        incomplete_draft: "Avatar, ses ve konuşma metni gerekli.",
-        adopt_failed: "Ses seçilemedi, lütfen tekrar dene.",
-        tts_unavailable: "Ses servisi şu an kullanılamıyor.",
-        invalid_body: "Geçersiz istek, seçimlerini kontrol et.",
+        insufficient_credits: "You are out of credits. Your plan renews them, or you can upgrade.",
+        incomplete_draft: "Still missing something: a script, a voice, and either a presenter or your own media.",
+        adopt_failed: "That voice could not be set up. Pick another, or try again.",
+        tts_unavailable: "Voices are unavailable right now. Nothing was charged — try again in a few minutes.",
+        invalid_body: "Something in your selection is not valid. Check the presenter, voice and script.",
       };
-      setSubmitError(messages[code] ?? "Video oluşturulamadı, lütfen tekrar dene.");
+      setSubmitError(messages[code] ?? "The video could not be started. Nothing was charged — try again.");
       setSubmitting(false);
     }
   }
@@ -346,7 +346,7 @@ export function MediaComposer({
               onClick={() => { setMode(m); setImportError(null); }}
               className={`rounded-full px-3.5 py-1.5 transition ${mode === m ? "bg-paper text-ink shadow-sm" : "text-muted hover:text-slate"}`}
             >
-              {m === "link" ? "Ürün linki" : "Medya yükle"}
+              {m === "link" ? "Product link" : "Upload media"}
             </button>
           ))}
         </div>
@@ -359,8 +359,8 @@ export function MediaComposer({
               <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-mist text-slate">
                 <Icon.paperclip width={22} height={22} />
               </span>
-              <p className="text-[14.5px] font-medium text-ink">Ürün bağlantısını yapıştır</p>
-              <p className="mx-auto mt-0.5 max-w-xs text-[12.5px] text-muted">Fotoğrafları, videoları ve tanıtım metnini senin için hazırlayalım.</p>
+              <p className="text-[14.5px] font-medium text-ink">Paste a product link</p>
+              <p className="mx-auto mt-0.5 max-w-xs text-[12.5px] text-muted">We read the page and bring back its photos, videos and a script.</p>
             </div>
             <div className="mx-auto flex w-full max-w-lg flex-col gap-2 sm:flex-row">
               <input
@@ -379,7 +379,7 @@ export function MediaComposer({
                 className="btn btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {importProduct.isPending ? <Spinner size={16} /> : <Icon.search width={17} height={17} className="order-1" />}
-                <span className="order-2">{importProduct.isPending ? "Taranıyor" : "Tara"}</span>
+                <span className="order-2">{importProduct.isPending ? "Reading…" : "Read page"}</span>
               </button>
             </div>
             {importError && <p className="text-center text-[13px] text-red-500">{importError}</p>}
@@ -395,8 +395,8 @@ export function MediaComposer({
               <Icon.media width={24} height={24} />
             </span>
             <div>
-              <p className="text-[14.5px] font-medium text-ink">Videolarını ya da görsellerini sürükle</p>
-              <p className="mt-0.5 text-[12.5px] text-muted">(.mp4, .mov, .jpg, .png — birden fazla seçebilirsin)</p>
+              <p className="text-[14.5px] font-medium text-ink">Drop your videos or photos here</p>
+              <p className="mt-0.5 text-[12.5px] text-muted">.mp4, .mov, .jpg or .png — several at once is fine</p>
             </div>
           </button>
         )
@@ -409,8 +409,8 @@ export function MediaComposer({
                 <button
                   type="button"
                   onClick={() => { setActiveBoundary(m.url); setEffectOpen(true); }}
-                  title={`Geçiş: ${TRANSITION_LABELS[m.transition ?? DEFAULT_TRANSITION] ?? ""}`}
-                  aria-label="Geçiş efekti seç"
+                  title={`Transition: ${TRANSITION_LABELS[m.transition ?? DEFAULT_TRANSITION] ?? ""}`}
+                  aria-label="Change the transition"
                   className="group/tr flex flex-none flex-col items-center gap-1 px-0.5"
                 >
                   <span className="flex items-center">
@@ -454,7 +454,7 @@ export function MediaComposer({
                 )}
                 {m.status === "error" && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/60 text-white">
-                    <span className="text-[9.5px] font-medium">Yüklenemedi</span>
+                    <span className="text-[9.5px] font-medium">Upload failed</span>
                     <button type="button" onClick={() => retry(m)} className="rounded-full bg-white/20 px-2 py-0.5 text-[9.5px] font-semibold hover:bg-white/30">
                       Tekrar
                     </button>
@@ -471,7 +471,7 @@ export function MediaComposer({
                 <button
                   type="button"
                   onClick={() => remove(m.url)}
-                  aria-label={`${m.name} kaldır`}
+                  aria-label={`Remove ${m.name}`}
                   className="absolute right-0.5 top-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white opacity-100 transition hover:bg-black/75 sm:opacity-0 sm:group-hover:opacity-100"
                 >
                   <Icon.close width={12} height={12} className="block" />
@@ -485,7 +485,7 @@ export function MediaComposer({
             className="ml-2 flex h-[68px] w-[68px] flex-none flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-hairline text-muted transition hover:bg-mist hover:text-slate"
           >
             <Icon.plus width={20} height={20} />
-            <span className="text-[10px] font-medium">Ekle</span>
+            <span className="text-[10px] font-medium">Add</span>
           </button>
         </div>
       )}
@@ -498,7 +498,7 @@ export function MediaComposer({
           value={script}
           onChange={(e) => setScript(e.target.value)}
           rows={3}
-          placeholder="Videoda ne anlatılsın? Konuşma metnini yaz…"
+          placeholder="What should the video say? Write it here…"
           className="no-scrollbar soft-in mt-3 max-h-40 min-h-[84px] w-full resize-none overflow-y-auto rounded-xl bg-transparent px-1 py-1 text-[14px] leading-relaxed text-ink outline-none placeholder:text-muted"
         />
       )}
@@ -512,10 +512,10 @@ export function MediaComposer({
              elements don't reliably fire hover/focus, so — same pattern as the primary CTA
              below — the Tooltip wraps a focusable span around the (possibly disabled)
              trigger rather than relying on the trigger's own native title. */}
-          <Tooltip label={!hasScript ? "Önce konuşma metnini yaz" : undefined} disabled={hasScript} side="top">
+          <Tooltip label={!hasScript ? "Write what the video should say first" : undefined} disabled={hasScript} side="top">
             <span className="inline-flex" tabIndex={!hasScript ? 0 : -1}>
               <ActionMenu
-                label="Video seçenekleri"
+                label="Video options"
                 icon={Icon.plus}
                 disabled={!hasScript}
                 size="lg"
@@ -523,30 +523,30 @@ export function MediaComposer({
                 items={[
                   {
                     key: "avatar",
-                    label: "Avatar",
+                    label: "Presenter",
                     icon: Icon.users,
-                    value: selectedAvatar ? selectedAvatar.name : "isteğe bağlı",
+                    value: selectedAvatar ? selectedAvatar.name : "optional",
                     onClick: () => setAvatarOpen(true),
                   },
                   {
                     key: "voice",
-                    label: "Ses",
+                    label: "Voice",
                     icon: Icon.voice,
-                    value: selectedVoice ? selectedVoice.label : "seçilmedi",
+                    value: selectedVoice ? selectedVoice.label : "none yet",
                     onClick: () => setVoiceOpen(true),
                   },
                   {
                     key: "music",
-                    label: "Müzik",
+                    label: "Music",
                     icon: Icon.musicNote,
-                    value: selectedMusic ? selectedMusic.name : "seçilmedi",
+                    value: selectedMusic ? selectedMusic.name : "none",
                     onClick: () => setMusicOpen(true),
                   },
                   {
                     key: "caption",
-                    label: "Alt yazı",
+                    label: "Captions",
                     icon: Icon.captions,
-                    value: selectedCaption ? selectedCaption.family : "seçilmedi",
+                    value: selectedCaption ? selectedCaption.family : "none",
                     onClick: () => setCaptionOpen(true),
                   },
                 ]}
@@ -557,14 +557,14 @@ export function MediaComposer({
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
-            aria-label="Ek ayarlar"
-            title="Ek ayarlar"
+            aria-label="More settings"
+            title="More settings"
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-hairline bg-paper text-ink transition hover:bg-mist"
           >
             <Icon.settings width={21} height={21} />
           </button>
           {/* live preview — same disabled/tooltip pattern as above */}
-          <Tooltip label={!hasScript ? "Önce konuşma metnini yaz" : undefined} disabled={hasScript} side="top">
+          <Tooltip label={!hasScript ? "Write what the video should say first" : undefined} disabled={hasScript} side="top">
             <span className="inline-flex" tabIndex={!hasScript ? 0 : -1}>
               <button
                 type="button"
@@ -573,14 +573,14 @@ export function MediaComposer({
                 className="flex h-11 items-center gap-2 rounded-full border border-hairline bg-paper pl-3.5 pr-4 text-[14.5px] font-medium text-ink transition hover:bg-mist disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Icon.play width={16} height={16} className="text-slate" />
-                Önizle
+                Preview
               </button>
             </span>
           </Tooltip>
           {items.length > 0 && (
             <span className="flex items-center gap-1.5 whitespace-nowrap text-[12px] text-muted">
               {uploading && <Spinner size={13} />}
-              {uploading ? "yükleniyor…" : `${items.length} medya hazır`}
+              {uploading ? "uploading…" : `${items.length} clip${items.length === 1 ? "" : "s"} ready`}
             </span>
           )}
         </div>
@@ -591,7 +591,7 @@ export function MediaComposer({
            around it rather than the button itself, which is what actually receives the
            hover/focus that shows the reason. */}
         <Tooltip label={createHint} disabled={!createHint} side="top">
-          <span className="ml-auto inline-flex shrink-0" tabIndex={createHint ? 0 : -1} aria-label="Video oluştur">
+          <span className="ml-auto inline-flex shrink-0" tabIndex={createHint ? 0 : -1} aria-label="Make the video">
             <button
               type="button"
               onClick={create}
@@ -599,7 +599,7 @@ export function MediaComposer({
               className="btn btn-primary btn-lg shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {uploading || submitting ? <Spinner size={16} /> : <Icon.arrowRight width={19} height={19} className="order-2" />}
-              <span className="order-1">{submitting ? "Oluşturuluyor…" : "Video oluştur"}</span>
+              <span className="order-1">{submitting ? "Starting…" : "Make video"}</span>
             </button>
           </span>
         </Tooltip>
@@ -611,7 +611,7 @@ export function MediaComposer({
         onClose={() => setEffectOpen(false)}
         value={activeTransition}
         onSelect={(v) => { if (activeBoundary) patch(activeBoundary, { transition: v }); }}
-        boundaryLabel={boundaryIndex >= 0 ? `${boundaryIndex}. ve ${boundaryIndex + 1}. klip arası` : undefined}
+        boundaryLabel={boundaryIndex >= 0 ? `Between clip ${boundaryIndex} and ${boundaryIndex + 1}` : undefined}
       />
       <AvatarPicker open={avatarOpen} onClose={() => setAvatarOpen(false)} selectedId={selectedAvatar?.id ?? null} onSelect={setSelectedAvatar} />
       <VoicePicker open={voiceOpen} onClose={() => setVoiceOpen(false)} selectedId={selectedVoice?.id ?? null} onSelect={setSelectedVoice} script={script} emotion={settings.voiceEmotion ?? ""} />

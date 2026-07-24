@@ -3,7 +3,7 @@
 import { VideoCard } from "@/components/VideoCard";
 import { useVideos } from "@/lib/queries";
 
-/** The dashboard "Son videoların" strip — the 4 most recent videos with real thumbnails. */
+/** The dashboard "Recent" strip — the 4 most recent videos with real thumbnails. */
 export function RecentVideos() {
   const { data: videos, isLoading } = useVideos();
   const recent = videos?.slice(0, 4) ?? [];
@@ -26,7 +26,7 @@ export function RecentVideos() {
   if (recent.length === 0) {
     return (
       <div className="card px-6 py-10 text-center text-[14px] text-slate">
-        Henüz video yok — ilk reelini oluştur.
+        Nothing here yet — your videos will appear as you make them.
       </div>
     );
   }

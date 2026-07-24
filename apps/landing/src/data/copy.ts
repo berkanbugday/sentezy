@@ -5,59 +5,65 @@
  *  and made the copy tedious to edit. One language, one string, no runtime swap. */
 
 export const nav = {
-  platform: "Platform",
-  showcase: "Showcase",
+  platform: "What you choose",
+  showcase: "Examples",
   how: "How it works",
   login: "Log in",
   cta: "Start free",
 };
 
 export const footer = {
-  tagline: "Reels with an AI presenter. No filming, no editing.",
+  tagline: "Vertical video for your business, without a camera.",
   productHead: "Product",
-  presenters: "AI presenters",
+  presenters: "Presenters",
   captions: "Captions",
   music: "Music",
-  solutionsHead: "Solutions",
+  solutionsHead: "Sectors",
   legalHead: "Legal",
   privacy: "Privacy",
   terms: "Terms",
-  madeFor: "Made in Türkiye",
   instagramHead: "Instagram",
 };
 
+/* Someone lands here from a social post on a phone. In one screen they have to learn what this
+ * makes, what it costs them to try, and whether it fits their business. Nothing clever: what
+ * you give it, what you get back, how long it takes. */
 export const hero = {
-  eyebrow: "AI PRESENTER REELS",
-  title: "Reels that sell — without filming a thing.",
-  lead: "Paste a product link or a script. Sentezy picks an AI presenter, writes the copy, burns in viral captions, and hands back a finished 9:16 reel. Built for travel, beauty, real estate and gym brands.",
-  ctaPrimary: "Start free",
-  ctaSecondary: "Watch a reel",
-  microcopy: "No credit card required",
+  eyebrow: "VERTICAL VIDEO, WITHOUT A CAMERA",
+  title: "Post every day without filming a thing.",
+  lead: "Paste a product link and Sentezy pulls the photos and writes the script. Or upload your own clips and type two sentences. Choose a presenter, a voice, captions and music, watch the whole thing preview, then download one vertical file that fits Reels, TikTok and Shorts. About five minutes.",
+  ctaPrimary: "Make your first video",
+  ctaSecondary: "See real examples",
+  /* 30 credits on signup (profile default), 1 credit per video (CREDIT_COST in
+   * apps/api/src/routes/videos.ts) — so this is literal, not a rounding of "some". */
+  microcopy: "Your first videos are free. No card.",
 };
 
 /** Every number here traces to source. Do not add one that does not.
- *   12 → apps/api/src/data/avatars.json, entries with a non-empty displayImageId
- *   24 → same file, distinct `sector` values
- *   20 → CAPTION_STYLE_META in packages/types/src/index.ts
- *   14 → BROLL_EFFECT_META in packages/types/src/index.ts */
+ *   126 → apps/api/src/data/avatars.json, total catalogue entries. NOTE: 12 of them have a
+ *         portrait generated today (`displayImageId`); the rest appear as "coming soon" in the
+ *         picker until the images are generated. Berkan asked for the catalogue number.
+ *   24  → same file, distinct `sector` values
+ *   20  → CAPTION_STYLE_META in packages/types/src/index.ts
+ *   14  → BROLL_EFFECT_META in packages/types/src/index.ts */
 export const proof = [
-  { n: "12", label: "AI presenters" },
-  { n: "24", label: "Sectors covered" },
+  { n: "126", label: "Presenters to choose from" },
+  { n: "24", label: "Sectors they are styled for" },
   { n: "20", label: "Caption styles" },
-  { n: "14", label: "Transitions" },
+  { n: "14", label: "Cuts and transitions" },
 ];
 
 /** All 24 sectors, in the order apps/api/src/data/avatars.json declares them — the same 24 the
  *  proof bar counts, so the claim and the list can never drift apart. The line under each says
  *  what that business posts, not what Sentezy does. */
 export const sectors = {
-  eyebrow: "BUILT FOR",
-  title: "Made for the businesses that live on reels.",
-  lead: "Twenty-four sectors, each with presenters dressed for the job.",
+  eyebrow: "WHO IT IS FOR",
+  title: "If your customers scroll, find your line of work.",
+  lead: "Twenty-four of them, each with presenters dressed for the job.",
   items: [
     { key: "beauty", name: "Beauty & Hair", body: "Before-and-afters, price drops and open slots." },
     { key: "tech", name: "Tech & Software", body: "Feature launches explained in fifteen seconds." },
-    { key: "realestate", name: "Real Estate", body: "Every new listing gets a reel the day it lists." },
+    { key: "realestate", name: "Real Estate", body: "Every new listing gets a video the day it lists." },
     { key: "fitness", name: "Fitness & Gym", body: "Class schedules, transformations, campaigns." },
     { key: "restaurant", name: "Restaurant & Café", body: "Today's menu, tonight's table, this week's special." },
     { key: "fashion", name: "Fashion & Boutique", body: "New arrivals on the shelf and on the feed." },
@@ -77,15 +83,15 @@ export const sectors = {
     { key: "cosmetics", name: "Cosmetics & Skincare", body: "Routines, ingredients and what actually changed." },
     { key: "corporate", name: "Corporate", body: "Announcements that do not read like a press release." },
     { key: "influencer", name: "Lifestyle & Creators", body: "A daily post without a daily shoot." },
-    { key: "ecommerce", name: "E-commerce", body: "A reel per product, straight from the link." },
-    { key: "coaching", name: "Coaching", body: "One idea per reel, on a weekly rhythm." },
+    { key: "ecommerce", name: "E-commerce", body: "A video per product, straight from the link." },
+    { key: "coaching", name: "Coaching", body: "One idea per video, on a weekly rhythm." },
   ],
 } as const;
 
 export const showcase = {
-  eyebrow: "SHOWCASE",
-  title: "Real reels. Made with Sentezy.",
-  lead: "Every one of these was generated end to end — script, presenter, voice, captions and edit. Nobody held a camera.",
+  eyebrow: "EXAMPLES",
+  title: "These were made with Sentezy.",
+  lead: "Script, presenter, voice, captions and the edit. No camera, no studio, no editor. Tap one to hear it.",
   follow: "Follow @sentezy.ai",
   /** The wall autoplays muted, the way a feed does. These are the only affordance telling you
    *  the sound is there; a card swaps one label for the other. */
@@ -99,18 +105,18 @@ export const how = {
   steps: [
     {
       n: "01",
-      title: "Paste a link or a script",
-      body: "Drop in a product URL and Sentezy reads the page and writes the script for you. Or bring your own.",
+      title: "Paste a link, or bring your own clips",
+      body: "Give Sentezy a product link and it pulls the photos and videos off the page and writes the script. Or upload your own footage and type two sentences.",
     },
     {
       n: "02",
-      title: "Pick a presenter and a style",
-      body: "Choose the face, the voice, the caption treatment and the music. Preview before you spend a credit.",
+      title: "Choose how it looks and sounds",
+      body: "Presenter, voice, captions, music, and the cut between each clip. Play the whole video back before it is rendered. Nothing is charged until you are happy with it.",
     },
     {
       n: "03",
-      title: "Publish",
-      body: "Download the finished 9:16 file, or post it straight to your feed.",
+      title: "Download it and post it",
+      body: "You get one finished vertical MP4 with the captions burned in. The same file works for Instagram Reels, TikTok, YouTube Shorts and anywhere else vertical. You post it yourself, from whichever account you want.",
     },
   ],
 } as const;
@@ -118,28 +124,28 @@ export const how = {
 /** The platform section: four choices, each demonstrated by a phone that plays through the
  *  options instead of describing them. The rows themselves live in src/data/studio.ts. */
 export const platform = {
-  eyebrow: "PLATFORM",
-  title: "Four choices. One finished reel.",
-  lead: "Presenter, voice, music, captions — every option below is the real catalog, playing through itself.",
+  eyebrow: "WHAT YOU CHOOSE",
+  title: "Four choices. One finished video.",
+  lead: "Everything below is the actual catalogue you pick from inside Sentezy.",
   presenters: {
-    eyebrow: "PRESENTER",
-    title: "Twelve faces, dressed for the sector.",
-    body: "A pharmacist in a lab coat, a realtor in a blazer — the wardrobe does the positioning before a word is spoken. Filter by gender or hijab, or go faceless entirely.",
+    eyebrow: "THE PRESENTER",
+    title: "Someone who looks like they work in your business.",
+    body: "126 presenters across 24 kinds of business, dressed for the job. Filter by gender, age or hijab. Or show no face at all.",
   },
   voices: {
-    eyebrow: "VOICE",
-    title: "A read, not a recital.",
-    body: "Shared ElevenLabs voices, auditioned before you spend a credit. Pacing and emphasis are marked up sentence by sentence, so it lands like speech — Turkish first, including the words other tools mangle.",
+    eyebrow: "THE VOICE",
+    title: "Hear your own words before you spend anything.",
+    body: "Type your script and press play to hear it read back in your own words. Six tones, in English and Turkish.",
   },
   music: {
-    eyebrow: "MUSIC",
-    title: "A bed under every reel.",
-    body: "Eleven license-free beds across four moods, ducking automatically under the voice. No mixing on your side — and silence stays a valid choice.",
+    eyebrow: "THE MUSIC",
+    title: "Music that stays under the voice.",
+    body: "Eleven royalty-free tracks in four moods, at a level you set. The music turns down when the presenter speaks. Silence is fine too.",
   },
   captions: {
-    eyebrow: "CAPTIONS",
-    title: "20 caption styles, burned into the file.",
-    body: "Not an overlay a platform can strip — the captions are rendered into the video, word by word, on the beat. 20 styles across 13 fonts and 12 accent colors.",
+    eyebrow: "THE CAPTIONS",
+    title: "Captions people can read with the sound off.",
+    body: "Burned into the video, so they work anywhere you post. Twenty styles, thirteen fonts, twelve colours. Each word lights up as it is said.",
     sample: "THIS REEL SELLS",
   },
 };
@@ -148,20 +154,24 @@ export const platform = {
  *  answers described things that do not exist and are gone for good — scripts/verify.mjs fails
  *  the build if any of them comes back. */
 export const faq = {
-  eyebrow: "FAQ",
-  title: "Frequently asked questions.",
+  eyebrow: "QUESTIONS",
+  title: "Before you start.",
   items: [
     {
-      q: "Is Sentezy really free to start?",
-      a: "Yes. You get credits to make your first reels with no card on file. Upgrade only when you need more.",
+      q: "What does it cost to try?",
+      a: "Nothing, and no card. You get free credits when you sign up, so your first videos are on us.",
     },
     {
-      q: "Which sectors do the presenters cover?",
-      a: "24 sectors, from real estate and beauty to dental, pharmacy, automotive and e-commerce. Each presenter is styled for their line of work.",
+      q: "How long does one video take?",
+      a: "About five minutes from a link or a couple of sentences to a finished file. Most of that is Sentezy rendering, not you working.",
     },
     {
-      q: "Do I need a camera or editing skills?",
-      a: "Neither. You write or paste a script, pick a presenter and a style, and Sentezy renders the finished 9:16 file — voice, captions, music and all.",
+      q: "Do I need a camera, a studio or editing skills?",
+      a: "No. You describe the video and choose how it looks; Sentezy does the voice, the captions, the music and the cuts, and gives you a file ready to post.",
+    },
+    {
+      q: "Where can I post the videos?",
+      a: "Anywhere vertical video goes: Instagram Reels, TikTok, YouTube Shorts, Facebook. You get one vertical file and post it yourself; Sentezy never asks for a password to any of them.",
     },
     {
       q: "Is my data safe? (KVKK/GDPR)",
@@ -174,8 +184,8 @@ export const faq = {
  *  this one after it — saying the same thing twice with the same button. The teaser's promise
  *  survives as the lead line here. */
 export const finalCta = {
-  title: "Your next reel is five minutes away.",
-  lead: "Your first reels are on us — no card, no trial timer. Move to a paid plan when you need more of them.",
-  cta: "Start free",
-  microcopy: "No credit card required",
+  title: "Make one and see.",
+  lead: "Free to start, no card, no trial countdown. Pay only when you want more than that.",
+  cta: "Make your first video",
+  microcopy: "Takes about five minutes.",
 };

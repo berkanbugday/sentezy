@@ -37,17 +37,17 @@ function render(profile: Record<string, unknown>): string {
 
 // ── A free user with a name ───────────────────────────────────────────────────
 const free = render({ displayName: "Berkan Buğday", email: "berkan@x.co", plan: "free", credits: 25 });
-assert.ok(free.includes("Ayarlar"), "heading renders");
+assert.ok(free.includes("Settings"), "heading renders");
 assert.ok(free.includes("Berkan Buğday"), "display name shows");
 assert.ok(free.includes("berkan@x.co"), "email shows");
-assert.ok(free.includes("Ücretsiz plan"), "free plan label");
+assert.ok(free.includes("Free plan"), "free plan label");
 assert.ok(free.includes("25"), "real credit count");
 assert.ok(free.includes("MAX"), "a free user is offered the upgrade");
 // Initials come from the display name, not the email.
 assert.ok(free.includes(">BB<"), "avatar shows initials of the name");
-assert.ok(free.includes("Güvenlik") && free.includes("Yeni şifre"), "the security card renders");
-assert.ok(free.includes("Mevcut şifre"), "password change requires the current password (step-up)");
-assert.ok(free.includes("Tehlikeli bölge") && free.includes("Hesabı sil"), "the danger zone renders");
+assert.ok(free.includes("Password") && free.includes("New password"), "the security card renders");
+assert.ok(free.includes("Current password"), "password change requires the current password (step-up)");
+assert.ok(free.includes("Danger zone") && free.includes("Delete account"), "the danger zone renders");
 
 // ── A user with no name falls back to the email ────────────────────────────────
 const noName = render({ displayName: null, email: "ada@x.co", plan: "free", credits: 3 });
@@ -57,6 +57,6 @@ assert.ok(noName.includes("3"), "low credit count still shows");
 // ── A MAX user is NOT shown the upgrade CTA ─────────────────────────────────────
 const max = render({ displayName: "Pro", email: "pro@x.co", plan: "max", credits: 500 });
 assert.ok(max.includes("MAX plan"), "max plan label");
-assert.ok(!max.includes("MAX&#x27;e geç") && !max.includes("MAX'e geç"), "no upgrade CTA for a MAX user");
+assert.ok(!max.includes("Upgrade to MAX"), "no upgrade CTA for a MAX user");
 
 console.log("apps/web/src/components/SettingsView.test.tsx ok");

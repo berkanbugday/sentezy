@@ -12,14 +12,14 @@ function fmt(sec: number): string {
 }
 
 /** Background-music picker — mirrors VoicePicker: mood chips filtered server-side, text
- *  search over the loaded page, per-row audio preview, and a "Yok" (none) escape hatch.
+ *  search over the loaded page, per-row audio preview, and a "None" escape hatch.
  *  The chosen track's level rides along so the caller can send it with the render.
  *
  *  Deliberate divergence from VoicePicker: picking a track does NOT close the modal.
  *  Music, unlike voice, has a follow-up control (the level slider below), and it only
  *  renders once a track is selected — closing immediately meant nobody ever saw it
- *  in the same session they picked a track. Selecting "Yok" still closes right away
- *  (there's nothing to follow up on), and there's an explicit "Bitti" button to close
+ *  in the same session they picked a track. Selecting "None" still closes right away
+ *  (there's nothing to follow up on), and there's an explicit "Done" button to close
  *  once a track is chosen. */
 export function MusicPicker({
   open,
@@ -80,20 +80,20 @@ export function MusicPicker({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
       <div className="sheet-in relative z-10 flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px] sm:border sm:border-hairline">
         <div className="flex-none px-5 pt-5">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
           <div className="flex items-start justify-between gap-3">
-            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Müzik seç</h3>
-            <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
+            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Choose music</h3>
+            <button type="button" onClick={onClose} aria-label="Close" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
               <Icon.close width={18} height={18} className="block" />
             </button>
           </div>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Müzik ara"
+            placeholder="Search music"
             className="mt-3 w-full rounded-full border border-hairline bg-paper px-4 py-2 text-[13.5px] text-ink outline-none placeholder:text-muted focus:border-ink"
           />
           <div className="no-scrollbar mt-3 flex gap-1.5 overflow-x-auto pb-1">
@@ -102,7 +102,7 @@ export function MusicPicker({
               onClick={() => setMood("")}
               className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition ${mood === "" ? "border-ink bg-ink text-paper" : "border-hairline text-slate hover:bg-mist"}`}
             >
-              Tümü
+              All
             </button>
             {moods.map((m) => (
               <button
@@ -126,16 +126,16 @@ export function MusicPicker({
             <span className="grid h-9 w-9 flex-none place-items-center rounded-full border border-hairline text-muted">
               <Icon.close width={15} height={15} />
             </span>
-            <span className="text-[14px] font-medium text-ink">Yok</span>
+            <span className="text-[14px] font-medium text-ink">None</span>
           </button>
 
           {musicQ.isLoading && (
             <div className="flex items-center gap-2 px-1 py-4 text-[13px] text-muted">
-              <Spinner size={14} /> Yükleniyor…
+              <Spinner size={14} /> Loading…
             </div>
           )}
           {!musicQ.isLoading && filtered.length === 0 && (
-            <p className="px-1 py-6 text-center text-[13px] text-muted">Bu filtreye uyan müzik yok.</p>
+            <p className="px-1 py-6 text-center text-[13px] text-muted">No tracks in that mood.</p>
           )}
 
           {filtered.map((t) => (
@@ -146,7 +146,7 @@ export function MusicPicker({
               <button
                 type="button"
                 onClick={() => play(t)}
-                aria-label={playing === t.key ? `${t.name} önizlemesini durdur` : `${t.name} önizlemesini oynat`}
+                aria-label={playing === t.key ? `Stop ${t.name}` : `Play ${t.name}`}
                 className="grid h-9 w-9 flex-none place-items-center rounded-full border border-hairline text-ink transition hover:bg-paper"
               >
                 {playing === t.key ? <Icon.pause width={14} height={14} /> : <Icon.play width={14} height={14} />}
@@ -169,7 +169,7 @@ export function MusicPicker({
         {selectedKey && (
           <div className="flex-none border-t border-hairline px-5 py-4">
             <div className="mb-1.5 flex items-center justify-between text-[11.5px] text-muted">
-              <span>Müzik seviyesi</span>
+              <span>Music level</span>
               <span className="mono">{Math.round(volume * 100)}%</span>
             </div>
             <input
@@ -186,7 +186,7 @@ export function MusicPicker({
               onClick={onClose}
               className="mt-3 w-full rounded-full bg-ink py-2.5 text-[13.5px] font-medium text-paper transition hover:opacity-90"
             >
-              Bitti
+              Done
             </button>
           </div>
         )}

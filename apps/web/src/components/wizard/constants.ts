@@ -4,13 +4,13 @@ export const fieldClass =
   "w-full rounded-xl border border-hairline bg-mist px-3.5 py-2.5 text-[14px] text-ink outline-none transition focus:border-signal";
 
 // Per-clip B-roll effect catalog — the curated Remotion-native set (BROLL_EFFECT_META),
-// grouped into between-clip transitions (Geçişler) and per-clip entrance effects (Efektler).
+// grouped into between-clip transitions and per-clip entrance effects.
 // Each tile renders a REAL Remotion preview (EffectTile → BrollEffectDemo). The worker maps
 // these ids to xfade for the ffmpeg fallback engine.
 export const DEFAULT_TRANSITION = "fade";
 export const TRANSITIONS: { group: string; items: { value: string; label: string }[] }[] = [
-  { group: "Geçişler", items: BROLL_EFFECT_META.filter((e) => e.kind === "transition").map((e) => ({ value: e.id, label: e.label })) },
-  { group: "Efektler", items: BROLL_EFFECT_META.filter((e) => e.kind === "entrance").map((e) => ({ value: e.id, label: e.label })) },
+  { group: "Transitions", items: BROLL_EFFECT_META.filter((e) => e.kind === "transition").map((e) => ({ value: e.id, label: e.label })) },
+  { group: "Effects", items: BROLL_EFFECT_META.filter((e) => e.kind === "entrance").map((e) => ({ value: e.id, label: e.label })) },
 ];
 
 export function chipClass(active: boolean) {
@@ -20,22 +20,22 @@ export function chipClass(active: boolean) {
 }
 
 export const CAPTION_STYLES = [
-  { value: "karaoke", label: "Karaoke", hint: "Kelime kelime parlar" },
-  { value: "tiktok", label: "TikTok", hint: "Kelime kelime, renkli vurgu" },
-  { value: "beast", label: "Beast", hint: "Kocaman, büyük harf, patlar" },
-  { value: "hormozi", label: "Vurgulu", hint: "Büyük, enerjik, renkli" },
-  { value: "boxed", label: "Kutulu", hint: "CapCut baloncuk kutusu" },
-  { value: "keyword", label: "Anahtar", hint: "Önemli kelime renkli kalır" },
-  { value: "clean", label: "Sade", hint: "Tüm cümle, sakin" },
+  { value: "karaoke", label: "Karaoke", hint: "Each word lights up as it is said" },
+  { value: "tiktok", label: "TikTok", hint: "Word by word, colour on the accent" },
+  { value: "beast", label: "Beast", hint: "Huge, all caps, pops on the beat" },
+  { value: "hormozi", label: "Hormozi", hint: "Big, loud, colour on key words" },
+  { value: "boxed", label: "Boxed", hint: "Words in a solid box" },
+  { value: "keyword", label: "Keyword", hint: "The important word stays coloured" },
+  { value: "clean", label: "Clean", hint: "Full sentence, no effects" },
 ] as const;
 
 // Voice emotion → ElevenLabs v3 audio tag ("" = natural). Also drives the audio-driven
 // HeyGen Avatar IV face, so the avatar looks more emotive too.
 export const VOICE_EMOTIONS = [
-  { value: "", label: "Doğal" },
-  { value: "warmly", label: "Sıcak" },
-  { value: "excited", label: "Enerjik" },
-  { value: "cheerfully", label: "Neşeli" },
-  { value: "seriously", label: "Ciddi" },
-  { value: "sincerely", label: "Samimi" },
+  { value: "", label: "Natural" },
+  { value: "warmly", label: "Warm" },
+  { value: "excited", label: "Energetic" },
+  { value: "cheerfully", label: "Cheerful" },
+  { value: "seriously", label: "Serious" },
+  { value: "sincerely", label: "Sincere" },
 ] as const;

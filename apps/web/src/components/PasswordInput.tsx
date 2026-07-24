@@ -22,7 +22,7 @@ export const PasswordInput = forwardRef<
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        aria-label={visible ? "Şifreyi gizle" : "Şifreyi göster"}
+        aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
         className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted hover:text-ink"
       >

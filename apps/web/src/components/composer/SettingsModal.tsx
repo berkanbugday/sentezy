@@ -53,7 +53,7 @@ function Toggle({
       <span className={`relative h-5 w-9 flex-none rounded-full transition-colors ${checked ? "bg-ink" : "bg-hairline"}`}>
         <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? "left-[18px]" : "left-0.5"}`} />
       </span>
-      {checked ? "Açık" : "Kapalı"}
+      {checked ? "On" : "Off"}
     </button>
   );
 }
@@ -68,19 +68,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const AVATAR_POS_OPTS: Opt<ComposerSettings["avatarPosition"]>[] = [
-  { value: "left", label: "Sol" },
-  { value: "center", label: "Orta" },
-  { value: "right", label: "Sağ" },
+  { value: "left", label: "Left" },
+  { value: "center", label: "Middle" },
+  { value: "right", label: "Right" },
 ];
 const CAPPOS_OPTS: Opt<ComposerSettings["captionPosition"]>[] = [
-  { value: "top", label: "Üst" },
-  { value: "bottom", label: "Alt" },
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
 ];
 
 const BRAND_TOGGLES: { key: "brandIntro" | "brandOutro" | "brandWatermark"; label: string }[] = [
-  { key: "brandIntro", label: "Giriş" },
-  { key: "brandOutro", label: "Kapanış" },
-  { key: "brandWatermark", label: "Filigran" },
+  { key: "brandIntro", label: "Intro card" },
+  { key: "brandOutro", label: "Outro card" },
+  { key: "brandWatermark", label: "Watermark" },
 ];
 
 /** Modal of extra video settings, opened from the composer's control row. */
@@ -119,45 +119,45 @@ export function SettingsModal({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
       <div className="sheet-in no-scrollbar relative z-10 flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px] sm:border sm:border-hairline">
         <div className="sticky top-0 z-10 flex-none bg-paper px-5 pt-5">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
           <div className="mb-1 flex items-start justify-between gap-3">
-            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Ek ayarlar</h3>
-            <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
+            <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">More settings</h3>
+            <button type="button" onClick={onClose} aria-label="Close" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
               <Icon.close width={18} height={18} className="block" />
             </button>
           </div>
         </div>
 
         <div className="no-scrollbar flex flex-col gap-5 overflow-y-auto px-5 py-5">
-          <Field label="Avatar yerleşimi">
+          <Field label="Where the presenter stands">
             <Pills options={AVATAR_POS_OPTS} value={settings.avatarPosition} onChange={(v) => set("avatarPosition", v)} />
           </Field>
-          <Field label="Alt yazı konumu">
+          <Field label="Where the captions sit">
             <Pills options={CAPPOS_OPTS} value={settings.captionPosition} onChange={(v) => set("captionPosition", v)} />
           </Field>
-          <Field label="Ses tonu">
+          <Field label="Tone of voice">
             <Pills options={VOICE_EMOTIONS} value={settings.voiceEmotion} onChange={(v) => set("voiceEmotion", v)} />
           </Field>
-          <Field label="Geçiş efekti sesi">
+          <Field label="Whoosh between clips">
             <Toggle
               checked={settings.transitionSfx}
               onChange={(v) => set("transitionSfx", v)}
               disabled={!transitionSfxAvailable}
-              label="Geçiş efekti sesi"
+              label="Whoosh between clips"
             />
             {!transitionSfxAvailable && (
-              <p className="mt-1.5 text-[11.5px] text-muted">Geçiş sesi klipler arasında çalar — en az 2 medya yükle.</p>
+              <p className="mt-1.5 text-[11.5px] text-muted">Plays between clips — add a second one to use it.</p>
             )}
           </Field>
 
           <div className="border-t border-hairline pt-5">
             <div className="mb-2 flex items-baseline justify-between gap-3">
-              <div className="text-[13px] font-semibold text-ink">Marka</div>
+              <div className="text-[13px] font-semibold text-ink">Your brand</div>
               <Link href="/brand-kit" className="text-[12.5px] font-medium text-signal">
-                Marka kitini düzenle
+                Edit brand kit
               </Link>
             </div>
             {hasBrandKit ? (
@@ -174,11 +174,11 @@ export function SettingsModal({
                  so send the user to build one first rather than letting them arm an
                  empty intro. */
               <p className="text-[11.5px] text-muted">
-                Henüz bir marka kitin yok.{" "}
+                You have not set up a brand kit yet.{" "}
                 <Link href="/brand-kit" className="font-medium text-signal">
-                  Marka kitini oluştur
+                  Create one
                 </Link>{" "}
-                — sonra girişi, kapanışı ve filigranı buradan açabilirsin.
+                — then you can switch the intro, outro and watermark on here.
               </p>
             )}
           </div>

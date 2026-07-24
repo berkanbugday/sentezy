@@ -49,9 +49,9 @@ export function readClipDuration(file: File): Promise<ClipDurationResult> {
   });
 }
 
-/** Turkish message for a rejected clip. Says what to do, not just what failed. */
+/** Message for a rejected clip. Says what to do, not just what failed. */
 export function clipErrorMessage(reason: ClipRejectReason): string {
-  if (reason === "too_short") return "Video çok kısa — en az 0,3 saniye olmalı.";
-  if (reason === "too_long") return "Video çok uzun — en fazla 15 saniye olabilir.";
-  return "Dosya okunamadı. Başka bir görsel ya da video dene.";
+  if (reason === "too_short") return "That clip is too short — it needs to be at least 0.3 seconds.";
+  if (reason === "too_long") return "That clip is too long — trim it to 15 seconds or less.";
+  return "That file could not be read. Try another photo or video.";
 }

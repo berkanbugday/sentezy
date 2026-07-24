@@ -28,7 +28,7 @@ export type ActionMenuItem = {
 export function ActionMenu({
   items,
   onOpenChange,
-  label = "Diğer işlemler",
+  label = "More",
   disabled,
   title,
   icon: TriggerIcon = Icon.more,
@@ -37,7 +37,7 @@ export function ActionMenu({
 }: {
   items: ActionMenuItem[];
   onOpenChange?: (open: boolean) => void;
-  /** aria-label / tooltip for the trigger button. Defaults to "Diğer işlemler". */
+  /** aria-label / tooltip for the trigger button. Defaults to "More". */
   label?: string;
   /** Disables the trigger button itself. */
   disabled?: boolean;
@@ -101,7 +101,7 @@ export function ActionMenu({
         type="button"
         onClick={() => setOpen(!open)}
         disabled={disabled}
-        aria-label={badge ? `${label} (${badge} seçili)` : label}
+        aria-label={badge ? `${label} (${badge} chosen)` : label}
         aria-haspopup="menu"
         aria-expanded={open}
         title={title ?? label}
@@ -124,7 +124,7 @@ export function ActionMenu({
              outside-click listener below instead */}
           <button
             type="button"
-            aria-label="Kapat"
+            aria-label="Close"
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm sm:hidden"
           />

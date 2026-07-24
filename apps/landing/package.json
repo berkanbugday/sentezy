@@ -11,7 +11,8 @@
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
-    "astro": "5.6.1"
+    "astro": "5.6.1",
+    "posthog-js": "1.407.2"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",

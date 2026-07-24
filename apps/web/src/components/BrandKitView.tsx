@@ -17,9 +17,9 @@ import { useBrandKit, useUpdateBrandKit, useUploadBrandAsset } from "@/lib/queri
 const SWATCHES = ["#0A0A0B", "#52525B", "#FF5A1F", "#2563EB", "#059669", "#7C3AED"];
 
 const MODES: { v: PreviewMode; label: string }[] = [
-  { v: "intro", label: "Giriş" },
-  { v: "outro", label: "Kapanış" },
-  { v: "watermark", label: "Filigran" },
+  { v: "intro", label: "Intro" },
+  { v: "outro", label: "Outro" },
+  { v: "watermark", label: "Watermark" },
 ];
 
 const INPUT =
@@ -75,7 +75,7 @@ export function BrandKitView() {
       setSaved(false);
       setDraft((d) => (d ? { ...d, logoKey: key, logoUrl: url } : d));
     } catch {
-      setUploadError("Logo yüklenemedi. Tekrar dene.");
+      setUploadError("That logo would not upload. Try again, or use a PNG under 5 MB.");
     }
   };
 
@@ -97,7 +97,7 @@ export function BrandKitView() {
       setSaved(false);
       setDraft((d) => (d ? { ...d, [end]: { key, ms: measured.ms, url, crop: DEFAULT_CROP } } : d));
     } catch {
-      setClipError("Video yüklenemedi. Tekrar dene.");
+      setClipError("That file would not upload. Try again, or use a shorter clip.");
     } finally {
       setUploading(null);
     }
@@ -141,22 +141,22 @@ export function BrandKitView() {
     <div className="mx-auto max-w-5xl pb-16">
       <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="disp text-[28px] font-semibold text-ink">Marka Kiti</h1>
+          <h1 className="disp text-[28px] font-semibold text-ink">Brand kit</h1>
           <p className="mt-1 text-[14.5px] text-slate">
-            Bir kez ayarla, videolarında giriş, kapanış ve filigran olarak kullan.
+            Set this up once and every video can open, close and sign off as your brand.
           </p>
         </div>
         {draft && (
           <div className="flex items-center gap-3">
-            {saved && !dirty && <span role="status" className="text-[13px] text-muted">Kaydedildi</span>}
-            {save.isError && <span className="text-[13px] text-red-600">Kaydedilemedi</span>}
+            {saved && !dirty && <span role="status" className="text-[13px] text-muted">Saved</span>}
+            {save.isError && <span className="text-[13px] text-red-600">Couldn't save</span>}
             <button
               type="button"
               onClick={onSave}
               disabled={!dirty || save.isPending}
               className="btn btn-primary min-w-28 disabled:opacity-35"
             >
-              {save.isPending ? "Kaydediliyor…" : "Kaydet"}
+              {save.isPending ? "Saving…" : "Save"}
             </button>
           </div>
         )}
@@ -164,7 +164,7 @@ export function BrandKitView() {
 
       {kitQ.isLoading ? (
         <div role="status" aria-live="polite" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <span className="sr-only">Yükleniyor…</span>
+          <span className="sr-only">Loading…</span>
           <div className="card p-5">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center justify-between gap-6 border-b border-hairline py-4 last:border-0">
@@ -179,7 +179,7 @@ export function BrandKitView() {
         /* A failed load is not an empty kit — showing blank defaults would let a save
            overwrite the real one. */
         <div className="card p-10 text-center">
-          <p className="text-[14px] text-muted">Marka kiti yüklenemedi</p>
+          <p className="text-[14px] text-muted">Your brand kit could not be loaded. Refresh the page.</p>
           <button type="button" onClick={() => kitQ.refetch()} className="mt-2 text-[13px] font-medium text-signal">
             Tekrar dene
           </button>
@@ -188,7 +188,7 @@ export function BrandKitView() {
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="flex flex-col gap-5">
             <section className="card px-5 py-1">
-              <Row label="Logo" hint="PNG, JPG, WEBP ya da SVG">
+              <Row label="Logo" hint="PNG, JPG, WEBP or SVG">
                 <input
                   ref={fileRef}
                   type="file"
@@ -201,7 +201,7 @@ export function BrandKitView() {
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={upload.isPending}
-                    aria-label={draft.logoUrl ? "Logoyu değiştir" : "Logo yükle"}
+                    aria-label={draft.logoUrl ? "Replace logo" : "Upload logo"}
                     className={`group relative grid h-[52px] w-[52px] flex-none place-items-center overflow-hidden rounded-xl border bg-mist transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
                       draft.logoUrl ? "border-hairline hover:border-slate" : "border-dashed border-hairline hover:border-slate"
                     }`}
@@ -229,48 +229,48 @@ export function BrandKitView() {
                       }}
                       className="text-[13px] font-medium text-muted transition hover:text-ink"
                     >
-                      Kaldır
+                      Remove
                     </button>
                   )}
                 </div>
               </Row>
 
-              <Row label="Marka adı">
+              <Row label="Brand name">
                 <input
                   value={draft.brandName}
                   onChange={(e) => set("brandName", e.target.value)}
                   maxLength={60}
                   placeholder="Sentezy"
                   className={INPUT}
-                  aria-label="Marka adı"
+                  aria-label="Brand name"
                 />
               </Row>
 
-              <Row label="Kullanıcı adı">
+              <Row label="Handle">
                 <input
                   value={draft.handle}
                   onChange={(e) => set("handle", e.target.value)}
                   maxLength={40}
                   placeholder="@sentezy"
                   className={INPUT}
-                  aria-label="Kullanıcı adı"
+                  aria-label="Handle"
                 />
               </Row>
 
-              <Row label="Kapanış yazısı" hint="Videonun sonundaki buton">
+              <Row label="Closing line" hint="The button on the last card">
                 <input
                   value={draft.outroCta}
                   onChange={(e) => set("outroCta", e.target.value)}
                   maxLength={40}
-                  placeholder="Hemen dene"
+                  placeholder="Try it now"
                   className={INPUT}
-                  aria-label="Kapanış yazısı"
+                  aria-label="Closing line"
                 />
               </Row>
             </section>
 
             <section className="card px-5 py-1">
-              <Row label="Renk" hint="Giriş ve kapanış arka planı">
+              <Row label="Colour" hint="Background of the intro and outro">
                 <div className="flex items-center gap-1.5">
                   {SWATCHES.map((hex) => {
                     const on = draft.color.toUpperCase() === hex;
@@ -290,7 +290,7 @@ export function BrandKitView() {
                   })}
                   <label
                     className="ml-0.5 grid h-7 w-7 flex-none cursor-pointer place-items-center rounded-full border border-dashed border-hairline text-muted transition hover:border-slate hover:text-ink"
-                    title="Özel renk"
+                    title="Custom colour"
                   >
                     <Icon.plus width={13} height={13} />
                     <input
@@ -298,31 +298,30 @@ export function BrandKitView() {
                       value={draft.color}
                       onChange={(e) => set("color", e.target.value)}
                       className="sr-only"
-                      aria-label="Özel renk"
+                      aria-label="Custom colour"
                     />
                   </label>
                 </div>
               </Row>
 
-              <Row label="Yazı tipi">
+              <Row label="Font">
                 <FontSelect value={draft.font} options={CAPTION_FONTS} onChange={(f) => set("font", f)} />
               </Row>
             </section>
 
             <section className="card px-5 py-1">
               <div className="border-b border-hairline pb-3 pt-4">
-                <div className="text-[13.5px] font-medium text-ink">Kendi görselin ya da videon</div>
+                <div className="text-[13.5px] font-medium text-ink">Use your own image or clip</div>
                 <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
-                  Hazır kart yerine kendi görselini ya da videonu kullan; yüklediğin dosya o
-                  bölümün yerini tamamen alır. Dosya 9:16 dikey formata göre ölçeklenir,
-                  taşan kenarlar kırpılır — önemli kısımları ortada tut. Görseller kart
-                  süresi kadar ekranda kalır.
+                  Upload something and it replaces that card entirely. It is scaled to fill a
+                  9:16 frame and the overflow is cropped, so keep anything important near the
+                  middle. A photo stays on screen for the length of the card.
                 </p>
               </div>
               {(
                 [
-                  { end: "introClip", label: "Giriş", ref: introRef },
-                  { end: "outroClip", label: "Kapanış", ref: outroRef },
+                  { end: "introClip", label: "Intro", ref: introRef },
+                  { end: "outroClip", label: "Outro", ref: outroRef },
                 ] as const
               ).map(({ end, label, ref }) => {
                 const clip = draft[end];
@@ -347,7 +346,7 @@ export function BrandKitView() {
                             onClick={() => ref.current?.click()}
                             className="text-[13px] font-medium text-signal"
                           >
-                            Değiştir
+                            Replace
                           </button>
                           <button
                             type="button"
@@ -357,7 +356,7 @@ export function BrandKitView() {
                             }}
                             className="text-[13px] font-medium text-muted transition hover:text-ink"
                           >
-                            Kaldır
+                            Remove
                           </button>
                         </span>
                       </div>
@@ -370,11 +369,11 @@ export function BrandKitView() {
                       >
                         {uploading === end ? (
                           <>
-                            <Spinner size={14} /> Yükleniyor…
+                            <Spinner size={14} /> Uploading…
                           </>
                         ) : (
                           <>
-                            <Icon.plus width={14} height={14} /> Görsel ya da video yükle
+                            <Icon.plus width={14} height={14} /> Upload an image or clip
                           </>
                         )}
                       </button>
@@ -432,7 +431,7 @@ export function BrandKitView() {
                     step={0.01}
                     value={activeClip.crop.scale}
                     onChange={(e) => setCrop({ ...activeClip.crop, scale: Number(e.target.value) })}
-                    aria-label="Yakınlaştır"
+                    aria-label="Zoom"
                     className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-hairline accent-ink"
                   />
                   <button
@@ -445,16 +444,16 @@ export function BrandKitView() {
                     }
                     className="flex-none text-[12px] font-medium text-muted transition hover:text-ink disabled:opacity-35"
                   >
-                    Sıfırla
+                    Reset
                   </button>
                 </div>
                 <p className="mt-2 text-[12px] leading-relaxed text-muted">
-                  Görüntüyü sürükleyerek 9:16 kadrajda ne görüneceğini seç.
+                  Drag the image to choose what shows inside the 9:16 frame.
                 </p>
               </div>
             ) : (
               <p className="mt-2.5 text-[12px] leading-relaxed text-muted">
-                Yazı rengi marka rengine göre seçilir, her zaman okunur kalır.
+                The text colour is chosen from your brand colour, so it always stays readable.
               </p>
             )}
           </aside>

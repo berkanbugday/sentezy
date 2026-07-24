@@ -9,12 +9,12 @@ import type { UserInfo } from "@/lib/user";
 import { Icon } from "./icons";
 
 const DOCK = [
-  { href: "/dashboard", label: "Ana sayfa", icon: Icon.home, ready: true },
-  { href: "/library", label: "Videolar", icon: Icon.video, ready: true },
+  { href: "/dashboard", label: "Home", icon: Icon.home, ready: true },
+  { href: "/library", label: "Videos", icon: Icon.video, ready: true },
   { href: "/avatars", label: "Avatar", icon: Icon.users, ready: true },
-  // Short label deliberately: five slots plus "Daha" is the most this dock fits at
-  // 360px, and "Marka Kiti" would wrap.
-  { href: "/brand-kit", label: "Marka", icon: Icon.box, ready: true },
+  // Short label deliberately: five slots plus "More" is the most this dock fits at
+  // 360px, and "Brand Kit" would wrap.
+  { href: "/brand-kit", label: "Brand", icon: Icon.box, ready: true },
 ];
 
 /** Mobile bottom dock. Primary nav with a Material-style oval highlight behind the
@@ -63,14 +63,14 @@ export function BottomNav({ user: authUser }: { user: UserInfo }) {
             <span className={`flex h-7 w-[54px] items-center justify-center rounded-full transition ${sheet ? "bg-white/16 text-white" : "text-white/55"}`}>
               <Icon.more width={20} height={20} />
             </span>
-            <span className={`text-[10px] font-medium leading-none ${sheet ? "text-white" : "text-white/55"}`}>Daha</span>
+            <span className={`text-[10px] font-medium leading-none ${sheet ? "text-white" : "text-white/55"}`}>More</span>
           </button>
         </div>
       </nav>
 
       {sheet && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <button aria-label="Kapat" onClick={() => setSheet(false)} className="absolute inset-0 bg-black/50" />
+          <button aria-label="Close" onClick={() => setSheet(false)} className="absolute inset-0 bg-black/50" />
           <div className="sheet-in absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-hairline bg-paper p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl">
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-hairline" />
             <div className="flex items-center gap-3 px-1 pb-3">
@@ -81,24 +81,24 @@ export function BottomNav({ user: authUser }: { user: UserInfo }) {
               </div>
               <span className="flex flex-none items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5 text-[12.5px] font-semibold text-ink">
                 <Icon.bolt width={13} height={13} className="text-slate" />
-                {credits ?? "—"} <span className="text-muted">kredi</span>
+                {credits ?? "—"} <span className="text-muted">credits</span>
               </span>
             </div>
             <div className="flex flex-col gap-0.5 border-t border-hairline pt-2">
               <Link href="/settings" onClick={() => setSheet(false)} className="nav-item">
                 <Icon.settings width={18} height={18} />
-                Ayarlar
+                Settings
               </Link>
               <button className="nav-item">
                 <Icon.help width={18} height={18} />
-                Yardım & destek
+                Help
               </button>
               <button onClick={signOut} className="nav-item">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <path d="m16 17 5-5-5-5M21 12H9" />
                 </svg>
-                Çıkış yap
+                Log out
               </button>
             </div>
           </div>

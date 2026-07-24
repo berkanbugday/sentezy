@@ -41,7 +41,7 @@ export function TeamSwitcher({ user: authUser, collapsed }: { user: UserInfo; co
 
   if (collapsed) {
     return (
-      <Tooltip label={`${user.name} — çalışma alanı`}>
+      <Tooltip label={`${user.name} — your workspace`}>
         <button className="flex items-center justify-center rounded-xl p-1.5 hover:bg-white/10">{avatar}</button>
       </Tooltip>
     );
@@ -67,7 +67,7 @@ export function TeamSwitcher({ user: authUser, collapsed }: { user: UserInfo; co
             className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-white/85 hover:bg-white/10"
           >
             <Icon.settings width={16} height={16} />
-            Ayarlar
+            Settings
           </Link>
           <button
             onClick={signOut}
@@ -77,7 +77,7 @@ export function TeamSwitcher({ user: authUser, collapsed }: { user: UserInfo; co
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <path d="m16 17 5-5-5-5M21 12H9" />
             </svg>
-            Çıkış yap
+            Log out
           </button>
         </div>
       )}

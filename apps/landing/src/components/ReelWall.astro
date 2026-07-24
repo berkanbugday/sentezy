@@ -1,5 +1,5 @@
 ---
-/* The reel wall: four finished reels playing on the dark band, in phone frames rather than
+/* The reel wall: six finished reels playing on the dark band, in phone frames rather than
    Instagram's embed chrome — that embed wrapped our best work in a white card with a "0 likes"
    counter, an "Add a comment" field and a letterboxed player.
 
@@ -7,15 +7,14 @@
    card. No follow button either — the footer already links the account, and a second one here
    interrupted the row.
 
-   The row slides by itself. Four reels are not enough to fill a desktop with a seamless loop —
-   the track has to stay wider than the viewport after it has scrolled one pass — so the list is
-   rendered four times and the animation translates -25%. Every pass after the first is
-   aria-hidden and unfocusable, so the reels are announced once. A tap stops the slide
+   The row slides by itself. The list has to stay wider than the viewport after it has scrolled
+   one pass, so it is rendered four times and the animation translates -25%. Every pass after the
+   first is aria-hidden and unfocusable, so the reels are announced once. A tap stops the slide
    and turns that reel's sound on — you cannot read a card that is moving away from your thumb.
 
    Muted autoplay once a card scrolls into view. The file is only fetched at that point
-   (preload="none" plus a data-src the script promotes), so the initial payload is four posters,
-   not five megabytes of video. */
+   (preload="none" plus a data-src the script promotes), so the initial payload is six posters,
+   not a wall of video. */
 import { getImage } from "astro:assets";
 import { showcase } from "../data/copy";
 import { reels } from "../data/reels";

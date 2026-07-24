@@ -35,14 +35,14 @@ export function RenderStage({
       aria-live="polite"
     >
       <span className="sr-only">
-        {active ? STAGE_LABEL[active] : "Sıraya alındı"} — %{Math.round(progress)}
+        {active ? STAGE_LABEL[active] : "In the queue"} — {Math.round(progress)}%
       </span>
 
       <Glyph stage={active} size={size} />
 
       {!compact && (
         <>
-          <p className="text-[13px] font-medium text-ink">{active ? STAGE_LABEL[active] : "Sıraya alındı"}</p>
+          <p className="text-[13px] font-medium text-ink">{active ? STAGE_LABEL[active] : "In the queue"}</p>
 
           {/* Four segments, one per stage: filled behind, live in front, empty ahead. A discrete
            *  rail beats a single bar here because the backend reports stages, not smooth progress —

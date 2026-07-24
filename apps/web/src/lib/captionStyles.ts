@@ -22,10 +22,10 @@ export const CAPTION_FONTS = [
 ];
 
 export const CAPTION_COLORS: { name: string; hex: string }[] = [
-  { name: "Sarı", hex: "#FFD54A" }, { name: "Beyaz", hex: "#FFFFFF" }, { name: "Yeşil", hex: "#34D399" },
-  { name: "Mavi", hex: "#38BDF8" }, { name: "Mor", hex: "#A78BFA" }, { name: "Pembe", hex: "#F472B6" },
-  { name: "Kırmızı", hex: "#F87171" }, { name: "Turuncu", hex: "#FB923C" }, { name: "Lime", hex: "#A3E635" },
-  { name: "Turkuaz", hex: "#22D3EE" }, { name: "Altın", hex: "#FBBF24" }, { name: "Menekşe", hex: "#C084FC" },
+  { name: "Yellow", hex: "#FFD54A" }, { name: "White", hex: "#FFFFFF" }, { name: "Green", hex: "#34D399" },
+  { name: "Blue", hex: "#38BDF8" }, { name: "Purple", hex: "#A78BFA" }, { name: "Pink", hex: "#F472B6" },
+  { name: "Red", hex: "#F87171" }, { name: "Orange", hex: "#FB923C" }, { name: "Lime", hex: "#A3E635" },
+  { name: "Cyan", hex: "#22D3EE" }, { name: "Gold", hex: "#FBBF24" }, { name: "Violet", hex: "#C084FC" },
 ];
 
 // The 20 caption effects, derived from the canonical registry in @sentezy/types.

@@ -19,11 +19,11 @@ export type ApiVideo = {
 };
 
 export const STATUS_LABEL: Record<VideoStatus, [string, string]> = {
-  draft: ["Taslak", "badge-draft"],
-  queued: ["Sırada", "badge-proc"],
-  processing: ["İşleniyor", "badge-proc"],
-  ready: ["Hazır", "badge-ready"],
-  failed: ["Başarısız", "badge-fail"],
+  draft: ["Draft", "badge-draft"],
+  queued: ["In queue", "badge-proc"],
+  processing: ["Making", "badge-proc"],
+  ready: ["Ready", "badge-ready"],
+  failed: ["Failed", "badge-fail"],
 };
 
 /** The DB/API stores the aspect ratio as a Prisma enum member ("r9_16"); show it as "9:16". */
@@ -33,9 +33,9 @@ export function formatRatio(r: string): string {
 }
 
 export const STAGE_LABEL: Record<string, string> = {
-  tts: "Ses üretiliyor",
-  avatar: "Avatar oluşturuluyor",
-  compose: "Video kurgulanıyor",
-  thumbnail: "Küçük resim hazırlanıyor",
-  done: "Tamamlandı",
+  tts: "Recording the voice",
+  avatar: "Filming the presenter",
+  compose: "Editing the video",
+  thumbnail: "Making the thumbnail",
+  done: "Done",
 };

@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
             <p className="disp max-w-[18em] text-[26px] font-semibold leading-snug">
-              Fikirlerini konuşan videolara sentezle.
+              Turn a link or a couple of sentences into a video that talks.
             </p>
           </div>
           <div className="text-[13px] text-white/70">© 2026 Sentezy</div>

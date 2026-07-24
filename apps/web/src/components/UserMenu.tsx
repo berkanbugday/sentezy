@@ -15,7 +15,7 @@ export function UserMenu({ user, collapsed }: { user: UserInfo; collapsed?: bool
     return (
       <button
         onClick={signOut}
-        title={`${user.name} — Çıkış yap`}
+        title={`${user.name} — log out`}
         className="mt-1 flex items-center justify-center rounded-xl p-2 hover:bg-mist"
       >
         <span className="grad flex h-9 w-9 flex-none items-center justify-center rounded-full text-[13px] font-bold text-white">
@@ -35,7 +35,7 @@ export function UserMenu({ user, collapsed }: { user: UserInfo; collapsed?: bool
       </div>
       <button
         onClick={signOut}
-        title="Çıkış yap"
+        title="Log out"
         className="flex h-8 w-8 flex-none items-center justify-center rounded-lg text-muted hover:bg-hairline hover:text-ink"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">

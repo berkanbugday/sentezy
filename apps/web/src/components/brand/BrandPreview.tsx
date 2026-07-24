@@ -137,7 +137,7 @@ export function BrandPreview({
           )}
           {empty && (
             <div className="text-[12px]" style={{ color: ink, opacity: 0.5 }}>
-              Logo ya da marka adı ekle
+              Add a logo or a brand name
             </div>
           )}
         </div>

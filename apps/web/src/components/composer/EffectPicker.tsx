@@ -10,16 +10,16 @@ export function EffectPicker({ open, onClose, value, onSelect, boundaryLabel }: 
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
       <div className="sheet-in no-scrollbar relative z-10 flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-paper shadow-2xl sm:rounded-[24px] sm:border sm:border-hairline">
         <div className="flex-none px-5 pt-5">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-hairline sm:hidden" />
           <div className="mb-1 flex items-start justify-between gap-3">
             <div>
-              <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Geçiş Efekti</h3>
+              <h3 className="disp mt-0.5 text-[18px] font-semibold text-ink">Transition</h3>
               {boundaryLabel && <p className="mt-0.5 text-[12px] text-muted">{boundaryLabel}</p>}
             </div>
-            <button type="button" onClick={onClose} aria-label="Kapat" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
+            <button type="button" onClick={onClose} aria-label="Close" className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted transition hover:bg-mist hover:text-ink">
               <Icon.close width={18} height={18} className="block" />
             </button>
           </div>
@@ -40,7 +40,7 @@ export function EffectPicker({ open, onClose, value, onSelect, boundaryLabel }: 
 
         <div className="flex flex-none justify-end px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3">
           <button type="button" onClick={onClose} className="btn btn-primary min-w-28">
-            Tamam
+            Done
           </button>
         </div>
       </div>

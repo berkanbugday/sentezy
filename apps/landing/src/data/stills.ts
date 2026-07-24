@@ -12,13 +12,13 @@ export type Still = {
 };
 
 export const stills: Still[] = [
-  { slug: "kevser",   tint: "rose",   sector: "E-commerce",   caption: "SOLD OUT TWICE", style: "hormozi" },
+  { slug: "camila",   tint: "rose",   sector: "E-commerce",   caption: "SOLD OUT TWICE", style: "hormozi" },
   { slug: "anna",     tint: "cool",   sector: "Real Estate",       caption: "3+1 SEA VIEW", style: "boxed" },
-  { slug: "aaliyah",  tint: "violet", sector: "Influencer",  caption: "LINK IN BIO",      style: "glow" },
-  { slug: "mariam",   tint: "teal",   sector: "Dental",         caption: "SAME DAY SMILE",   style: "highlight" },
-  { slug: "beyza",    tint: "warm",   sector: "E-commerce",   caption: "NEW DROP",       style: "tiktok" },
+  { slug: "aisha",    tint: "violet", sector: "Influencer",  caption: "LINK IN BIO",      style: "glow" },
+  { slug: "arda",     tint: "teal",   sector: "Dental",         caption: "SAME DAY SMILE",   style: "highlight" },
+  { slug: "amara",    tint: "warm",   sector: "E-commerce",   caption: "NEW DROP",       style: "tiktok" },
   { slug: "hana",     tint: "cool",   sector: "Finance",      caption: "0% FOR 12 MO",     style: "boxed" },
-  { slug: "sumeyye",  tint: "teal",   sector: "Health",      caption: "BOOK IN 30 SEC", style: "highlight" },
+  { slug: "hana",     tint: "teal",   sector: "Health",      caption: "BOOK IN 30 SEC", style: "highlight" },
   { slug: "camila",   tint: "amber",  sector: "Automotive",    caption: "TEST DRIVE IT",      style: "hormozi" },
   { slug: "arda",     tint: "teal",   sector: "Pharmacy",      caption: "OPEN 24/7",        style: "clean" },
   { slug: "amara",    tint: "violet", sector: "Education",      caption: "ENROLL TODAY",   style: "tiktok" },

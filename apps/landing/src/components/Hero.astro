@@ -3,7 +3,7 @@
    the pitch — which is a grid `order` change and nothing else: the component lays out exactly
    as it does on desktop. */
 import { hero } from "../data/copy";
-import { SIGNUP_URL } from "../data/site";
+import { START_URL } from "../data/site";
 import ReelMarquee from "./ReelMarquee.astro";
 ---
 
@@ -14,7 +14,7 @@ import ReelMarquee from "./ReelMarquee.astro";
       <h1 class="disp h1x">{hero.title}</h1>
       <p class="lead">{hero.lead}</p>
       <div class="hero-cta">
-        <a class="btn btn-primary btn-lg" href={SIGNUP_URL}><span>{hero.ctaPrimary}</span></a>
+        <a class="btn btn-primary btn-lg" href={START_URL}><span>{hero.ctaPrimary}</span></a>
         <a class="btn btn-ghost btn-lg" href="#showcase"><span class="play">▶</span><span>{hero.ctaSecondary}</span></a>
       </div>
       <div class="microcopy">{hero.microcopy}</div>

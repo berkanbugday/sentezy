@@ -1,13 +1,14 @@
 ---
 import "../styles/global.css";
+import Posthog from "../components/Posthog.astro";
 
 interface Props {
   title?: string;
   description?: string;
 }
 const {
-  title = "Sentezy — reels with an AI presenter",
-  description = "Turn a product link or a script into a finished 9:16 reel with an AI presenter, viral captions and your brand kit. No filming, no editing.",
+  title = "Sentezy — vertical video without a camera",
+  description = "Paste a product link or two sentences and get a finished vertical video with a presenter, voice, captions and music, ready for Reels, TikTok and Shorts. Free to start.",
 } = Astro.props;
 ---
 
@@ -29,6 +30,7 @@ const {
     />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <Posthog />
   </head>
   <body>
     <slot />

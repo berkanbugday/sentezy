@@ -16,17 +16,17 @@ export default function NotFound() {
 
         {/* message + actions on the white panel */}
         <div className="px-8 pb-8 pt-7 text-center">
-          <h1 className="disp text-[19px] font-semibold text-ink">Sayfa bulunamadı</h1>
+          <h1 className="disp text-[19px] font-semibold text-ink">Page not found</h1>
           <p className="mx-auto mt-2 max-w-[19em] text-[14px] leading-relaxed text-slate">
-            Aradığın sayfa taşınmış ya da hiç var olmamış olabilir. Panele dönüp kaldığın yerden devam edebilirsin.
+            This page has moved or never existed. Head back and pick up where you left off.
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
             <Link href="/dashboard" className="btn btn-primary w-full justify-center sm:w-auto">
               <Icon.home width={16} height={16} />
-              Panele dön
+              Back to the composer
             </Link>
             <Link href="/library" className="btn btn-ghost w-full justify-center sm:w-auto">
-              Videolarım
+              Your videos
             </Link>
           </div>
         </div>

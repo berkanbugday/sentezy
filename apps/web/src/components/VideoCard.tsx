@@ -35,7 +35,7 @@ export function VideoCard({ video }: { video: ApiVideo }) {
       <div className="p-3">
         <p className="truncate text-[13.5px] font-semibold text-ink">{videoDisplayTitle(video)}</p>
         <div className="mt-1 flex items-center justify-between text-[12px] text-muted">
-          <span>{new Date(video.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</span>
+          <span>{new Date(video.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
           <span className="mono">{duration}</span>
         </div>
       </div>

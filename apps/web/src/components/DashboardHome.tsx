@@ -78,19 +78,19 @@ export function DashboardHome() {
       <section className="hero-aurora -mx-5 -mt-6 px-5 pb-10 pt-10 sm:-mx-6 sm:px-6 sm:pt-12 md:-mx-8 md:px-8">
         <div className="mx-auto max-w-4xl">
           <div>
-            <h1 className="disp text-[26px] font-semibold leading-tight text-ink sm:text-[34px]">Sentezy&apos;e hoş geldin</h1>
+            <h1 className="disp text-[26px] font-semibold leading-tight text-ink sm:text-[34px]">What are we making today?</h1>
             {/* A deleted or missing source degrades to a plain new-video flow with a
                 notice — never an error screen, since the composer works fine without it. */}
             <p className="mt-1.5 text-[14px] text-slate sm:text-[15px]">
               {reuseFailed
-                ? "Önceki video bulunamadı — varsayılan ayarlarla başlıyorsun"
+                ? "That video could not be found, so we started you fresh"
                 : reuseId
-                  ? "Ayarlar önceki videodan alındı — yeni metnini yaz"
+                  ? "Same presenter, voice and style as before — just write the new script"
                   : avatarFailed
-                    ? "Avatar bulunamadı — varsayılan ayarlarla başlıyorsun"
+                    ? "That presenter could not be found, so we started you fresh"
                     : avatarSeeded
-                      ? `${avatarSeeded.selectedAvatar?.name} seçildi — metnini yaz`
-                      : "Medyanı içe aktar ve videonu oluştur"}
+                      ? `${avatarSeeded.selectedAvatar?.name} is presenting — write the script`
+                      : "Paste a product link, or upload your own photos and clips"}
             </p>
           </div>
           <MediaComposer extraSettings={settings} onSettingsChange={setSettings} seed={seed} />

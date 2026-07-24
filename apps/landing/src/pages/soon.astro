@@ -1,0 +1,50 @@
+---
+/* Where every "Start free" button leads until the app opens. A calm, standalone screen — no nav,
+   no footer — so a visitor understands the app is on its way and how to keep in touch. */
+import Base from "../layouts/Base.astro";
+import { INSTAGRAM_URL } from "../data/site";
+---
+
+<Base title="Coming soon — Sentezy" description="Sentezy is almost ready. Follow along to know when it opens.">
+  <main class="soon">
+    <div class="soon-in">
+      <a class="soon-logo" href="/">
+        <img src="/sentezy-logo.png" alt="" />
+        <span>Sentezy</span>
+      </a>
+      <div class="soon-eyebrow">COMING SOON</div>
+      <h1 class="disp">We're almost ready.</h1>
+      <p>
+        Sentezy isn't open to everyone just yet. Follow along and you'll be the first to know when
+        you can make your first video.
+      </p>
+      <div class="soon-actions">
+        <a class="btn btn-primary btn-lg" href={INSTAGRAM_URL} target="_blank" rel="noopener">
+          <span>Follow on Instagram</span>
+        </a>
+        <a class="soon-back" href="/">← Back to home</a>
+      </div>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .soon { min-height: 100vh; min-height: 100svh; display: grid; place-items: center; padding: 40px 24px;
+    background: radial-gradient(120% 90% at 50% 0%, #f4f4f5 0%, #ffffff 60%); }
+  .soon-in { max-width: 460px; text-align: center; }
+  .soon-logo { display: inline-flex; align-items: center; gap: 12px; font-family: var(--font-display);
+    font-weight: 700; font-size: 30px; letter-spacing: -0.01em; color: var(--color-ink); }
+  .soon-logo img { height: 44px; width: auto; }
+  .soon-eyebrow { font-family: var(--font-mono); font-size: 13px; font-weight: 500; letter-spacing: 0.14em;
+    color: var(--color-muted); margin-top: 32px; }
+  .soon h1 { font-size: 44px; line-height: 1.08; letter-spacing: -0.02em; font-weight: 700;
+    color: var(--color-ink); margin: 14px 0 0; }
+  .soon p { font-size: 17px; line-height: 1.6; color: #52525b; margin: 18px 0 0; }
+  .soon-actions { display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 34px; }
+  .soon-back { font-family: var(--font-mono); font-size: 13px; color: var(--color-muted); }
+  .soon-back:hover { color: var(--color-ink); }
+
+  @media (max-width: 640px) {
+    .soon h1 { font-size: 34px; }
+  }
+</style>

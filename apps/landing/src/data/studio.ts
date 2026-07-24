@@ -13,12 +13,12 @@ export type Presenter = { slug: string; name: string; sector: string; tint: Tint
 /** Six of the twelve — enough to read as a catalog without the phone cycling for half a minute.
  *  Ordered so consecutive slides change sector, tone and backdrop, not just the face. */
 export const presenters: Presenter[] = [
-  { slug: "kevser",  name: "Kevser",  sector: "E-commerce",  tint: "rose" },
-  { slug: "anna",    name: "Anna",    sector: "Real estate", tint: "cool" },
-  { slug: "arda",    name: "Arda",    sector: "Pharmacy",    tint: "teal" },
-  { slug: "aaliyah", name: "Aaliyah", sector: "Influencer",  tint: "violet" },
-  { slug: "camila",  name: "Camila",  sector: "Automotive",  tint: "amber" },
-  { slug: "alp",     name: "Alp",     sector: "Optics",      tint: "cool" },
+  { slug: "aisha",  name: "Aisha",  sector: "E-commerce",  tint: "rose" },
+  { slug: "anna",   name: "Anna",   sector: "Real estate", tint: "cool" },
+  { slug: "arda",   name: "Arda",   sector: "Pharmacy",    tint: "teal" },
+  { slug: "amara",  name: "Amara",  sector: "Influencer",  tint: "violet" },
+  { slug: "camila", name: "Camila", sector: "Automotive",  tint: "amber" },
+  { slug: "alp",    name: "Alp",    sector: "Optics",      tint: "cool" },
 ];
 
 export type Voice = { name: string; meta: string; presenter: string; tint: Tint };
@@ -35,10 +35,10 @@ export type Track = { name: string; mood: string; sec: number; bars: number[] };
 /** `bars` is the equalizer silhouette — a fixed 9-bar shape per track so the four moods read
  *  differently at a glance (calm sits low and even, energetic spikes). */
 export const tracks: Track[] = [
-  { name: "Fırtınadan Sonra",   mood: "Cinematic", sec: 123, bars: [30, 52, 44, 68, 90, 62, 46, 58, 34] },
-  { name: "Huzurlu An",         mood: "Calm",      sec: 19,  bars: [22, 30, 26, 34, 28, 36, 24, 30, 20] },
-  { name: "Zafer Anı",          mood: "Energetic", sec: 57,  bars: [46, 84, 60, 96, 72, 100, 58, 88, 52] },
-  { name: "Motivasyon Dalgası", mood: "Corporate", sec: 170, bars: [34, 48, 62, 54, 70, 58, 66, 44, 38] },
+  { name: "After the Storm", mood: "Cinematic", sec: 123, bars: [30, 52, 44, 68, 90, 62, 46, 58, 34] },
+  { name: "Quiet Hour",      mood: "Calm",      sec: 19,  bars: [22, 30, 26, 34, 28, 36, 24, 30, 20] },
+  { name: "Victory Lap",     mood: "Energetic", sec: 57,  bars: [46, 84, 60, 96, 72, 100, 58, 88, 52] },
+  { name: "Momentum",        mood: "Corporate", sec: 170, bars: [34, 48, 62, 54, 70, 58, 66, 44, 38] },
 ];
 
 /** The caption treatments, matching `.cap-<id>` in global.css and real CAPTION_STYLE_META ids. */

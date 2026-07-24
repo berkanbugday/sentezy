@@ -4,12 +4,12 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Sentezy",
-  description: "AI video studio — synthesize ideas into talking video.",
+  description: "Turn a product link or a couple of sentences into a finished vertical video — presenter, voice, captions and music included.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="tr">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://api.fontshare.com" />

@@ -15,15 +15,15 @@ export function LibraryView() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="disp text-[28px] font-semibold text-ink">Videolarım</h1>
-          <p className="mt-1 text-[14.5px] text-slate">Oluşturduğun tüm videolar.</p>
+          <h1 className="disp text-[28px] font-semibold text-ink">Your videos</h1>
+          <p className="mt-1 text-[14.5px] text-slate">Everything you have made, newest first.</p>
         </div>
-        <Link href="/dashboard" className="btn btn-primary">+ Yeni video</Link>
+        <Link href="/dashboard" className="btn btn-primary">+ New video</Link>
       </div>
 
       {isLoading && (
         <div role="status" aria-live="polite">
-          <span className="sr-only">Yükleniyor…</span>
+          <span className="sr-only">Loading…</span>
           <div className={GRID_CLS}>
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="card overflow-hidden">
@@ -39,9 +39,9 @@ export function LibraryView() {
 
       {videos?.length === 0 && (
         <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
-          <p className="disp text-[18px] font-semibold text-ink">Henüz video yok</p>
-          <p className="max-w-sm text-[14px] text-slate">İlk reelini oluştur — bir senaryo yaz, avatar ve ses seç.</p>
-          <Link href="/dashboard" className="btn btn-primary mt-1">İlk videonu oluştur</Link>
+          <p className="disp text-[18px] font-semibold text-ink">No videos yet</p>
+          <p className="max-w-sm text-[14px] text-slate">Paste a product link or write a couple of sentences, and Sentezy makes the rest.</p>
+          <Link href="/dashboard" className="btn btn-primary mt-1">Make your first video</Link>
         </div>
       )}
 
