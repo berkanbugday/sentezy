@@ -124,7 +124,7 @@ export function ActionMenu({
              outside-click listener below instead */}
           <button
             type="button"
-            aria-label="Kapat"
+            aria-label="Close"
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm sm:hidden"
           />

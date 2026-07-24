@@ -61,7 +61,7 @@ export function AvatarGrid({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Avatar ara…"
+            placeholder="Search avatars…"
             className="w-full rounded-full border border-hairline bg-paper py-2 pl-9 pr-3 text-[13px] text-ink outline-none transition focus:border-signal"
           />
         </div>

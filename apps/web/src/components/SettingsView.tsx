@@ -10,7 +10,7 @@ import { useProfile, useUpdateProfile } from "@/lib/queries";
 const INPUT =
   "w-full rounded-xl border border-hairline bg-mist px-3.5 py-2.5 text-[14px] text-ink outline-none transition placeholder:text-muted focus:border-signal";
 
-/** Plan → Turkish label. Only "free" and "max" exist today; an unknown value shows as-is
+/** Plan → display label. Only "free" and "max" exist today; an unknown value shows as-is
  *  rather than a wrong guess. */
 function planLabel(plan: string): string {
   if (plan === "free") return "Free plan";
@@ -42,7 +42,7 @@ export function SettingsView() {
   return (
     <div className="mx-auto max-w-3xl pb-16">
       <div className="mb-7">
-        <h1 className="disp text-[28px] font-semibold text-ink">Ayarlar</h1>
+        <h1 className="disp text-[28px] font-semibold text-ink">Settings</h1>
         <p className="mt-1 text-[14.5px] text-slate">Your account, your plan and your password.</p>
       </div>
 
@@ -60,13 +60,13 @@ export function SettingsView() {
         <div className="card p-10 text-center">
           <p className="text-[14px] text-muted">Your settings could not be loaded. Refresh the page.</p>
           <button type="button" onClick={() => profileQ.refetch()} className="mt-2 text-[13px] font-medium text-signal">
-            Tekrar dene
+            Try again
           </button>
         </div>
       ) : p ? (
         <div className="flex flex-col gap-5">
-          {/* ── Profil ── */}
-          <SettingsCard title="Profil">
+          {/* ── Profile ── */}
+          <SettingsCard title="Profile">
             <div className="flex items-center gap-4">
               <span className="grad grid h-14 w-14 flex-none place-items-center rounded-2xl text-[18px] font-bold text-white">
                 {initials}
@@ -96,15 +96,15 @@ export function SettingsView() {
                   disabled={!nameDirty || updateName.isPending}
                   className="btn btn-primary flex-none disabled:opacity-35"
                 >
-                  {updateName.isPending ? "…" : "Kaydet"}
+                  {updateName.isPending ? "…" : "Save"}
                 </button>
               </div>
-              {updateName.isError && <p className="mt-1.5 text-[12.5px] text-red-600">Kaydedilemedi, tekrar dene.</p>}
+              {updateName.isError && <p className="mt-1.5 text-[12.5px] text-red-600">Couldn't save, try again.</p>}
             </div>
 
             <div className="mt-5 flex items-center justify-between gap-4 border-t border-hairline pt-4">
               <div>
-                <div className="text-[13.5px] font-medium text-ink">E-posta</div>
+                <div className="text-[13.5px] font-medium text-ink">Email</div>
                 <div className="mt-0.5 text-[12.5px] text-muted">The address you log in with</div>
               </div>
               <span className="min-w-0 truncate text-[13.5px] text-slate">{p.email}</span>

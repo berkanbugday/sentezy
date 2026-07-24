@@ -485,7 +485,7 @@ export function MediaComposer({
             className="ml-2 flex h-[68px] w-[68px] flex-none flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-hairline text-muted transition hover:bg-mist hover:text-slate"
           >
             <Icon.plus width={20} height={20} />
-            <span className="text-[10px] font-medium">Ekle</span>
+            <span className="text-[10px] font-medium">Add</span>
           </button>
         </div>
       )}

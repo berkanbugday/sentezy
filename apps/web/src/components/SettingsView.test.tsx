@@ -37,7 +37,7 @@ function render(profile: Record<string, unknown>): string {
 
 // ── A free user with a name ───────────────────────────────────────────────────
 const free = render({ displayName: "Berkan Buğday", email: "berkan@x.co", plan: "free", credits: 25 });
-assert.ok(free.includes("Ayarlar"), "heading renders");
+assert.ok(free.includes("Settings"), "heading renders");
 assert.ok(free.includes("Berkan Buğday"), "display name shows");
 assert.ok(free.includes("berkan@x.co"), "email shows");
 assert.ok(free.includes("Free plan"), "free plan label");

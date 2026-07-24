@@ -67,7 +67,7 @@ export function TeamSwitcher({ user: authUser, collapsed }: { user: UserInfo; co
             className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-white/85 hover:bg-white/10"
           >
             <Icon.settings width={16} height={16} />
-            Ayarlar
+            Settings
           </Link>
           <button
             onClick={signOut}

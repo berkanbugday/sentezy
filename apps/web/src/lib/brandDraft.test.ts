@@ -43,7 +43,7 @@ assert.deepStrictEqual(toBrandDraft({ ...KIT, outroClipCrop: null }).outroClip?.
 // ── brandFingerprint ────────────────────────────────────────────────────────
 // THE REGRESSION THIS EXISTS FOR: the API re-signs every URL it returns, so the same
 // saved kit comes back with different signatures. If those counted, the form would be
-// dirty the instant it was saved — Kaydet stuck enabled, "Kaydedildi" never shown.
+// dirty the instant it was saved — Save stuck enabled, "Saved" never shown.
 const reSigned = toBrandDraft({
   ...KIT,
   logoUrl: "https://r2/logo.png?X-Amz-Date=20260721T111111Z&X-Amz-Signature=zzz",

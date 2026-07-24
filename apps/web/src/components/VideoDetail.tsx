@@ -169,8 +169,8 @@ export function VideoDetail({ id }: { id: string }) {
                   type="button"
                   disabled={!draftTitle.trim() || rename.isPending}
                   onClick={() => rename.mutate(draftTitle.trim(), { onSuccess: () => setEditing(false) })}
-                  aria-label="Kaydet"
-                  title="Kaydet"
+                  aria-label="Save"
+                  title="Save"
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-paper transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Icon.check width={16} height={16} />
@@ -220,13 +220,13 @@ export function VideoDetail({ id }: { id: string }) {
               },
               {
                 key: "reuse",
-                label: "Yeniden kullan",
+                label: "Reuse",
                 icon: Icon.repeat,
                 onClick: () => router.push(`/dashboard?reuse=${v.id}`),
               },
               {
                 key: "delete",
-                label: confirmDelete ? "Emin misiniz?" : "Sil",
+                label: confirmDelete ? "Are you sure?" : "Delete",
                 icon: Icon.trash,
                 danger: true,
                 keepOpen: true,
@@ -277,7 +277,7 @@ export function VideoDetail({ id }: { id: string }) {
             </div>
           )}
 
-          <CollapsibleCard defaultOpen title="Ayarlar">
+          <CollapsibleCard defaultOpen title="Settings">
             <div className="text-[14px]">
               {(
                 [
@@ -323,7 +323,7 @@ export function VideoDetail({ id }: { id: string }) {
           </CollapsibleCard>
 
           {scriptText && (
-            <CollapsibleCard title="Metin" summary={`${wordCount} kelime`}>
+            <CollapsibleCard title="Script" summary={`${wordCount} words`}>
               <p className="text-[14px] leading-relaxed text-ink">{scriptText}</p>
             </CollapsibleCard>
           )}

@@ -18,7 +18,7 @@ export function LibraryView() {
           <h1 className="disp text-[28px] font-semibold text-ink">Your videos</h1>
           <p className="mt-1 text-[14.5px] text-slate">Everything you have made, newest first.</p>
         </div>
-        <Link href="/dashboard" className="btn btn-primary">+ Yeni video</Link>
+        <Link href="/dashboard" className="btn btn-primary">+ New video</Link>
       </div>
 
       {isLoading && (

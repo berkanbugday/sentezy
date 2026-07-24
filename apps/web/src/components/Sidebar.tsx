@@ -11,10 +11,10 @@ import { TeamSwitcher } from "./TeamSwitcher";
 import { Tooltip } from "./Tooltip";
 
 const NAV = [
-  { href: "/dashboard", label: "Ana sayfa", icon: Icon.home, ready: true },
+  { href: "/dashboard", label: "Home", icon: Icon.home, ready: true },
   { href: "/library", label: "Your videos", icon: Icon.video, ready: true },
-  { href: "/avatars", label: "Avatarlar", icon: Icon.users, ready: true },
-  { href: "/brand-kit", label: "Marka Kiti", icon: Icon.box, ready: true },
+  { href: "/avatars", label: "Avatars", icon: Icon.users, ready: true },
+  { href: "/brand-kit", label: "Brand Kit", icon: Icon.box, ready: true },
 ];
 
 const STORAGE_KEY = "sentezy:sidebar-collapsed";
@@ -127,7 +127,7 @@ export function Sidebar({ user, mobile = false, onNavigate }: { user: UserInfo; 
             {!isCollapsed && (
               <>
                 {/* An em-dash placeholder while the profile loads — never the old hardcoded 50. */}
-                {credits ?? "—"} <span className="text-white/60">kredi</span>
+                {credits ?? "—"} <span className="text-white/60">credits</span>
               </>
             )}
           </span>

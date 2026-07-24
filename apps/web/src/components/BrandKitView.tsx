@@ -19,7 +19,7 @@ const SWATCHES = ["#0A0A0B", "#52525B", "#FF5A1F", "#2563EB", "#059669", "#7C3AE
 const MODES: { v: PreviewMode; label: string }[] = [
   { v: "intro", label: "Intro" },
   { v: "outro", label: "Outro" },
-  { v: "watermark", label: "Filigran" },
+  { v: "watermark", label: "Watermark" },
 ];
 
 const INPUT =
@@ -148,15 +148,15 @@ export function BrandKitView() {
         </div>
         {draft && (
           <div className="flex items-center gap-3">
-            {saved && !dirty && <span role="status" className="text-[13px] text-muted">Kaydedildi</span>}
-            {save.isError && <span className="text-[13px] text-red-600">Kaydedilemedi</span>}
+            {saved && !dirty && <span role="status" className="text-[13px] text-muted">Saved</span>}
+            {save.isError && <span className="text-[13px] text-red-600">Couldn't save</span>}
             <button
               type="button"
               onClick={onSave}
               disabled={!dirty || save.isPending}
               className="btn btn-primary min-w-28 disabled:opacity-35"
             >
-              {save.isPending ? "Kaydediliyor…" : "Kaydet"}
+              {save.isPending ? "Saving…" : "Save"}
             </button>
           </div>
         )}
@@ -188,7 +188,7 @@ export function BrandKitView() {
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="flex flex-col gap-5">
             <section className="card px-5 py-1">
-              <Row label="Logo" hint="PNG, JPG, WEBP ya da SVG">
+              <Row label="Logo" hint="PNG, JPG, WEBP or SVG">
                 <input
                   ref={fileRef}
                   type="file"
@@ -262,7 +262,7 @@ export function BrandKitView() {
                   value={draft.outroCta}
                   onChange={(e) => set("outroCta", e.target.value)}
                   maxLength={40}
-                  placeholder="Hemen dene"
+                  placeholder="Try it now"
                   className={INPUT}
                   aria-label="Closing line"
                 />
