@@ -2,10 +2,10 @@
 /* Copy on one side, the app demo on the other — and on a phone, in that order.
  *
  * The visual half used to be the vertical presenter marquee, and below 900px it was pulled
- * ABOVE the copy. That meant a phone opened on a wall of AI faces with the eyebrow, the
- * headline and the CTA all below the fold: nothing on the first screen said what the product
- * was. HeroDemo replaces it and the order flip is gone, so the first screen now reads
- * pitch → demo → button. The marquee still ships, as PresenterStrip under the proof bar.
+ * ABOVE the copy. That meant a phone opened on a wall of AI faces with the headline and the
+ * CTA below the fold: nothing on the first screen said what the product was. HeroDemo
+ * replaces it and the order flip is gone, so the first screen now reads headline → demo →
+ * button. The marquee is gone entirely; the showcase and the sector rail carry the faces.
  */
 import { getCopy } from "../i18n";
 import { startUrl } from "../data/site";
@@ -17,7 +17,6 @@ const { hero } = getCopy(Astro.currentLocale);
 <section class="hero">
   <div class="wrap hero-grid">
     <div class="hero-copy reveal">
-      <div class="eyebrow">{hero.eyebrow}</div>
       <h1 class="disp h1x">{hero.title}</h1>
       <p class="lead">{hero.lead}</p>
       <div class="hero-cta">

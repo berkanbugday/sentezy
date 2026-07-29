@@ -1,7 +1,7 @@
 # Hero app demo — design
 
 **Date:** 2026-07-29
-**Status:** approved, ready to implement
+**Status:** shipped (uncommitted). Revised after Berkan's review — see Placement and HeroDemo.
 
 ## Problem
 
@@ -37,14 +37,17 @@ files so TR and EN are one build, and degrades to a static finished state under
 
 `HeroDemo` replaces `ReelMarquee` inside `Hero.astro`'s `.hero-visual`.
 
-`.hero-visual { order: -1 }` is removed, so a phone gets **eyebrow → headline → lead → demo →
-CTA**. The demo sits between the pitch and the button, which is where a demo belongs.
+`.hero-visual { order: -1 }` is removed, and on a phone `.hero-copy` dissolves into the grid
+(`display: contents`) so its parts can be ordered individually: **headline → demo → CTA →
+lead**. Removing the order flip alone was not enough — the lead paragraph ran seven lines at
+390px and buried the demo just as effectively. The eyebrow is gone entirely and the lead is cut
+to two sentences, both for the same reason.
 
-`ReelMarquee` (two vertical columns, 620px tall) is replaced by `PresenterStrip` — the same
-tiles on the existing `.marquee` horizontal primitive (`global.css:227`) — mounted directly
-under `ProofBar`. A 420px vertical marquee mid-page fights the scroll direction; a slim
-horizontal band does not. Its job is unchanged: proof that there are 126 presenters across 24
-sectors, sitting right below the bar that states those two numbers.
+`ReelMarquee` is deleted outright. It first became `PresenterStrip` — the same tiles on the
+horizontal `.marquee` primitive, under `ProofBar` — and Berkan cut that too: the showcase wall
+and the sector rail already carry the faces, and a third band of them was repetition. Its data
+(`data/stills.ts`, `i18n/stills.*.ts`, the `Stills` type, the `.tile*` rules) went with it
+rather than being left as dead weight both locales are type-forced to maintain.
 
 ## Components
 
@@ -60,22 +63,32 @@ export type Step = "idle" | "drop" | "uploaded" | "typing" | "typed" | "menu1"
 export type Beat = { at: number; step?: Step; cursor?: string; click?: boolean };
 ```
 
-Also exports `LOOP`, the typewriter window (`TYPE_FROM`/`TYPE_TO`), the three uploaded clips
-(poster slugs `1`, `3`, `5`) and the picked presenter (`kevser`).
+Also exports `LOOP` (15.2s), the typewriter window, the three uploaded clips (poster slugs `3`,
+`4`, `6`) and the picked presenter (`kevser`).
 
-The first uploaded clip is `posters/1.jpg`, which is the first frame of `/reels/1.mp4` — the
-video that plays at the end. What goes in is literally what comes out.
+The first uploaded clip is `posters/3.jpg`, which is the first frame of `/reels/3.mp4` — the
+video that plays at the end. What goes in is literally what comes out. Posters `1` and `5` are
+deliberately not used: the tray crops a square from near the top of a 9:16 frame and their
+burned-in captions fall inside it, which makes a raw upload look like a finished render.
 
 ### `src/components/HeroDemo.astro`
+
+The chrome is the app's own shell, not a browser window. `AppShell.tsx` renders a dark
+`--frame` background carrying the sidebar, with the content on an inset white panel; that
+floating workspace is the product's signature look, and a traffic-light title bar would have
+been a stock SaaS screenshot that happens to contain Sentezy. Both `--frame` and `--hero` are
+already declared in the landing's stylesheet with the values `apps/web/src/app/globals.css`
+uses, so the demo and the product cannot drift apart on colour. Sidebar labels, order, icons
+and the credits pill are copied from `Sidebar.tsx`.
 
 ```
 .hd                        container-type: inline-size
   .hd-glow                 the accent wash, same primitive as .glow
-  .appwin                  font-size: clamp(10px, 2.5cqw, 13px) — the only scale knob
-    .appwin-bar            traffic lights + app.sentezy.com pill
-    .appwin-body
-      .appside             Home / Library / Presenters / Brand kit + credits (hidden <900px)
+  .appwin                  --frame; font-size: clamp(10.5px, 1.9cqw, 15.5px) — the only scale knob
+    .appside               dark rail: Home / Your videos / Avatars / Brand Kit + credits (hidden <900px)
+    .apppanel > .panel     the inset white workspace
       .appmain
+        .aurora            the dashboard's --hero block behind the heading and composer
         .appmain-head      "What are we making today?"
         .compose           faithful copy of MediaComposer's card
           .compose-tabs      Product link | Upload media
@@ -94,8 +107,11 @@ always have a measurable rect.
 
 ### `src/scripts/hero-demo.ts`
 
-One `requestAnimationFrame` loop. Holds `t0`, applies every beat whose `at` has passed, drives
-the typewriter by interpolating `text.slice(0, n)` across the type window, and wraps at `LOOP`.
+Sleeps between beats: one `setTimeout` to the next beat's `at`, and `requestAnimationFrame` only
+for the 2.2s the typewriter is drawing. An always-on frame loop would wake the main thread sixty
+times a second for fifteen seconds to do nothing on almost every frame — on the page whose whole
+problem is people leaving it on a phone. Everything else the demo animates (cursor travel, wipes,
+spinners, the glow) is CSS and runs on the compositor regardless.
 
 - Cursor moves by writing `translate` to `.hd-cursor` from the anchor's rect measured at that
   moment, so responsive reflow needs no special handling.
@@ -118,7 +134,7 @@ where they exist), the typed script, the four step labels, and the result screen
 ## Non-goals
 
 - The demo abbreviates: it picks a presenter and a caption style. Voice shows as already chosen
-  rather than adding a fifth beat to an already 17s loop.
+  rather than adding a fifth beat to an already 15s loop.
 - No interaction. Clicking the demo does nothing; the CTA beneath it is the interaction.
 - The real app UI is not refactored to share code with the demo. The landing is Astro, the app
   is Next/React; a shared component would drag React into a static page for one visual.

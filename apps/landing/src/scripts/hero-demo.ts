@@ -1,15 +1,17 @@
 /** Drives the hero's app demo.
  *
- *  One requestAnimationFrame loop holds the clock; every beat in src/data/heroDemo.ts is a
- *  `data-step` write and a cursor move, and CSS does the rest. There is deliberately no
- *  per-beat setTimeout: a tab that throttles timers would desynchronise the cursor from the
- *  step it is supposed to be pressing, and the demo would show a click landing on nothing.
- *  Reading elapsed time from the frame's own timestamp cannot drift.
+ *  Sleeps between beats. An earlier version held one requestAnimationFrame loop open for the
+ *  whole 15s and did almost nothing on almost every frame — which still wakes the main thread
+ *  sixty times a second, on a marketing page whose entire problem is people leaving it on a
+ *  phone. Now a single `setTimeout` waits for the next beat, and rAF runs only for the 2.2s the
+ *  typewriter is actually drawing. Everything else the demo animates — the cursor's travel, the
+ *  wipes, the spinners, the glow — is CSS, and runs on the compositor whether this file is
+ *  awake or not.
  *
  *  The loop runs only while the demo is on screen and the tab is visible, and not at all under
- *  prefers-reduced-motion — where the finished state is rendered statically instead.
+ *  prefers-reduced-motion, where the finished state is rendered statically instead.
  */
-import { beats, LOOP, TYPE_FROM, TYPE_TO } from "../data/heroDemo";
+import { beats, LOOP, TYPE_MS } from "../data/heroDemo";
 
 const root = document.querySelector<HTMLElement>("[data-hd]");
 
@@ -45,6 +47,61 @@ if (root) {
     clickTimer = window.setTimeout(() => cursor.classList.remove("click"), 420);
   }
 
+  // ── the typewriter ───────────────────────────────────────────────────────
+  // The one thing here that genuinely needs a frame loop: it draws a different string on each
+  // frame for TYPE_MS and then stops. Driven from its own clock rather than the beat clock, so
+  // it cannot be left half-written by a beat that fires late.
+  let typeRaf = 0;
+  function startTyping() {
+    if (!typeEl || !script) return;
+    cancelAnimationFrame(typeRaf);
+    const from = performance.now();
+    const step = (now: number) => {
+      const p = Math.min(1, (now - from) / TYPE_MS);
+      const n = Math.round(p * script.length);
+      // Guarded: writing the same string again would still dirty the text node.
+      if ((typeEl.textContent ?? "").length !== n) typeEl.textContent = script.slice(0, n);
+      if (p < 1) typeRaf = requestAnimationFrame(step);
+    };
+    typeRaf = requestAnimationFrame(step);
+  }
+
+  // ── the beat clock ───────────────────────────────────────────────────────
+  let timer = 0;
+  let startedAt = 0;
+  let next = 0;
+  let running = false;
+
+  /** Sleep until the next beat — or until the wrap, once the beats are spent. Times are always
+   *  measured from `startedAt`, never accumulated, so a late timeout cannot make the demo drift
+   *  out of step with itself. */
+  function schedule() {
+    const t = performance.now() - startedAt;
+    const at = next < beats.length ? beats[next].at : LOOP;
+    timer = window.setTimeout(next < beats.length ? fire : wrap, Math.max(0, at - t));
+  }
+
+  function fire() {
+    const b = beats[next++];
+    if (b.step) {
+      root!.dataset.step = b.step;
+      if (b.step === "typing") startTyping();
+      // Only started here, never on load: preload="none" means the file is not fetched until
+      // this beat, so the reel costs nothing to a visitor who leaves before it.
+      if (b.step === "done") void video?.play().catch(() => {});
+    }
+    if (b.cursor) moveTo(b.cursor);
+    if (b.click) click();
+    schedule();
+  }
+
+  function wrap() {
+    reset();
+    next = 0;
+    startedAt = performance.now();
+    schedule();
+  }
+
   function reset() {
     root!.dataset.step = "idle";
     if (typeEl) typeEl.textContent = "";
@@ -54,54 +111,20 @@ if (root) {
     }
   }
 
-  let raf = 0;
-  let t0 = 0;
-  let next = 0;
-  let running = false;
-
-  function frame(now: number) {
-    if (!t0) t0 = now;
-    const t = now - t0;
-
-    while (next < beats.length && beats[next].at <= t) {
-      const b = beats[next++];
-      if (b.step) {
-        root!.dataset.step = b.step;
-        // Only started here, never on load: preload="none" means the file is not fetched until
-        // this beat, so the reel costs nothing to a visitor who leaves before it.
-        if (b.step === "done") void video?.play().catch(() => {});
-      }
-      if (b.cursor) moveTo(b.cursor);
-      if (b.click) click();
-    }
-
-    if (typeEl && script) {
-      const p = (t - TYPE_FROM) / (TYPE_TO - TYPE_FROM);
-      const n = Math.round(Math.min(1, Math.max(0, p)) * script.length);
-      // Guarded: writing the same string every frame would still dirty the text node.
-      if ((typeEl.textContent ?? "").length !== n) typeEl.textContent = script.slice(0, n);
-    }
-
-    if (t >= LOOP) {
-      reset();
-      next = 0;
-      t0 = now;
-    }
-
-    raf = requestAnimationFrame(frame);
-  }
-
   function start() {
     if (running || reduce) return;
     running = true;
-    t0 = 0; // re-based on the next frame, so time spent off screen is not counted
-    raf = requestAnimationFrame(frame);
+    reset();
+    next = 0;
+    startedAt = performance.now();
+    schedule();
   }
 
   function stop() {
     if (!running) return;
     running = false;
-    cancelAnimationFrame(raf);
+    window.clearTimeout(timer);
+    cancelAnimationFrame(typeRaf);
     video?.pause();
   }
 
@@ -123,22 +146,20 @@ if (root) {
           else {
             stop();
             reset();
-            next = 0;
           }
         }
       },
       { threshold: 0.25 },
     ).observe(root);
 
-    // A backgrounded tab throttles rAF to a crawl rather than stopping it, which would leave
-    // the loop mid-beat and resume with the cursor somewhere it never travelled to. Tracking
+    // A backgrounded tab throttles timers to once a minute, which would strand the demo
+    // mid-beat and resume it with the cursor somewhere it never travelled to. Tracking
     // `onScreen` separately matters here: without it, returning to the tab would restart a
     // demo that has since been scrolled past.
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         stop();
         reset();
-        next = 0;
       } else if (onScreen) start();
     });
   }

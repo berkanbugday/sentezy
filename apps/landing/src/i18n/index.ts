@@ -1,20 +1,17 @@
 /** One accessor per data file. Components call these with `Astro.currentLocale`, which Astro
  *  derives from the URL — so no prop drilling, and /tr/ pages render Turkish at build time. */
 import { getRelativeLocaleUrl } from "astro:i18n";
-import type { Copy, Locale, Reels, Stills, Studio } from "./types";
+import type { Copy, Locale, Reels, Studio } from "./types";
 import { copy as copyEn } from "./copy.en";
 import { copy as copyTr } from "./copy.tr";
 import { studio as studioEn } from "./studio.en";
 import { studio as studioTr } from "./studio.tr";
 import { reels as reelsEn } from "./reels.en";
 import { reels as reelsTr } from "./reels.tr";
-import { stills as stillsEn } from "./stills.en";
-import { stills as stillsTr } from "./stills.tr";
 
 const COPY: Record<Locale, Copy> = { en: copyEn, tr: copyTr };
 const STUDIO: Record<Locale, Studio> = { en: studioEn, tr: studioTr };
 const REELS: Record<Locale, Reels> = { en: reelsEn, tr: reelsTr };
-const STILLS: Record<Locale, Stills> = { en: stillsEn, tr: stillsTr };
 
 /** Astro.currentLocale is `string | undefined`; anything unexpected falls back to English
  *  rather than throwing, because a wrong language is recoverable and a blank page is not. */
@@ -23,7 +20,6 @@ export const localeOf = (v?: string): Locale => (v === "tr" ? "tr" : "en");
 export const getCopy = (v?: string): Copy => COPY[localeOf(v)];
 export const getStudio = (v?: string): Studio => STUDIO[localeOf(v)];
 export const getReels = (v?: string): Reels => REELS[localeOf(v)];
-export const getStills = (v?: string): Stills => STILLS[localeOf(v)];
 
 /** Locale-aware internal href.
  *

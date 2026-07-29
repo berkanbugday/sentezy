@@ -39,13 +39,17 @@ export const copy: Copy = {
    * makes, what it costs them to try, and whether it fits their business. Nothing clever: what
    * you give it, what you get back, how long it takes. */
   hero: {
-    eyebrow: "VERTICAL VIDEO, WITHOUT A CAMERA",
-    /* Mirrors the Turkish headline rather than the other way round — the Turkish was rewritten
-       first and set the frame: name who does the work, then what is left for you. Two beats in
-       both languages, with "Let Sentezy…" carrying the same permissive warmth as the optative
-       `hazırlasın`. Keep the pair in step; if one changes, change the other. */
-    title: "Let Sentezy make your videos. You just post them.",
-    lead: "Paste a product link and Sentezy pulls the photos and writes the script. Or upload your own clips and type two sentences. Choose a presenter, a voice, captions and music, watch the whole thing preview, then download one vertical file that fits Reels, TikTok and Shorts. About five minutes.",
+    /* Mirrors the Turkish headline rather than the other way round — Berkan wrote the Turkish
+       first and it sets the frame: name the thing the product does, in one phrase, with no
+       verb asking anything of the reader. There is no eyebrow above it any more; the headline
+       had to carry the whole claim on its own, and a sentence could not.
+       Keep the pair in step; if one changes, change the other. */
+    title: "The AI that makes your photos talk",
+    /* Two sentences. The old lead was four and ran seven lines on a phone — it pushed the demo
+       below the fold, which is the bug this whole hero was rebuilt to fix. The detail it used
+       to carry (music, preview, one vertical file, five minutes) is all still on the page,
+       further down, where someone who has decided to read is doing the reading. */
+    lead: "Paste a product link, or upload your own photos. Pick a presenter, a voice and captions — your vertical video is ready in minutes.",
     ctaPrimary: "Make your first video",
     ctaSecondary: "See real examples",
     /* 30 credits on signup (profile default), 1 credit per video (CREDIT_COST in
@@ -60,7 +64,7 @@ export const copy: Copy = {
   heroDemo: {
     dashTitle: "What are we making today?",
     dashLead: "Paste a product link, or upload your own photos and clips",
-    nav: { home: "Home", library: "Library", presenters: "Presenters", brand: "Brand kit" },
+    nav: { home: "Home", library: "Your videos", presenters: "Avatars", brand: "Brand Kit" },
     credits: "30 credits",
     tabLink: "Product link",
     tabUpload: "Upload media",

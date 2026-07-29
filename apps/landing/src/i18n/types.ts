@@ -2,7 +2,7 @@
  *
  *  This file is the guard the previous bilingual build lacked: every locale module — not
  *  just `copy.tr.ts` — declares against a type from this file, so a missing, extra or
- *  misspelled key in any of them (`Copy`, `Studio`, `Reels`, `Stills`) is a build error
+ *  misspelled key in any of them (`Copy`, `Studio`, `Reels`) is a build error
  *  rather than a blank space on the live page.
  *
  *  Deliberately NOT derived from copy.en.ts. `typeof import("./copy.en")` is a module type
@@ -17,7 +17,7 @@
  *  drifted key. `how.steps` and `faq.items` have no coverage from either layer.
  *
  *  This paragraph exists because an earlier version of this comment claimed a guarantee that
- *  held for `Copy` alone while three other locale files sat outside it. A documented promise
+ *  held for `Copy` alone while the other locale files sat outside it. A documented promise
  *  that silently does not hold is worse than a documented gap. */
 
 export type Locale = "en" | "tr";
@@ -44,7 +44,7 @@ export type Copy = {
     terms: string; instagramHead: string;
   };
   hero: {
-    eyebrow: string; title: string; lead: string;
+    title: string; lead: string;
     ctaPrimary: string; ctaSecondary: string; microcopy: string;
   };
   /** Every string inside the hero's animated app demo. The demo is a rebuild of the real
@@ -121,9 +121,6 @@ export type VoiceName = "PJ" | "Kate Mercer" | "David" | "Rene";
 export type TrackMood = "Cinematic" | "Calm" | "Energetic" | "Corporate";
 export type CaptionStyleId = "hormozi" | "tiktok" | "highlight" | "boxed" | "glow" | "clean";
 export type ReelFile = "1" | "2" | "3" | "4" | "5" | "6";
-export type StillId =
-  | "t1" | "t2" | "t3" | "t4" | "t5" | "t6"
-  | "t7" | "t8" | "t9" | "t10" | "t11" | "t12";
 
 export type Studio = {
   /** Keyed by Presenter.slug — the sector shown under each face on the demo phone. */
@@ -142,8 +139,3 @@ export type Reels = {
   byFile: Record<ReelFile, { sector: string; alt: string }>;
 };
 
-export type Stills = {
-  /** Keyed by Still.id. The marquee tiles are aria-hidden, but the text is visually
-   *  prominent in the hero — it is copy, not decoration. */
-  byId: Record<StillId, { sector: string; caption: string }>;
-};

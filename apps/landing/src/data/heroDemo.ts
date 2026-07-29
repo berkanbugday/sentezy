@@ -34,38 +34,44 @@ export type Beat = {
   click?: boolean;
 };
 
-/** Full loop length. The last beat holds the finished reel on screen for ~3s before the wrap —
- *  the reel is the payoff, and cutting away from it fast wastes the only frame that sells. */
-export const LOOP = 17_400;
+/** Full loop length. The last beat holds the finished reel on screen for ~2.7s before the wrap —
+ *  the reel is the payoff, and cutting away from it fast wastes the only frame that sells.
+ *
+ *  Retimed once already: the payoff used to land at 14.3s, which is a long wait for a punchline
+ *  on a page people leave in three. The cursor's travel gaps and the post-click holds were the
+ *  fat; the beats a viewer has to READ were not touched. */
+export const LOOP = 15_200;
 
-/** The typewriter window. The driver interpolates `script.slice(0, n)` across it rather than
- *  running its own interval, so the text can never drift out of step with the beats. */
-export const TYPE_FROM = 3_900;
-export const TYPE_TO = 6_600;
+/** The typewriter window. `typing` fires at TYPE_FROM and `typed` at TYPE_TO — the driver reads
+ *  the DURATION from these two and runs its own rAF for exactly that long, so the two must stay
+ *  equal to the matching beats below. */
+export const TYPE_FROM = 3_300;
+export const TYPE_TO = 5_500;
+export const TYPE_MS = TYPE_TO - TYPE_FROM;
 
 export const beats: Beat[] = [
   { at: 0, step: "idle", cursor: "start" },
-  { at: 700, cursor: "drop" },
-  { at: 1_500, step: "drop", click: true },
-  { at: 2_100, step: "uploaded" },
-  { at: 3_300, cursor: "script" },
-  { at: 3_900, step: "typing", click: true },
+  { at: 600, cursor: "drop" },
+  { at: 1_300, step: "drop", click: true },
+  { at: 1_850, step: "uploaded" },
+  { at: 2_800, cursor: "script" },
+  { at: TYPE_FROM, step: "typing", click: true },
   { at: TYPE_TO, step: "typed" },
-  { at: 6_900, cursor: "options" },
-  { at: 7_500, step: "menu1", click: true },
-  { at: 7_900, cursor: "menu-presenter" },
-  { at: 8_500, step: "avatars", click: true },
-  { at: 9_000, cursor: "pick-presenter" },
-  { at: 9_700, step: "picked", click: true },
-  { at: 10_100, cursor: "options" },
-  { at: 10_600, step: "menu2", click: true },
-  { at: 10_900, cursor: "menu-captions" },
-  { at: 11_400, step: "captions", click: true },
-  { at: 11_800, cursor: "pick-caption" },
-  { at: 12_400, step: "styled", click: true },
-  { at: 12_800, cursor: "make" },
-  { at: 13_400, step: "making", click: true },
-  { at: 14_300, step: "done", cursor: "start" },
+  { at: 5_800, cursor: "options" },
+  { at: 6_300, step: "menu1", click: true },
+  { at: 6_650, cursor: "menu-presenter" },
+  { at: 7_150, step: "avatars", click: true },
+  { at: 7_600, cursor: "pick-presenter" },
+  { at: 8_250, step: "picked", click: true },
+  { at: 8_600, cursor: "options" },
+  { at: 9_050, step: "menu2", click: true },
+  { at: 9_350, cursor: "menu-captions" },
+  { at: 9_800, step: "captions", click: true },
+  { at: 10_200, cursor: "pick-caption" },
+  { at: 10_750, step: "styled", click: true },
+  { at: 11_100, cursor: "make" },
+  { at: 11_650, step: "making", click: true },
+  { at: 12_450, step: "done", cursor: "start" },
 ];
 
 /** Which step each label under the stage belongs to. A label lights when the current step is

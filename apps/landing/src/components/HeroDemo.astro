@@ -40,25 +40,54 @@ const poster = (file: string): ImageMetadata => {
 <div class="hd" data-hd data-step="idle">
   <div class="hd-glow" aria-hidden="true"></div>
 
+  {/* The app's own shell, not a browser window: a dark `--frame` chrome carrying the sidebar,
+      with the content on an inset white panel. That "floating workspace" is what
+      apps/web/src/components/AppShell.tsx renders and is the product's signature look — a
+      traffic-light title bar would have been a stock SaaS-screenshot cliché that happens to
+      contain Sentezy. Both `--frame` and `--hero` are already declared in this stylesheet with
+      the exact values apps/web/src/app/globals.css uses. */}
   <div class="appwin">
-    <div class="appwin-bar">
-      <span class="appwin-dots"><i></i><i></i><i></i></span>
-      <span class="appwin-url">app.sentezy.com</span>
-    </div>
+    <aside class="appside">
+      <div class="appside-brand">
+        <img src="/sentezy-mark-light.png" alt="" width="26" height="26" />
+        <span>Sentezy</span>
+      </div>
 
-    <div class="appwin-body">
-      <aside class="appside">
-        <div class="appside-brand">Sentezy</div>
-        <nav class="appside-nav">
-          <span class="on"><b></b>{d.nav.home}</span>
-          <span class="lib"><b></b>{d.nav.library}</span>
-          <span><b></b>{d.nav.presenters}</span>
-          <span><b></b>{d.nav.brand}</span>
-        </nav>
-        <div class="appside-credits">{d.credits}</div>
-      </aside>
+      {/* Labels, order and icons copied from Sidebar.tsx's NAV — including "Your videos"
+          rather than "Library", which is what the rail actually says. */}
+      <nav class="appside-nav">
+        <span class="on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>
+          {d.nav.home}
+        </span>
+        <span class="lib">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="12" rx="2"></rect><path d="m17 10 4-2v8l-4-2"></path></svg>
+          {d.nav.library}
+        </span>
+        <span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"></circle><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6"></path></svg>
+          {d.nav.presenters}
+        </span>
+        <span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 7v10l-8 4-8-4V7z"></path><path d="M4 7l8 4 8-4M12 11v10"></path></svg>
+          {d.nav.brand}
+        </span>
+      </nav>
 
-      <main class="appmain">
+      <div class="appside-foot">
+        <span class="credit-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6z"></path></svg>
+          {d.credits}
+        </span>
+      </div>
+    </aside>
+
+    <div class="apppanel">
+      <div class="panel">
+        <main class="appmain">
+          {/* The dashboard's aurora block — `hero-aurora` in the real app — bleeding to the
+              panel edges behind the heading and the composer. */}
+          <div class="aurora">
         <div class="appmain-head">
           <h3>{d.dashTitle}</h3>
           <p>{d.dashLead}</p>
@@ -156,6 +185,7 @@ const poster = (file: string): ImageMetadata => {
           </button>
           </div>
         </div>
+          </div>
 
         <div class="hd-modal hd-modal-av">
           <div class="hd-sheet">
@@ -209,7 +239,8 @@ const poster = (file: string): ImageMetadata => {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12m-5-5 5 5 5-5M5 20h14"></path></svg>{d.download}
         </span>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
 
     {/* Where the cursor rests before the first beat and after the last — off the controls, so

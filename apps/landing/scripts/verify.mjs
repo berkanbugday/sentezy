@@ -58,7 +58,7 @@ const HERO_DEMO = ["data-hd", 'data-step="idle"'];
 
 const REQUIRED = [
   ">126<", ">24<", ">20<", ">14<",         // the four verified proof numbers
-  "Let Sentezy make your videos. You just post them.", // hero headline
+  "The AI that makes your photos talk",     // hero headline
   "instagram.com/sentezy.ai",                // the real account is linked
   "Your video is ready",                     // the hero demo's payoff frame, in English
   ...HERO_DEMO,
@@ -68,7 +68,7 @@ const REQUIRED = [
 // BOTH trees — they trace to source files and are facts, not copy, so they never differ.
 const REQUIRED_TR = [
   ">126<", ">24<", ">20<", ">14<",
-  "Videolarınızı Sentezy hazırlasın, siz sadece paylaşın.",  // hero headline
+  "Fotoğraflarınızı konuşturan yapay zeka",   // hero headline
   "instagram.com/sentezy.ai",
   "Videonuz hazır",                          // the hero demo's payoff frame, in Turkish
   ...HERO_DEMO,

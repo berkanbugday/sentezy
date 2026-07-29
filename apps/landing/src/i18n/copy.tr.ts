@@ -36,18 +36,15 @@ export const copy: Copy = {
   },
 
   hero: {
-    eyebrow: "KAMERASIZ DİKEY VİDEO",
-    /* EN: "Post every day without filming a thing." Deliberately NOT a literal rendering.
-       This one reframes: the English says what you avoid, the Turkish says who does the work
-       instead. Berkan chose it over two closer options — a headline that hands the job over
-       reads warmer in Turkish than one that describes an absence.
-
-       An earlier version was "Kamera yok. Her gün yeni video." — two noun fragments with no
-       verb between them. Grammatical, but it read as a keyword list rather than a sentence,
-       which is exactly what a hero headline cannot afford. The eyebrow above still carries
-       the no-camera claim, so nothing is lost by dropping it from the headline itself. */
-    title: "Videolarınızı Sentezy hazırlasın, siz sadece paylaşın.",
-    lead: "Bir ürün linki yapıştırın; Sentezy fotoğrafları çeker, metni yazar. Ya da kendi çekimlerinizi yükleyip iki cümle yazın. Sunucuyu, sesi, altyazıyı ve müziği seçin, videoyu baştan sona izleyin, sonra Reels, TikTok ve Shorts'a uyan tek bir dikey dosya indirin. Yaklaşık beş dakika.",
+    /* Berkan'ın yazdığı başlık. Ürünü bir cümlede değil, tek bir tamlamada adlandırıyor —
+       üstündeki "KAMERASIZ DİKEY VİDEO" eyebrow'u kaldırıldığı için iddianın tamamını tek
+       başına taşımak zorunda. İngilizce ikizi bunun ardından yazıldı; biri değişirse diğeri
+       de değişmeli. */
+    title: "Fotoğraflarınızı konuşturan yapay zeka",
+    /* İki cümle. Öncesi dört cümleydi ve telefonda yedi satır tutuyordu; demoyu ekranın
+       altına itiyordu ki bu hero'nun baştan yazılma sebebi tam olarak buydu. Müzik, önizleme,
+       tek dosya, beş dakika — hepsi sayfanın devamında duruyor. */
+    lead: "Bir ürün linki yapıştırın ya da kendi fotoğraflarınızı yükleyin. Sunucuyu, sesi ve altyazıyı seçin; dikey videonuz dakikalar içinde hazır.",
     ctaPrimary: "İlk videonuzu yapın",
     ctaSecondary: "Gerçek örnekleri izleyin",
     microcopy: "İlk videolarınız ücretsiz. Kart istemiyoruz.",
@@ -60,7 +57,7 @@ export const copy: Copy = {
   heroDemo: {
     dashTitle: "Bugün ne hazırlıyoruz?",
     dashLead: "Bir ürün linki yapıştırın ya da kendi fotoğraf ve videolarınızı yükleyin",
-    nav: { home: "Ana sayfa", library: "Kitaplık", presenters: "Sunucular", brand: "Marka kiti" },
+    nav: { home: "Ana sayfa", library: "Videolarınız", presenters: "Sunucular", brand: "Marka Kiti" },
     credits: "30 kredi",
     tabLink: "Ürün linki",
     tabUpload: "Medya yükle",

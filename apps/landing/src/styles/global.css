@@ -192,12 +192,11 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
      hero simply renders — which is the right trade for the page's largest paint anyway. */
   .hero-grid { display: grid; grid-template-columns: 1fr; gap: 22px; }
   .hero-copy { display: contents; }
-  .hero-copy .eyebrow { order: 1; }
-  .hero-copy .h1x { order: 2; }
-  .hero-visual { order: 3; }
-  .hero-copy .hero-cta { order: 4; margin-top: 0; }
-  .hero-copy .lead { order: 5; margin-top: 4px; }
-  .hero-copy .microcopy { order: 6; margin-top: 0; }
+  .hero-copy .h1x { order: 1; margin-top: 0; }
+  .hero-visual { order: 2; }
+  .hero-copy .hero-cta { order: 3; margin-top: 0; }
+  .hero-copy .lead { order: 4; margin-top: 0; }
+  .hero-copy .microcopy { order: 5; margin-top: 0; }
   .hero { padding-top: 96px; }
   .steps { grid-template-columns: 1fr 1fr; }
   /* Brand full width, then the three link lists side by side. minmax(0,1fr) lets the tracks
@@ -270,32 +269,9 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 }
 
 
-/* ── presenter strip ────────────────────────────────────────────────────── */
-/* Was two 620px vertical columns in the hero. The hero belongs to the app demo now, and a tall
-   vertical marquee mid-page fights the direction the visitor is already scrolling — so the same
-   tiles ride the shared horizontal `.marquee` primitive instead, in a slim band directly under
-   the proof bar that states the 126 and the 24 these faces are evidence for. */
-.strip { padding: 8px 0 4px; overflow: hidden; }
-.strip .tile { width: 132px; margin-bottom: 0; }
-
-.tile { position: relative; aspect-ratio: 9/16; border-radius: 18px; overflow: hidden; flex: none;
-  border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 18px 44px rgba(10,10,12,0.16); }
-.tile-cool   { background: linear-gradient(165deg, #2e74c4, #14304f); }
-.tile-warm   { background: linear-gradient(165deg, #e89260, #6d3a1c); }
-.tile-rose   { background: linear-gradient(165deg, #d67096, #58243a); }
-.tile-teal   { background: linear-gradient(165deg, #28c4c0, #0e4746); }
-.tile-violet { background: linear-gradient(165deg, #7f5ad0, #33215c); }
-.tile-amber  { background: linear-gradient(165deg, #d8a13c, #5c4110); }
-.tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-  object-position: top center; }
-.tile::after { content: ""; position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, transparent 34%, rgba(0,0,0,0.45) 100%); }
-.tile-sector { position: absolute; top: 10px; left: 10px; z-index: 2; font-family: var(--font-mono);
-  font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: #fff;
-  background: rgba(0,0,0,0.42); backdrop-filter: blur(6px); padding: 4px 8px; border-radius: 999px; }
-.tile-cap { position: absolute; left: 10px; right: 10px; bottom: 14px; z-index: 2; text-align: center;
-  font-family: var(--font-display); font-weight: 700; font-size: 15px; line-height: 1.15;
-  text-transform: uppercase; color: #fff; }
+/* The presenter tiles (.tile / .tile-<tint> / .tile-sector / .tile-cap) went with the hero
+   marquee and the strip that briefly replaced it. Only the caption treatments below outlived
+   them — Platform.astro's caption row and the hero demo's style picker both render them. */
 /* Caption treatments — CSS stand-ins for the real burned-in styles. */
 .cap-hormozi   { -webkit-text-stroke: 2px #000; paint-order: stroke fill; color: #ffe14d; font-size: 17px; }
 .cap-tiktok    { text-shadow: 0 2px 0 #000, 0 0 12px rgba(0,0,0,0.6); }
@@ -304,7 +280,6 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .cap-glow      { color: #7de3ff; text-shadow: 0 0 10px #29b6ff, 0 0 22px rgba(41,182,255,0.6); }
 .cap-clean     { font-weight: 600; text-transform: none; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
 
-@media (max-width: 560px) { .strip .tile { width: 104px; } }
 
 /* ── proof bar ──────────────────────────────────────────────────────────── */
 .proof { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 34px 0;
@@ -583,49 +558,60 @@ html { scroll-behavior: smooth; }
 /* The aspect ratio is set from the composer's own height at the largest font-size, not chosen
    for looks: too tall and the card floats in a lake of white for the first twelve seconds,
    too short and the finished reel has no room to be seen. */
-.appwin { position: relative; width: 100%; aspect-ratio: 16/10; display: flex; flex-direction: column;
-  border-radius: 16px; overflow: hidden; background: var(--color-paper);
-  border: 1px solid var(--color-hairline);
-  box-shadow: 0 30px 80px rgba(10,10,12,0.22), 0 2px 8px rgba(10,10,12,0.06);
+.appwin { position: relative; width: 100%; aspect-ratio: 16/9.4; display: flex; overflow: hidden;
+  border-radius: 20px; background: var(--frame);
+  box-shadow: 0 30px 80px rgba(10,10,12,0.32), 0 2px 8px rgba(10,10,12,0.10);
   /* The only scale knob in the entire demo. cqw is a percentage of .hd's width, so this tracks
      the hero column rather than the viewport — which is what makes one value cover desktop,
      tablet and phone without a media query. */
   font-size: clamp(10.5px, 1.9cqw, 15.5px); }
 
-.appwin-bar { flex: none; height: 2.6em; display: flex; align-items: center; gap: 0.9em;
-  padding: 0 0.9em; background: var(--color-mist); border-bottom: 1px solid var(--color-hairline); }
-.appwin-dots { display: flex; gap: 0.42em; }
-.appwin-dots i { width: 0.62em; height: 0.62em; border-radius: 50%; background: #d4d4d8; }
-.appwin-url { margin: 0 auto; font-family: var(--font-mono); font-size: 0.8em;
-  color: var(--color-muted); background: var(--color-paper);
-  border: 1px solid var(--color-hairline); border-radius: 999px; padding: 0.2em 1.2em; }
-
-.appwin-body { flex: 1; min-height: 0; display: flex; }
-
-.appside { flex: none; width: 9.4em; padding: 1em 0.75em; background: #fafafa;
-  border-right: 1px solid var(--color-hairline); display: flex; flex-direction: column; gap: 0.8em; }
-.appside-brand { font-family: var(--font-display); font-weight: 700; font-size: 1.05em;
-  color: var(--color-ink); letter-spacing: -0.01em; padding: 0 0.4em; }
-.appside-nav { display: flex; flex-direction: column; gap: 0.15em; }
-.appside-nav span { display: flex; align-items: center; gap: 0.55em; padding: 0.45em 0.6em;
-  border-radius: 0.6em; font-size: 0.82em; color: var(--color-slate);
+/* The dark rail, on the frame itself — no panel of its own, exactly as Sidebar.tsx renders it
+   (`[background:var(--frame)]` with the `.dark` token flip). Proportionally narrower than the
+   real 248px rail: that is 17% of a 1440px viewport, and 17% of this window is what reads right. */
+.appside { flex: none; width: 10.4em; padding: 0.8em 0.7em; display: flex; flex-direction: column;
+  gap: 0.15em; }
+.appside-brand { display: flex; align-items: center; gap: 0.5em; padding: 0.15em 0.3em 0.7em; }
+.appside-brand img { width: 1.55em; height: 1.55em; display: block; }
+.appside-brand span { font-family: var(--font-display); font-weight: 700; font-size: 1.15em;
+  letter-spacing: -0.01em; color: #fff; }
+/* `.nav-item` from the web app's globals.css, restated: 12px gap, 9px/12px padding, 12px radius,
+   and the dark-chrome treatment where active is a translucent white overlay rather than a raised
+   white pill. */
+.appside-nav { display: flex; flex-direction: column; gap: 0.12em; }
+.appside-nav span { display: flex; align-items: center; gap: 0.7em; padding: 0.5em 0.72em;
+  border-radius: 0.72em; font-size: 0.84em; font-weight: 500; color: rgba(255,255,255,0.86);
   transition: background 0.35s, color 0.35s; }
-.appside-nav b { width: 0.66em; height: 0.66em; border-radius: 0.18em; background: currentColor;
-  opacity: 0.45; flex: none; }
-.appside-nav .on { background: var(--color-ink); color: #fff; }
+.appside-nav svg { width: 1.15em; height: 1.15em; flex: none; }
+.appside-nav .on { background: rgba(255,255,255,0.13); color: #fff; font-weight: 600; }
 /* The finished video lands in the library, so that is where the app is once the demo ends. */
-.hd[data-step="done"] .appside-nav .on { background: transparent; color: var(--color-slate); }
-.hd[data-step="done"] .appside-nav .lib { background: var(--color-ink); color: #fff; }
-.appside-credits { margin-top: auto; padding: 0 0.4em; font-family: var(--font-mono);
-  font-size: 0.72em; color: var(--color-muted); }
+.hd[data-step="done"] .appside-nav .on { background: transparent; color: rgba(255,255,255,0.86);
+  font-weight: 500; }
+.hd[data-step="done"] .appside-nav .lib { background: rgba(255,255,255,0.13); color: #fff;
+  font-weight: 600; }
+.appside-foot { margin-top: auto; padding: 0 0.2em; }
+.credit-pill { display: inline-flex; align-items: center; gap: 0.4em; padding: 0.34em 0.8em;
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 999px; font-size: 0.76em;
+  font-weight: 600; color: #fff; }
+.credit-pill svg { width: 0.92em; height: 0.92em; opacity: 0.8; }
 
-.appmain { position: relative; flex: 1; min-width: 0; padding: 1.25em 1.2em; overflow: hidden;
-  display: flex; flex-direction: column; }
+/* The inset floating panel. Gutter on three sides only — it hugs the rail, which is what
+   AppShell.tsx's `md:pl-0` does. */
+.apppanel { flex: 1; min-width: 0; padding: 0.62em 0.62em 0.62em 0; }
+.panel { position: relative; height: 100%; display: flex; flex-direction: column;
+  overflow: hidden; border-radius: 1.5em; background: var(--color-paper);
+  border: 1px solid var(--color-hairline); }
+
+.appmain { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex;
+  flex-direction: column; }
+/* `hero-aurora` — the same gradient the dashboard puts behind its heading and composer,
+   bleeding to the panel's edges. */
+.aurora { flex: 1 1 auto; background: var(--hero); padding: 1.4em 1.3em 1.6em; }
 .appmain-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.4em; font-weight: 600;
   letter-spacing: -0.01em; color: var(--color-ink); }
 .appmain-head p { margin: 0.3em 0 0; font-size: 0.84em; color: var(--color-slate); }
 
-.compose { position: relative; margin-top: 1em; padding: 0.85em; background: var(--color-paper);
+.compose { position: relative; margin-top: 0.9em; padding: 0.85em; background: var(--color-paper);
   border: 1px solid var(--color-hairline); border-radius: 1.15em;
   box-shadow: 0 1px 3px rgba(10,10,12,0.05); }
 .compose-tabs { display: inline-flex; gap: 0.15em; margin-bottom: 0.75em; padding: 0.15em;
@@ -781,7 +767,7 @@ html { scroll-behavior: smooth; }
 .av img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
 /* The ring lights on a delay timed to the cursor's arrival, not to the modal opening — the
    selection has to look like a consequence of the click, not a decoration that was already there. */
-.hd[data-step="avatars"] .av.target { animation: hdring 0.28s 0.5s both; }
+.hd[data-step="avatars"] .av.target { animation: hdring 0.26s 0.45s both; }
 @keyframes hdring { to { box-shadow: 0 0 0 0.18em var(--color-ink); } }
 
 .capgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5em; width: 100%; max-width: 19em; }
@@ -792,7 +778,7 @@ html { scroll-behavior: smooth; }
 .capgrid span { font-family: var(--font-display); font-weight: 700; font-size: 0.95em;
   line-height: 1.1; text-transform: uppercase; color: #fff; }
 .capgrid :is(.cap-hormozi, .cap-tiktok, .cap-highlight, .cap-boxed) { font-size: 0.95em; }
-.hd[data-step="captions"] .capt.target { animation: hdring 0.28s 0.5s both; }
+.hd[data-step="captions"] .capt.target { animation: hdring 0.26s 0.4s both; }
 
 .hd-done { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 0.65em; padding: 1.1em;
@@ -816,7 +802,7 @@ html { scroll-behavior: smooth; }
 
 .hd-cursor { position: absolute; left: 0; top: 0; z-index: 20; width: 1.35rem; height: 1.35rem;
   pointer-events: none; translate: 0 0;
-  transition: translate 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: translate 0.42s cubic-bezier(0.22, 1, 0.36, 1);
   filter: drop-shadow(0 2px 5px rgba(10,10,12,0.4)); }
 .hd-cursor svg { width: 100%; height: 100%; fill: #fff; stroke: #0a0a0b; stroke-width: 1.4;
   stroke-linejoin: round; transition: scale 0.12s; }
@@ -854,11 +840,13 @@ html { scroll-behavior: smooth; }
 .hd[data-reduce] .hd-steps li::before { background: var(--color-ink); border-color: var(--color-ink); color: #fff; }
 
 @media (max-width: 900px) {
-  /* The sidebar goes, which is what the real app does on a phone too (BottomNav). Losing it
-     buys the composer ~9.4em, and the composer is the part being demonstrated. */
+  /* The rail goes, which is what the real app does on a phone too — AppShell.tsx hides the
+     sidebar below md and swaps in BottomNav. Losing it buys the composer ~10em, and the
+     composer is the part being demonstrated. */
   .appside { display: none; }
   .appwin { aspect-ratio: 1/0.98; }
-  .appmain { padding: 1.1em 1em; }
+  .apppanel { padding: 0.55em; }
+  .aurora { padding: 1.1em 1em 1.3em; }
 }
 @media (max-width: 560px) {
   .appwin { aspect-ratio: 1/1.06; }
