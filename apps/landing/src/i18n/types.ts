@@ -80,6 +80,15 @@ export type Copy = {
     making: string;
     pickPresenter: string;
     pickCaption: string;
+    /** The picker sheets' confirm button and their close control's label. Both exist in
+     *  AvatarPicker.tsx; the demo shows them because a modal with no way out reads as a
+     *  screenshot rather than a screen. */
+    pickerDone: string;
+    pickerClose: string;
+    /** The transition named under each connector node between two clips in the tray. */
+    transitionLabel: string;
+    /** The tray's trailing "add more media" tile. */
+    addMedia: string;
     ready: string;
     download: string;
     steps: string[];

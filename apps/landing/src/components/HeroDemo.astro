@@ -15,7 +15,7 @@ import { Image } from "astro:assets";
 import { getCopy, getStudio } from "../i18n";
 import {
   CAPTIONS, CLIPS, FACES, PICKED_CAPTION, PICKED_FACE, PICKED_FACE_NAME,
-  RESULT_POSTER, RESULT_REEL, VIDEO_CLIP,
+  RESULT_POSTER, RESULT_REEL, TR_GRADIENT, TR_GRADIENT_SOFT,
 } from "../data/heroDemo";
 
 const { heroDemo: d } = getCopy(Astro.currentLocale);
@@ -33,6 +33,15 @@ const posters = import.meta.glob<{ default: ImageMetadata }>("../assets/posters/
 const poster = (file: string): ImageMetadata => {
   const mod = posters[`../assets/posters/${file}.jpg`];
   if (!mod) throw new Error(`hero demo: no poster for reel "${file}"`);
+  return mod.default;
+};
+/* The dragged-in media. A photo is itself; a clip is its extracted first frame, because the
+   sources run to 14 MB and these render at 68px. */
+const bgs = import.meta.glob<{ default: ImageMetadata }>("../assets/backgrounds/*.jpg", { eager: true });
+const clipStill = (c: { slug: string; kind: string }): ImageMetadata => {
+  const name = c.kind === "image" ? c.slug : `thumb-${c.slug}`;
+  const mod = bgs[`../assets/backgrounds/${name}.jpg`];
+  if (!mod) throw new Error(`hero demo: no still for background "${c.slug}" — expected ${name}.jpg`);
   return mod.default;
 };
 ---
@@ -115,20 +124,40 @@ const poster = (file: string): ImageMetadata => {
 
             <div class="tray">
               {CLIPS.map((c, i) => (
-                <div class="clip" style={`--i:${i}`}>
-                  <Image src={poster(c)} alt="" widths={[96, 192]} sizes="96px" loading="eager" decoding="async" />
-                  {c === VIDEO_CLIP && (
-                    <span class="clip-kind">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+                <>
+                  {/* The connector the real composer draws between two clips: a gradient hairline
+                      through a node carrying the transition for that gap. */}
+                  {i > 0 && (
+                    <span class="tr-gap" style={`--i:${i}`}>
+                      <span class="tr-line">
+                        <i style={`background:${TR_GRADIENT}`}></i>
+                        <b style={`background:${TR_GRADIENT_SOFT}`}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"></path><path d="m14 7 3 3"></path><path d="M5 6v4M19 14v4M10 2v2M7 8H3M21 16h-4M11 3H9"></path></svg>
+                        </b>
+                        <i style={`background:${TR_GRADIENT}`}></i>
+                      </span>
+                      <em>{d.transitionLabel}</em>
                     </span>
                   )}
-                  <span class="clip-spin"></span>
-                  <span class="clip-ok">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
-                  </span>
-                </div>
+                  <div class="clip" style={`--i:${i}`}>
+                    <Image src={clipStill(c)} alt="" widths={[96, 192]} sizes="96px" loading="eager" decoding="async" />
+                    {c.kind === "video" && (
+                      <span class="clip-kind">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+                        video
+                      </span>
+                    )}
+                    <span class="clip-spin"></span>
+                    <span class="clip-ok">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
+                    </span>
+                  </div>
+                </>
               ))}
-              <div class="clip-add">+</div>
+              <div class="clip-add">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+                <em>{d.addMedia}</em>
+              </div>
             </div>
           </div>
 
@@ -138,11 +167,11 @@ const poster = (file: string): ImageMetadata => {
           </div>
 
           <div class="compose-row">
-            <button type="button" class="cbtn cbtn-opt" data-anchor="options">
-              <span class="cbtn-plus">+</span>{d.options}
-              {/* Counts what has been chosen, the way the real ActionMenu's badge does — so it
-                  reads 1 after the presenter and 2 after the caption style, not 2 from the
-                  start. Both digits ship and CSS reveals one. */}
+            {/* ActionMenu's `lg` trigger: a circular icon button with a count bubble on its
+                top-right corner, ringed in paper so it reads off the card. It is NOT a labelled
+                pill — an earlier draft invented one, and the real control has no text at all. */}
+            <button type="button" class="cbtn cbtn-ico cbtn-opt" data-anchor="options" aria-label={d.options}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
               <span class="cbtn-badge"><i class="b1">1</i><i class="b2">2</i></span>
             </button>
             <button type="button" class="cbtn cbtn-ico" aria-hidden="true">
@@ -174,12 +203,14 @@ const poster = (file: string): ImageMetadata => {
               text — and doing it from the driver would put copy in a script, where the i18n
               type check cannot reach it. */}
           <button type="button" class="hd-menu-row" data-anchor="menu-presenter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"></circle><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6"></path></svg>
             <b>{d.menuPresenter}</b>
             <em class="v-presenter"><i class="v-off">{d.menuNone}</i><i class="v-on">{PICKED_FACE_NAME}</i></em>
           </button>
-          <button type="button" class="hd-menu-row"><b>{d.menuVoice}</b><em>{d.voiceValue}</em></button>
-          <button type="button" class="hd-menu-row"><b>{d.menuMusic}</b><em>{d.menuNone}</em></button>
+          <button type="button" class="hd-menu-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg><b>{d.menuVoice}</b><em>{d.voiceValue}</em></button>
+          <button type="button" class="hd-menu-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg><b>{d.menuMusic}</b><em>{d.menuNone}</em></button>
           <button type="button" class="hd-menu-row" data-anchor="menu-captions">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M6.5 15h5M6.5 11.5h11M13.5 15h5"></path></svg>
             <b>{d.menuCaptions}</b>
             <em class="v-caption"><i class="v-off">{d.menuNone}</i><i class="v-on">{captionLabels[PICKED_CAPTION]}</i></em>
           </button>
@@ -187,29 +218,57 @@ const poster = (file: string): ImageMetadata => {
         </div>
           </div>
 
+        {/* Both pickers are AvatarPicker.tsx's sheet: a blurred scrim, a rounded panel, a
+            title row with a close control, the grid, and a Done button that commits the choice.
+            The header and footer are not decoration — a modal with no way out and no way to
+            confirm reads as a screenshot rather than a screen. */}
         <div class="hd-modal hd-modal-av">
           <div class="hd-sheet">
-          <h4>{d.pickPresenter}</h4>
-          <div class="avgrid">
-            {FACES.map((f) => (
-              <div class={`av${f === PICKED_FACE ? " target" : ""}`} data-anchor={f === PICKED_FACE ? "pick-presenter" : undefined}>
-                <Image src={face(f)} alt="" widths={[104, 208]} sizes="104px" loading="lazy" decoding="async" />
-              </div>
-            ))}
-          </div>
+            <div class="sheet-head">
+              <h4>{d.pickPresenter}</h4>
+              <span class="sheet-x" aria-label={d.pickerClose}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+              </span>
+            </div>
+            <div class="avgrid">
+              {FACES.map((f) => (
+                <div class={`av${f.slug === PICKED_FACE ? " target" : ""}`} data-anchor={f.slug === PICKED_FACE ? "pick-presenter" : undefined}>
+                  <div class="av-tile">
+                    <Image src={face(f.slug)} alt="" widths={[104, 208]} sizes="104px" loading="lazy" decoding="async" />
+                    <span class="av-tick">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
+                    </span>
+                  </div>
+                  <b>{f.name}</b>
+                </div>
+              ))}
+            </div>
+            <div class="sheet-foot"><span class="cbtn cbtn-go sheet-done">{d.pickerDone}</span></div>
           </div>
         </div>
 
         <div class="hd-modal hd-modal-cap">
           <div class="hd-sheet">
-          <h4>{d.pickCaption}</h4>
-          <div class="capgrid">
-            {CAPTIONS.map((c) => (
-              <div class={`capt${c === PICKED_CAPTION ? " target" : ""}`} data-anchor={c === PICKED_CAPTION ? "pick-caption" : undefined}>
-                <span class={`cap-${c}`}>{captionLabels[c]}</span>
-              </div>
-            ))}
-          </div>
+            <div class="sheet-head">
+              <h4>{d.pickCaption}</h4>
+              <span class="sheet-x" aria-label={d.pickerClose}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+              </span>
+            </div>
+            <div class="capgrid">
+              {CAPTIONS.map((c) => (
+                <div class={`capt${c === PICKED_CAPTION ? " target" : ""}`} data-anchor={c === PICKED_CAPTION ? "pick-caption" : undefined}>
+                  <div class="capt-tile">
+                    <span class={`cap-${c}`}>{captionLabels[c]}</span>
+                    <span class="av-tick">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
+                    </span>
+                  </div>
+                  <b>{captionLabels[c]}</b>
+                </div>
+              ))}
+            </div>
+            <div class="sheet-foot"><span class="cbtn cbtn-go sheet-done">{d.pickerDone}</span></div>
           </div>
         </div>
 

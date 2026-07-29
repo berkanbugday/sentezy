@@ -34,19 +34,19 @@ export type Beat = {
   click?: boolean;
 };
 
-/** Full loop length. The last beat holds the finished reel on screen for ~2.7s before the wrap —
- *  the reel is the payoff, and cutting away from it fast wastes the only frame that sells.
- *
- *  Retimed once already: the payoff used to land at 14.3s, which is a long wait for a punchline
- *  on a page people leave in three. The cursor's travel gaps and the post-click holds were the
- *  fat; the beats a viewer has to READ were not touched. */
-export const LOOP = 15_200;
+/** Full loop length. The last beat holds the finished reel on screen for ~2.9s before the wrap —
+ *  the reel is the payoff, and cutting away from it fast wastes the only frame that sells. */
+export const LOOP = 16_800;
 
 /** The typewriter window. `typing` fires at TYPE_FROM and `typed` at TYPE_TO — the driver reads
  *  the DURATION from these two and runs its own rAF for exactly that long, so the two must stay
- *  equal to the matching beats below. */
-export const TYPE_FROM = 3_300;
-export const TYPE_TO = 5_500;
+ *  equal to the matching beats below.
+ *
+ *  3.6s for a ~140-character script is about 39 characters a second. That is faster than a
+ *  person types and it is meant to be: the line is the product's input, not something the
+ *  visitor has to read word by word, and every extra second here is a second before the reel. */
+export const TYPE_FROM = 3_400;
+export const TYPE_TO = 7_000;
 export const TYPE_MS = TYPE_TO - TYPE_FROM;
 
 export const beats: Beat[] = [
@@ -54,24 +54,24 @@ export const beats: Beat[] = [
   { at: 600, cursor: "drop" },
   { at: 1_300, step: "drop", click: true },
   { at: 1_850, step: "uploaded" },
-  { at: 2_800, cursor: "script" },
+  { at: 2_900, cursor: "script" },
   { at: TYPE_FROM, step: "typing", click: true },
   { at: TYPE_TO, step: "typed" },
-  { at: 5_800, cursor: "options" },
-  { at: 6_300, step: "menu1", click: true },
-  { at: 6_650, cursor: "menu-presenter" },
-  { at: 7_150, step: "avatars", click: true },
-  { at: 7_600, cursor: "pick-presenter" },
-  { at: 8_250, step: "picked", click: true },
-  { at: 8_600, cursor: "options" },
-  { at: 9_050, step: "menu2", click: true },
-  { at: 9_350, cursor: "menu-captions" },
-  { at: 9_800, step: "captions", click: true },
-  { at: 10_200, cursor: "pick-caption" },
-  { at: 10_750, step: "styled", click: true },
-  { at: 11_100, cursor: "make" },
-  { at: 11_650, step: "making", click: true },
-  { at: 12_450, step: "done", cursor: "start" },
+  { at: 7_300, cursor: "options" },
+  { at: 7_800, step: "menu1", click: true },
+  { at: 8_150, cursor: "menu-presenter" },
+  { at: 8_650, step: "avatars", click: true },
+  { at: 9_100, cursor: "pick-presenter" },
+  { at: 9_750, step: "picked", click: true },
+  { at: 10_100, cursor: "options" },
+  { at: 10_550, step: "menu2", click: true },
+  { at: 10_850, cursor: "menu-captions" },
+  { at: 11_300, step: "captions", click: true },
+  { at: 11_700, cursor: "pick-caption" },
+  { at: 12_250, step: "styled", click: true },
+  { at: 12_600, cursor: "make" },
+  { at: 13_150, step: "making", click: true },
+  { at: 13_950, step: "done", cursor: "start" },
 ];
 
 /** Which step each label under the stage belongs to. A label lights when the current step is
@@ -85,36 +85,48 @@ export const STEP_ORDER: Step[] = [
 /** First step of each of the four labels in `copy.heroDemo.steps`. */
 export const LABEL_AT: Step[] = ["idle", "typing", "menu1", "done"];
 
-/** The three uploaded clips, as poster slugs in src/assets/posters.
+/** What the visitor drags in: Berkan's own B-roll from src/assets/backgrounds — one photo and
+ *  three clips, which is exactly the mix the composer accepts. `1.jpg` is the salon the result
+ *  reel is shot against, so the media going in and the video coming out are the same shoot.
  *
- *  `3` is first on purpose: it is the opening frame of /reels/3.mp4, the video that plays at
- *  the end. What the visitor watches go in is literally what comes back out.
- *
- *  Not any three posters, either. The tray crops these to a square from near the top of a 9:16
- *  frame, and posters 1 and 5 have their burned-in captions inside that crop — on a tile that
- *  is meant to be raw footage the visitor just dragged in, an already-captioned still makes the
- *  input look like the output. 3, 4 and 6 are clean up there. */
-export const CLIPS = ["3", "4", "6"] as const;
+ *  The three videos are represented by a first-frame still (`thumb-<slug>.jpg`, extracted with
+ *  ffmpeg) rather than a <video> element: the sources are 2.6–14 MB and the tray renders them
+ *  at 68px. The real composer does the same thing — `videoPoster()` in MediaComposer.tsx draws
+ *  a poster off the uploaded file — so this is the behaviour, not a shortcut around it. */
+export type Clip = { slug: string; kind: "image" | "video" };
+export const CLIPS: Clip[] = [
+  { slug: "1", kind: "image" },
+  { slug: "2", kind: "video" },
+  { slug: "3", kind: "video" },
+  { slug: "4", kind: "video" },
+];
 
-/** The clip shown with a "video" badge — the other two read as photos, which is the mix the
- *  composer actually accepts. */
-export const VIDEO_CLIP = "3";
-
-/** The reel that plays on the last beat. Served from public/reels, the same files the showcase
- *  uses further down the page, so it is already in the browser cache by the second visit. */
-export const RESULT_REEL = "/reels/3.mp4";
-/** Its first frame, and also CLIPS[0]. Used as the video's poster so the last beat has
- *  something to show before the file has finished buffering — and so reduced motion, which
- *  never calls play(), still ends on a real finished reel. */
-export const RESULT_POSTER = "3";
+/** The reel that plays on the last beat: src/assets/videos/7.mp4, downscaled to 540x960 and
+ *  ~840 KB into public/reels the same way 1–6 were. It is NOT in data/reels.ts — the showcase
+ *  wall further down the page still runs 1–6, and this one belongs to the demo. */
+export const RESULT_REEL = "/reels/7.mp4";
+/** A frame from 3s in, not the first: the opening frame is the empty room, and the poster is
+ *  what reduced motion shows forever — so it needs the presenter in it. */
+export const RESULT_POSTER = "7";
 
 /** Presenter portraits in the picker grid, and the one the cursor lands on. Slugs join into
- *  src/assets/avatars/*.png — the same set Platform.astro draws from. */
-export const FACES = ["kevser", "hana", "camila", "anna", "beyza", "arda"] as const;
+ *  src/assets/avatars/*.png. Names ride along because the real AvatarGrid labels every tile
+ *  under the portrait; they are proper nouns, so they are not copy and do not translate. */
+export const FACES = [
+  { slug: "kevser", name: "Kevser" },
+  { slug: "hana", name: "Hana" },
+  { slug: "camila", name: "Camila" },
+  { slug: "anna", name: "Anna" },
+  { slug: "beyza", name: "Beyza" },
+  { slug: "arda", name: "Arda" },
+];
 export const PICKED_FACE = "kevser";
 export const PICKED_FACE_NAME = "Kevser";
 
-/** Caption styles in the picker, matching `.cap-<id>` in global.css. The demo picks the first,
- *  which is also the one the burned-in captions of /reels/1.mp4 most resemble. */
+/** Caption styles in the picker, matching `.cap-<id>` in global.css. */
 export const CAPTIONS = ["hormozi", "tiktok", "highlight", "boxed"] as const;
 export const PICKED_CAPTION = "hormozi";
+
+/** The connector between two clips in the tray, straight from lib/composer/transitions.ts. */
+export const TR_GRADIENT = "linear-gradient(90deg, rgb(52,104,184), rgb(96,64,168), rgb(170,86,96))";
+export const TR_GRADIENT_SOFT = "linear-gradient(135deg, rgba(52,104,184,0.16), rgba(96,64,168,0.16), rgba(170,86,96,0.16))";

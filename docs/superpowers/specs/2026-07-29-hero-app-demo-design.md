@@ -63,13 +63,16 @@ export type Step = "idle" | "drop" | "uploaded" | "typing" | "typed" | "menu1"
 export type Beat = { at: number; step?: Step; cursor?: string; click?: boolean };
 ```
 
-Also exports `LOOP` (15.2s), the typewriter window, the three uploaded clips (poster slugs `3`,
-`4`, `6`) and the picked presenter (`kevser`).
+Also exports `LOOP` (16.8s), the typewriter window, the uploaded clips and the picked presenter.
 
-The first uploaded clip is `posters/3.jpg`, which is the first frame of `/reels/3.mp4` — the
-video that plays at the end. What goes in is literally what comes out. Posters `1` and `5` are
-deliberately not used: the tray crops a square from near the top of a 9:16 frame and their
-burned-in captions fall inside it, which makes a raw upload look like a finished render.
+Assets are Berkan's own. The dragged-in media is `src/assets/backgrounds/` — `1.jpg` plus three
+mp4s, represented in the tray by ffmpeg-extracted first frames (`thumb-<n>.jpg`) because the
+sources run to 14 MB and the tiles render at 68px; the real composer's `videoPoster()` draws a
+poster off the uploaded file for the same reason. The result is `src/assets/videos/7.mp4`,
+downscaled into `public/reels/7.mp4` with the recipe reels 1–6 use (540x960, CRF 26, ~840 KB),
+plus a poster taken at 3s rather than frame 1 — the opening frame is an empty room, and the
+poster is what reduced motion shows forever. `1.jpg` is the room 7.mp4 is shot in, so the media
+going in and the video coming out are the same shoot.
 
 ### `src/components/HeroDemo.astro`
 
@@ -105,6 +108,14 @@ and the credits pill are copied from `Sidebar.tsx`.
 Modals and menus hide with `visibility`/`opacity`, never `display: none`, so cursor anchors
 always have a measurable rect.
 
+Measurements are not eyeballed: the CSS restates the Tailwind values from `MediaComposer.tsx`,
+`ActionMenu.tsx`, `AvatarPicker.tsx`, `AvatarGrid.tsx` and `CaptionTile.tsx` in `em` at
+1em = 16px, so `p-3.5` is `0.875em` and `h-11` is `2.75em`. Where a number here disagrees with
+the component, the component is right. That means: the options control is a circular icon button
+with a corner badge (not a labelled pill), its menu opens below the trigger, menu rows carry
+icons, both pickers have a title row with a close control and a Done footer, avatar tiles are
+3:4 with the name underneath, and caption tiles are square with a label and a tick.
+
 ### `src/scripts/hero-demo.ts`
 
 Sleeps between beats: one `setTimeout` to the next beat's `at`, and `requestAnimationFrame` only
@@ -134,7 +145,7 @@ where they exist), the typed script, the four step labels, and the result screen
 ## Non-goals
 
 - The demo abbreviates: it picks a presenter and a caption style. Voice shows as already chosen
-  rather than adding a fifth beat to an already 15s loop.
+  rather than adding a fifth beat to an already 17s loop.
 - No interaction. Clicking the demo does nothing; the CTA beneath it is the interaction.
 - The real app UI is not refactored to share code with the demo. The landing is Astro, the app
   is Next/React; a shared component would drag React into a static page for one visual.

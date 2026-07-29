@@ -72,7 +72,9 @@ export const copy: Copy = {
     dropHint: ".mp4, .mov, .jpg or .png",
     clipsReady: "3 clips ready",
     scriptPlaceholder: "What should the video say? Write it here…",
-    script: "This coat is waterproof, packs into your bag, and it's 40% off this week.",
+    /* Mirrors the Turkish, which Berkan wrote. It is the script the video reads out, so it is
+       written the way his own ads are written — the claim, the range, the call to action. */
+    script: "Your presenter-led promo video is ready in minutes! Hundreds of presenters and voices to choose from! Visit our site for a free demo.",
     options: "Video options",
     menuPresenter: "Presenter",
     menuVoice: "Voice",
@@ -85,6 +87,10 @@ export const copy: Copy = {
     making: "Starting…",
     pickPresenter: "Choose a presenter",
     pickCaption: "Choose a caption style",
+    pickerDone: "Done",
+    pickerClose: "Close",
+    addMedia: "Add",
+    transitionLabel: "Whip",
     ready: "Your video is ready",
     download: "Download",
     steps: ["Upload your media", "Write the line", "Pick presenter & captions", "Your reel is ready"],
