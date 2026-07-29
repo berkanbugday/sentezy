@@ -3,7 +3,9 @@
    rail reads as a catalog you can flick through, and on a phone it costs no vertical space.
    The list is rendered twice so the track can translate exactly -50% and loop seamlessly — the
    copy is aria-hidden so a screen reader hears the 24 once. */
-import { sectors } from "../data/copy";
+import { getCopy } from "../i18n";
+
+const { sectors } = getCopy(Astro.currentLocale);
 ---
 
 <section class="sec mist" id="sectors">

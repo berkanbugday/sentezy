@@ -74,8 +74,8 @@ if (cards.length) {
       // A moving card cannot be watched: the first tap stops the slide for good.
       card.closest(".marquee")?.classList.add("paused");
       video.muted = !turningOn;
-      // Both hint labels ship in the markup with their own data-tr, so the class swap keeps
-      // working after a language switch and no string lives outside copy.ts.
+      // Both hint labels ship in the markup and the swap is a CSS class, not a string
+      // rewrite — so the card needs no knowledge of which language it is rendered in.
       card.classList.toggle("loud", turningOn);
       void video.play().catch(() => {});
     });

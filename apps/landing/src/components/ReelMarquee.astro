@@ -1,6 +1,9 @@
 ---
 import { Image } from "astro:assets";
 import { columnA, columnB, type Still } from "../data/stills";
+import { getStills } from "../i18n";
+
+const { byId } = getStills(Astro.currentLocale);
 
 /* The cutouts live in src/assets so astro:assets can downscale them and emit WebP — the
    originals are 1024x1536 PNGs and these render at 270px wide. A glob is needed because the
@@ -26,8 +29,8 @@ const cols: { dir: "up" | "down"; items: Still[] }[] = [
       {[...col.items, ...col.items].map((s) => (
         <div class={`tile tile-${s.tint}`}>
           <Image src={avatarOf(s.slug)} alt="" widths={[270, 540]} sizes="270px" loading="lazy" decoding="async" />
-          <span class="tile-sector">{s.sector}</span>
-          <div class="tile-cap"><span class={`cap-${s.style}`}>{s.caption}</span></div>
+          <span class="tile-sector">{byId[s.id].sector}</span>
+          <div class="tile-cap"><span class={`cap-${s.style}`}>{byId[s.id].caption}</span></div>
         </div>
       ))}
     </div>

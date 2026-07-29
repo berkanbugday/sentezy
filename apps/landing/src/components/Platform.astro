@@ -9,9 +9,11 @@
    you can also click to take over. No step numbers: the four are things you choose, not a sequence
    you complete, and on a phone the numbered rail was furniture between two thumbs. */
 import { Image } from "astro:assets";
-import { platform } from "../data/copy";
+import { getCopy, getStudio } from "../i18n";
 import { captionStyles, mmss, presenters, tracks, voices } from "../data/studio";
 
+const { platform } = getCopy(Astro.currentLocale);
+const { presenterSectors, voiceMeta, trackMoods, captionLabels } = getStudio(Astro.currentLocale);
 const avatars = import.meta.glob<{ default: ImageMetadata }>("../assets/avatars/*.png", { eager: true });
 const face = (slug: string): ImageMetadata => {
   const mod = avatars[`../assets/avatars/${slug}.png`];
@@ -55,7 +57,7 @@ const MUSIC_BG = "1";
           <div class={`slide ${i % 2 ? "side-l" : "side-r"}${i === 0 ? " on" : ""}`} data-slide>
             <Image class="slide-bg" src={posterMeta(presenterBg[i % presenterBg.length])} alt="" widths={[300, 600]} sizes="300px" loading="lazy" decoding="async" />
             <Image class="slide-cutout" src={face(p.slug)} alt="" widths={[270, 540]} sizes="270px" loading="lazy" decoding="async" />
-            <div class="slide-foot"><b>{p.name}</b><em>{p.sector}</em></div>
+            <div class="slide-foot"><b>{p.name}</b><em>{presenterSectors[p.slug]}</em></div>
           </div>
         ))}
         </div>
@@ -83,7 +85,7 @@ const MUSIC_BG = "1";
             <div class="slide-foot">
               <span class="wave" aria-hidden="true">{Array.from({ length: 15 }).map((_, b) => <i style={`--b:${b}`}></i>)}</span>
               <b>{v.name}</b>
-              <em>{v.meta}</em>
+              <em>{voiceMeta[v.name]}</em>
             </div>
           </div>
         ))}
@@ -112,7 +114,7 @@ const MUSIC_BG = "1";
             <div class="slide-foot">
               <span class="eq" aria-hidden="true">{t.bars.map((h, b) => <i style={`--h:${h}%;--b:${b}`}></i>)}</span>
               <b>{t.name}</b>
-              <em>{t.mood} · {mmss(t.sec)}</em>
+              <em>{trackMoods[t.mood]} · {mmss(t.sec)}</em>
             </div>
           </div>
         ))}
@@ -124,7 +126,7 @@ const MUSIC_BG = "1";
         <p>{platform.music.body}</p>
         <div class="demo-chips">
           {tracks.map((t, i) => (
-            <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{t.mood}</button>
+            <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{trackMoods[t.mood]}</button>
           ))}
         </div>
       </div>
@@ -149,7 +151,7 @@ const MUSIC_BG = "1";
         <p>{platform.captions.body}</p>
         <div class="demo-chips">
           {captionStyles.map((s, i) => (
-            <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{s.label}</button>
+            <button type="button" class={`chip${i === 0 ? " on" : ""}`} data-chip aria-pressed={i === 0 ? "true" : "false"}>{captionLabels[s.id]}</button>
           ))}
         </div>
       </div>

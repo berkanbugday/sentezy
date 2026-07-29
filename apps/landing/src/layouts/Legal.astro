@@ -4,6 +4,7 @@
 import Base from "./Base.astro";
 import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
+import { getCopy, localeHref } from "../i18n";
 
 interface Props {
   title: string;
@@ -11,15 +12,18 @@ interface Props {
   description?: string;
 }
 const { title, updated, description } = Astro.props;
+/* The back link and the "last updated" label are chrome, so they come from copy. `updated`
+   itself is a prop, not copy: each locale's page passes its own rendering of the same date. */
+const { legal } = getCopy(Astro.currentLocale);
 ---
 
 <Base title={`${title} — Sentezy`} description={description ?? `${title} for Sentezy.`}>
   <Nav />
   <main class="legal">
     <div class="wrap legal-wrap">
-      <a class="legal-back" href="/">← Back to home</a>
+      <a class="legal-back" href={localeHref(Astro.currentLocale, "/")}>{legal.back}</a>
       <h1 class="disp">{title}</h1>
-      <p class="legal-updated">Last updated {updated}</p>
+      <p class="legal-updated">{legal.updated} {updated}</p>
       <div class="legal-body">
         <slot />
       </div>

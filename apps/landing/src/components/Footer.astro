@@ -1,13 +1,15 @@
 ---
-import { footer, sectors } from "../data/copy";
+import { getCopy, localeHref } from "../i18n";
 import { INSTAGRAM_URL, TIKTOK_URL, YOUTUBE_URL } from "../data/site";
+
+const { footer, sectors } = getCopy(Astro.currentLocale);
 ---
 
 <footer class="footer">
   <div class="wrap">
     <div class="foot-grid">
       <div class="foot-brand">
-        <a class="logo" href="/"><img class="logo-mark" src="/sentezy-logo.png" alt="Sentezy" />Sentezy</a>
+        <a class="logo" href={localeHref(Astro.currentLocale, "/")}><img class="logo-mark" src="/sentezy-logo.png" alt="Sentezy" />Sentezy</a>
         <p>{footer.tagline}</p>
         <div class="foot-social">
           <a href={INSTAGRAM_URL} target="_blank" rel="noopener" aria-label="Instagram">
@@ -45,9 +47,9 @@ import { INSTAGRAM_URL, TIKTOK_URL, YOUTUBE_URL } from "../data/site";
       </div>
       <div class="foot-col">
         <h4>{footer.legalHead}</h4>
-        <a href="/kvkk">KVKK</a>
-        <a href="/privacy">{footer.privacy}</a>
-        <a href="/terms">{footer.terms}</a>
+        <a href={localeHref(Astro.currentLocale, "kvkk")}>KVKK</a>
+        <a href={localeHref(Astro.currentLocale, "privacy")}>{footer.privacy}</a>
+        <a href={localeHref(Astro.currentLocale, "terms")}>{footer.terms}</a>
       </div>
     </div>
     <div class="foot-bottom">

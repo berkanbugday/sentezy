@@ -16,9 +16,11 @@
    (preload="none" plus a data-src the script promotes), so the initial payload is six posters,
    not a wall of video. */
 import { getImage } from "astro:assets";
-import { showcase } from "../data/copy";
+import { getCopy, getReels } from "../i18n";
 import { reels } from "../data/reels";
 
+const { showcase } = getCopy(Astro.currentLocale);
+const { byFile } = getReels(Astro.currentLocale);
 const posters = import.meta.glob<{ default: ImageMetadata }>("../assets/posters/*.jpg", { eager: true });
 const cards = await Promise.all(
   reels.map(async (r) => {
@@ -26,7 +28,7 @@ const cards = await Promise.all(
     if (!mod) throw new Error(`no poster for reel "${r.file}" — expected src/assets/posters/${r.file}.jpg`);
     // getImage, not <Image>: a poster is an attribute URL, not an element.
     const poster = await getImage({ src: mod.default, width: 540, format: "webp" });
-    return { ...r, poster: poster.src };
+    return { ...r, ...byFile[r.file], poster: poster.src };
   }),
 );
 ---

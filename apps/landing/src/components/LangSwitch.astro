@@ -1,0 +1,90 @@
+---
+/* Nav-only, by design. The removed bilingual build put a switcher in both the nav and the
+   footer, which was part of what made it feel cluttered.
+
+   A disclosure, not a JS menu. `<details>`/`<summary>` gives open/close, keyboard operation
+   and focus handling for free, so the control still works if the script below never runs —
+   which matters for a control whose whole job is getting a visitor to a language they can
+   read. The script only adds the niceties: close on outside click, close on Escape.
+
+   Each entry links to the counterpart of the CURRENT page, not to the home page — someone
+   reading /terms who switches to Turkish expects /tr/terms, not /tr/.
+
+   The two labels are endonyms (English, Türkçe) and are deliberately NOT translated: a
+   language menu names each language in its own language, so a visitor who cannot read the
+   current one can still find theirs. That is also why they are not in `Copy`. */
+import { barePath, getCopy, localeHref, localeOf } from "../i18n";
+
+const locale = localeOf(Astro.currentLocale);
+const bare = barePath(Astro.url.pathname);
+const { nav } = getCopy(Astro.currentLocale);
+
+const entries = [
+  { code: "en" as const, label: "English", short: "EN" },
+  { code: "tr" as const, label: "Türkçe", short: "TR" },
+];
+const current = entries.find((e) => e.code === locale)!;
+---
+
+<details class="lang">
+  <summary aria-label={`${nav.language}: ${current.label}`}>
+    {/* Globe, inlined — a strict CSP blocks external requests, and an icon font would be
+        20KB to say one thing. aria-hidden because the summary already has a label. */}
+    <svg class="lang-globe" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="6.25" />
+      <path d="M1.75 8h12.5" />
+      <path d="M8 1.75c1.9 2 2.85 4.1 2.85 6.25S9.9 12.25 8 14.25C6.1 12.25 5.15 10.15 5.15 8S6.1 3.75 8 1.75Z" />
+    </svg>
+    <span class="lang-code">{current.short}</span>
+    <svg class="lang-caret" viewBox="0 0 10 6" aria-hidden="true" focusable="false">
+      <path d="M1 1.25 5 4.75l4-3.5" />
+    </svg>
+  </summary>
+
+  <ul class="lang-menu">
+    {entries.map((e) => (
+      <li>
+        <a
+          href={localeHref(e.code, bare)}
+          data-lang={e.code}
+          lang={e.code}
+          aria-current={e.code === locale ? "true" : undefined}
+        >
+          <span class="lang-tick" aria-hidden="true">{e.code === locale ? "✓" : ""}</span>
+          {e.label}
+        </a>
+      </li>
+    ))}
+  </ul>
+</details>
+
+<script>
+  /* Progressive enhancement only — <details> already opens, closes and takes keyboard input
+     without any of this. */
+  for (const d of document.querySelectorAll<HTMLDetailsElement>("details.lang")) {
+    /* A click here is an explicit choice and must outrank browser detection on every later
+       visit — src/scripts/lang-detect.ts reads this key before it reads navigator.languages. */
+    for (const a of d.querySelectorAll<HTMLAnchorElement>("a[data-lang]")) {
+      a.addEventListener("click", () => {
+        try {
+          localStorage.setItem("sentezy-lang", a.dataset.lang!);
+        } catch {
+          /* Private mode or blocked storage: the navigation still happens, the choice just
+             does not persist. Never let a storage failure block the click. */
+        }
+      });
+    }
+
+    /* An open menu that survives a click elsewhere on the page reads as a stuck overlay. */
+    document.addEventListener("click", (ev) => {
+      if (d.open && !d.contains(ev.target as Node)) d.open = false;
+    });
+
+    d.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && d.open) {
+        d.open = false;
+        d.querySelector("summary")?.focus();
+      }
+    });
+  }
+</script>

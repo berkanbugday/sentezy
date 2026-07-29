@@ -1,22 +1,35 @@
 ---
 import "../styles/global.css";
 import Posthog from "../components/Posthog.astro";
+import { barePath, getCopy, localeHref, localeOf } from "../i18n";
+// Read at build time and inlined, so there is no extra request in front of the redirect.
+import langDetect from "../scripts/lang-detect.ts?raw";
 
 interface Props {
   title?: string;
   description?: string;
 }
-const {
-  title = "Sentezy — vertical video without a camera",
-  description = "Paste a product link or two sentences and get a finished vertical video with a presenter, voice, captions and music, ready for Reels, TikTok and Shorts. Free to start.",
-} = Astro.props;
+
+const locale = localeOf(Astro.currentLocale);
+const { meta } = getCopy(Astro.currentLocale);
+const { title = meta.title, description = meta.description } = Astro.props;
+
+/** The path with any /tr prefix stripped, so the hreflang pair points at this same page in
+ *  both trees rather than at the two home pages. */
+const bare = barePath(Astro.url.pathname);
+const enHref = new URL(localeHref("en", bare), Astro.site).href;
+const trHref = new URL(localeHref("tr", bare), Astro.site).href;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {locale === "en" && <script is:inline set:html={langDetect} />}
+    <link rel="alternate" hreflang="en" href={enHref} />
+    <link rel="alternate" hreflang="tr" href={trHref} />
+    <link rel="alternate" hreflang="x-default" href={enHref} />
     <link rel="icon" type="image/png" href="/sentezy-logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://api.fontshare.com" />

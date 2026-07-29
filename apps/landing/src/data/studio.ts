@@ -6,31 +6,34 @@
  *  tracks     → apps/api/src/data/music.json (11 beds, 4 moods)
  *  captions   → CAPTION_STYLE_META in packages/types/src/index.ts (6 of the 20)
  */
+import type { CaptionStyleId, PresenterSlug, TrackMood, VoiceName } from "../i18n/types";
+
 export type Tint = "cool" | "warm" | "rose" | "teal" | "violet" | "amber";
 
-export type Presenter = { slug: string; name: string; sector: string; tint: Tint };
+export type Presenter = { slug: PresenterSlug; name: string; tint: Tint };
 
 /** Six of the twelve — enough to read as a catalog without the phone cycling for half a minute.
  *  Ordered so consecutive slides change sector, tone and backdrop, not just the face. */
 export const presenters: Presenter[] = [
-  { slug: "aisha",  name: "Aisha",  sector: "E-commerce",  tint: "rose" },
-  { slug: "anna",   name: "Anna",   sector: "Real estate", tint: "cool" },
-  { slug: "arda",   name: "Arda",   sector: "Pharmacy",    tint: "teal" },
-  { slug: "amara",  name: "Amara",  sector: "Influencer",  tint: "violet" },
-  { slug: "camila", name: "Camila", sector: "Automotive",  tint: "amber" },
-  { slug: "alp",    name: "Alp",    sector: "Optics",      tint: "cool" },
+  { slug: "aisha",  name: "Aisha",  tint: "rose" },
+  { slug: "anna",   name: "Anna",   tint: "cool" },
+  { slug: "arda",   name: "Arda",   tint: "teal" },
+  { slug: "amara",  name: "Amara",  tint: "violet" },
+  { slug: "camila", name: "Camila", tint: "amber" },
+  { slug: "alp",    name: "Alp",    tint: "cool" },
 ];
 
-export type Voice = { name: string; meta: string; presenter: string; tint: Tint };
+export type Voice = { name: VoiceName; presenter: string; tint: Tint };
 
 export const voices: Voice[] = [
-  { name: "PJ",           meta: "Conversational · young",       presenter: "beyza",   tint: "warm" },
-  { name: "Kate Mercer",  meta: "Narrative · middle-aged",      presenter: "amara",   tint: "violet" },
-  { name: "David",        meta: "Social media · young",         presenter: "alp",     tint: "cool" },
-  { name: "Rene",         meta: "Conversational · young",       presenter: "sumeyye", tint: "teal" },
+  { name: "PJ",           presenter: "beyza",   tint: "warm" },
+  { name: "Kate Mercer",  presenter: "amara",   tint: "violet" },
+  { name: "David",        presenter: "alp",     tint: "cool" },
+  { name: "Rene",         presenter: "sumeyye", tint: "teal" },
 ];
 
-export type Track = { name: string; mood: string; sec: number; bars: number[] };
+/** `mood` is the lookup key into Studio.trackMoods, not a display string. */
+export type Track = { name: string; mood: TrackMood; sec: number; bars: number[] };
 
 /** `bars` is the equalizer silhouette — a fixed 9-bar shape per track so the four moods read
  *  differently at a glance (calm sits low and even, energetic spikes). */
@@ -42,13 +45,13 @@ export const tracks: Track[] = [
 ];
 
 /** The caption treatments, matching `.cap-<id>` in global.css and real CAPTION_STYLE_META ids. */
-export const captionStyles = [
-  { id: "hormozi",   label: "Hormozi" },
-  { id: "tiktok",    label: "TikTok" },
-  { id: "highlight", label: "Highlight" },
-  { id: "boxed",     label: "Boxed" },
-  { id: "glow",      label: "Neon" },
-  { id: "clean",     label: "Clean" },
+export const captionStyles: { id: CaptionStyleId }[] = [
+  { id: "hormozi" },
+  { id: "tiktok" },
+  { id: "highlight" },
+  { id: "boxed" },
+  { id: "glow" },
+  { id: "clean" },
 ];
 
 export const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;

@@ -17,13 +17,11 @@
  *      src/assets/posters/N.jpg
  *  then append an entry here.
  */
-export type Reel = { file: string; sector: string; alt: string };
+import type { ReelFile } from "../i18n/types";
+
+export type Reel = { file: ReelFile };
 
 export const reels: Reel[] = [
-  { file: "2", sector: "Beauty", alt: "A Sentezy reel made for a beauty salon" },
-  { file: "1", sector: "Travel", alt: "A Sentezy reel made for a travel agency" },
-  { file: "3", sector: "Gym", alt: "A Sentezy reel made for a gym" },
-  { file: "6", sector: "Automotive", alt: "A Sentezy reel made for a car service" },
-  { file: "4", sector: "Café", alt: "A Sentezy reel made for a café" },
-  { file: "5", sector: "Cruise", alt: "A Sentezy reel made for a cruise line" },
+  { file: "2" }, { file: "1" }, { file: "3" },
+  { file: "6" }, { file: "4" }, { file: "5" },
 ];

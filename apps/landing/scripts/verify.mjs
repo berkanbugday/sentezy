@@ -4,6 +4,10 @@
  * that the real claims are present, that no dead links shipped, and that no periwinkle
  * from the pre-monochrome palette leaked through.
  *
+ * Walks every emitted page in both the English and Turkish trees. The old gate read
+ * dist/index.html alone, so a dead link or a forbidden claim on /terms — or anywhere in
+ * /tr/ — shipped unnoticed.
+ *
  *   pnpm --filter @sentezy/landing verify   (runs after `build`)
  */
 import { readFile, readdir } from "node:fs/promises";
@@ -14,6 +18,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const DIST = resolve(HERE, "../dist");
 
 // Invented claims and unshipped features that must never come back.
+// "dijital ikiz" (Turkish for "digital twin") is left from the bilingual build that was
+// previously removed — the Turkish tree is real again now, so it needs guarding again.
 const FORBIDDEN_TEXT = [
   "147M", "122M", "175+", "SOC 2",
   "digital twin", "dijital ikiz",
@@ -45,9 +51,28 @@ const FORBIDDEN_CSS = ["c9a9e9", "201,169,233", "7c86e8", "124,134,232"];
 //   14 b-roll effects                 → BROLL_EFFECT_META, packages/types/src/index.ts
 const REQUIRED = [
   ">126<", ">24<", ">20<", ">14<",         // the four verified proof numbers
-  "Post every day without filming a thing.", // hero headline
+  "Let Sentezy make your videos. You just post them.", // hero headline
   "instagram.com/sentezy.ai",                // the real account is linked
 ];
+
+// Claims that must be present in the Turkish tree. The four proof numbers are checked in
+// BOTH trees — they trace to source files and are facts, not copy, so they never differ.
+const REQUIRED_TR = [
+  ">126<", ">24<", ">20<", ">14<",
+  "Videolarınızı Sentezy hazırlasın, siz sadece paylaşın.",  // hero headline
+  "instagram.com/sentezy.ai",
+];
+
+/** Every .html file under dist/, recursively. The old gate read dist/index.html alone, so a
+ *  dead link or a forbidden claim on /terms shipped unnoticed. */
+async function allPages(dir = DIST, out = []) {
+  for (const e of await readdir(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) await allPages(p, out);
+    else if (e.name.endsWith(".html")) out.push([p, await readFile(p, "utf8")]);
+  }
+  return out;
+}
 
 /** Built CSS, concatenated, whitespace-stripped and lowercased, so `rgba(201, 169, 233, …)`
  *  and the minifier's `#C9A9E938` both match the same needle.
@@ -76,15 +101,115 @@ async function builtCss() {
     .replace(/--color-(signal|aurora):[^;}]*/g, "");
 }
 
+/** Every in-page link on a Turkish page must stay in the Turkish tree.
+ *
+ *  Matches anchors only — <link rel="stylesheet" href="/_astro/…"> and the hreflang tags are
+ *  supposed to point outside /tr/, and matching every href would flag them.
+ *
+ *  This is the gate for the design's highest-risk detail: an English-rooted href on a Turkish
+ *  page produces no error, no warning and no visual defect. The page looks perfect and drops
+ *  the visitor into English one click later. */
+function localeLeaks(html) {
+  const bad = [];
+  // Case-insensitive, and accepts either quote style. An earlier draft matched only
+  // lowercase <a and only href="…" — a leak written as href='/terms' or <A HREF> was
+  // invisible to it, which is the precise silent failure this gate exists to prevent.
+  for (const m of html.matchAll(/<a\s([^>]*?)href=["']([^"']*)["']([^>]*)>/gi)) {
+    const attrs = m[1] + m[3];
+    const href = m[2];
+
+    // Leaving the site entirely, or staying on the page, is not a locale question.
+    if (/^(https?:|mailto:|tel:|#)/i.test(href) || href.startsWith("//")) continue;
+
+    // The language switcher's EN half legitimately points out of the Turkish tree — that is
+    // the entire point of a switcher. It is identified by data-lang="en", not by its href,
+    // so the exemption cannot be widened accidentally by some other link to the same path.
+    // \b anchors it so a hypothetical xdata-lang="en" cannot claim the exemption.
+    if (/\bdata-lang=["']en["']/.test(attrs)) continue;
+
+    if (href === "/tr" || href.startsWith("/tr/")) continue;
+
+    // Everything else is a leak — including a RELATIVE href. On a Turkish page "./terms"
+    // resolves inside /tr/ today and outside it tomorrow depending on the emitting page's
+    // depth. The project routes every internal link through localeHref, which always emits
+    // an absolute path, so a relative href here means something bypassed that helper.
+    bad.push(href);
+  }
+  return bad;
+}
+
+/** Every page in both trees must carry all three alternates, each pointing at a real absolute
+ *  URL. A Turkish page orphaned from its English twin is invisible to Google as a translation,
+ *  which is the entire point of building two trees.
+ *
+ *  Checks the href, not just the label. An earlier draft substring-matched `hreflang="tr"` and
+ *  nothing else, so a tag with an empty or wrong href passed a check named "pairing" — and so
+ *  would the literal text `hreflang="tr"` appearing anywhere in the body copy. */
+function hreflangProblems(html) {
+  const found = new Map();
+  for (const m of html.matchAll(/<link\s[^>]*hreflang=["']([^"']+)["'][^>]*>/gi)) {
+    found.set(m[1], /href=["']([^"']*)["']/i.exec(m[0])?.[1] ?? "");
+  }
+  const problems = [];
+  for (const h of ["en", "tr", "x-default"]) {
+    if (!found.has(h)) problems.push(`missing hreflang="${h}"`);
+    else if (!/^https?:\/\/\S+/.test(found.get(h)))
+      problems.push(`hreflang="${h}" href is empty or not absolute: ${JSON.stringify(found.get(h))}`);
+  }
+  return problems;
+}
+
+/** The tree a page lives in and the language it declares must agree. This is the cheap,
+ *  structural half of cross-contamination detection: REQUIRED/REQUIRED_TR assert real copy but
+ *  only on the two home pages, so a sub-page rendering the wrong locale would otherwise ship
+ *  unnoticed. It catches misrouting, not mistranslation — see the limitation noted below.
+ *
+ *  Known limitation, deliberately accepted: a Turkish sub-page whose *body copy* silently
+ *  rendered English would still pass this check — its `lang` attribute would be correct.
+ *  Closing that properly needs per-page language assertions, which is a follow-up. */
+function wrongHtmlLang(rel, html) {
+  const lang = /<html[^>]*\slang=["']([^"']*)["']/i.exec(html)?.[1] ?? "";
+  const expected = rel.startsWith("tr/") ? "tr" : "en";
+  return lang === expected ? null : `<html lang="${lang}"> on a page in the ${expected} tree`;
+}
+
 async function main() {
-  const html = await readFile(join(DIST, "index.html"), "utf8");
+  const pages = await allPages();
+  if (pages.length === 0) throw new Error(`no HTML emitted to ${DIST} — nothing to verify`);
+
   const css = await builtCss();
+  const rel = (p) => p.slice(DIST.length + 1);
+  const page = (name) => pages.find(([p]) => rel(p) === name)?.[1] ?? "";
+
+  const en = page("index.html");
+  const tr = page("tr/index.html");
+  if (!en) throw new Error("dist/index.html missing");
+  if (!tr) throw new Error("dist/tr/index.html missing — the Turkish tree did not build");
 
   const failures = [
-    ...FORBIDDEN_TEXT.filter((n) => html.includes(n)).map((n) => `forbidden claim in HTML: ${JSON.stringify(n)}`),
-    ...FORBIDDEN_WORDS.filter((w) => new RegExp(`\\b${w}\\b`).test(html)).map((w) => `fake customer logo in HTML: ${w}`),
-    ...FORBIDDEN_CSS.filter((n) => css.includes(n)).map((n) => `periwinkle literal in built CSS: ${n} — a hardcoded color the token retheme could not reach`),
-    ...REQUIRED.filter((n) => !html.includes(n)).map((n) => `required claim missing from HTML: ${JSON.stringify(n)}`),
+    // Forbidden claims now sweep every page, not just the index.
+    ...pages.flatMap(([p, html]) => [
+      ...FORBIDDEN_TEXT.filter((n) => html.includes(n))
+        .map((n) => `forbidden claim in ${rel(p)}: ${JSON.stringify(n)}`),
+      ...FORBIDDEN_WORDS.filter((w) => new RegExp(`\\b${w}\\b`).test(html))
+        .map((w) => `fake customer logo in ${rel(p)}: ${w}`),
+      ...hreflangProblems(html).map((h) => `${rel(p)}: ${h}`),
+      ...[wrongHtmlLang(rel(p), html)].filter(Boolean).map((h) => `${rel(p)}: ${h}`),
+    ]),
+    // Locale leaks: Turkish pages only.
+    ...pages
+      .filter(([p]) => rel(p).startsWith("tr/"))
+      .flatMap(([p, html]) =>
+        localeLeaks(html).map(
+          (href) => `locale leak in ${rel(p)}: <a href="${href}"> escapes the Turkish tree`,
+        ),
+      ),
+    ...FORBIDDEN_CSS.filter((n) => css.includes(n))
+      .map((n) => `periwinkle literal in built CSS: ${n} — a hardcoded color the token retheme could not reach`),
+    ...REQUIRED.filter((n) => !en.includes(n))
+      .map((n) => `required claim missing from index.html: ${JSON.stringify(n)}`),
+    ...REQUIRED_TR.filter((n) => !tr.includes(n))
+      .map((n) => `required claim missing from tr/index.html: ${JSON.stringify(n)}`),
   ];
 
   if (failures.length) {
@@ -93,8 +218,7 @@ async function main() {
     process.exit(1);
   }
 
-  const checks = FORBIDDEN_TEXT.length + FORBIDDEN_WORDS.length + FORBIDDEN_CSS.length + REQUIRED.length;
-  console.log(`verify OK — ${checks} checks passed`);
+  console.log(`verify OK — ${pages.length} page(s) checked`);
 }
 
 main().catch((err) => {

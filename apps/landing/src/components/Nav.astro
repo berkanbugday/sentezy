@@ -1,18 +1,22 @@
 ---
-import { nav } from "../data/copy";
-import { START_URL } from "../data/site";
+import { getCopy, localeHref } from "../i18n";
+import { startUrl } from "../data/site";
+import LangSwitch from "./LangSwitch.astro";
+
+const { nav } = getCopy(Astro.currentLocale);
 ---
 
 <header class="nav">
   <div class="wrap nav-in">
-    <a class="logo" href="/"><img class="logo-mark" src="/sentezy-logo.png" alt="Sentezy" />Sentezy</a>
+    <a class="logo" href={localeHref(Astro.currentLocale, "/")}><img class="logo-mark" src="/sentezy-logo.png" alt="Sentezy" />Sentezy</a>
     <nav class="nav-menu">
       <a href="#showcase">{nav.showcase}</a>
       <a href="#how">{nav.how}</a>
       <a href="#platform">{nav.platform}</a>
     </nav>
     <div class="nav-util">
-      <a href={START_URL} class="btn btn-primary"><span>{nav.cta}</span></a>
+      <LangSwitch />
+      <a href={startUrl(Astro.currentLocale)} class="btn btn-primary"><span>{nav.cta}</span></a>
     </div>
   </div>
 </header>

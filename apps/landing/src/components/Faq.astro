@@ -1,5 +1,7 @@
 ---
-import { faq } from "../data/copy";
+import { getCopy } from "../i18n";
+
+const { faq } = getCopy(Astro.currentLocale);
 ---
 
 <section class="sec" id="faq">

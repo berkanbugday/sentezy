@@ -81,6 +81,47 @@ a:hover { color: var(--color-ink); }
 .nav-util { display: flex; align-items: center; gap: 16px; }
 /* Smaller than a page CTA: in a 54px dock it is a label, not the call to action. */
 .nav .btn-primary { padding: 9px 16px; font-size: 14px; }
+/* Language switcher: a <details> disclosure, so open/close needs no JS. The nav is a rounded
+   pill on a fixed bar, so the menu is absolutely positioned and the pill must not clip it —
+   .nav-in sets no overflow, which is what makes this work. */
+.lang { position: relative; flex: none; }
+
+.lang > summary {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 32px; padding: 0 8px; border-radius: 999px;
+  color: var(--color-slate); font-size: 13px; font-weight: 500;
+  cursor: pointer; list-style: none; user-select: none;
+  transition: color .15s ease, background .15s ease;
+}
+/* Both spellings: WebKit still needs the pseudo-element to drop the disclosure triangle. */
+.lang > summary::-webkit-details-marker { display: none; }
+.lang > summary::marker { content: ""; }
+.lang > summary:hover { color: var(--color-ink); background: rgba(11,11,13,0.05); }
+.lang > summary:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
+
+.lang-globe, .lang-caret { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.lang-globe { width: 15px; height: 15px; flex: none; }
+.lang-caret { width: 9px; height: 6px; flex: none; transition: transform .18s ease; }
+.lang[open] > summary { color: var(--color-ink); }
+.lang[open] .lang-caret { transform: rotate(180deg); }
+.lang-code { letter-spacing: .02em; }
+
+.lang-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  min-width: 150px; margin: 0; padding: 6px; list-style: none;
+  background: var(--color-paper); border: 1px solid var(--color-hairline);
+  border-radius: 12px; box-shadow: 0 12px 32px rgba(11,11,13,0.12);
+}
+.lang-menu a {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 8px;
+  color: var(--color-slate); font-size: 14px; white-space: nowrap;
+}
+.lang-menu a:hover { color: var(--color-ink); background: rgba(11,11,13,0.05); }
+.lang-menu a[aria-current="true"] { color: var(--color-ink); font-weight: 600; }
+/* Reserve the tick's width on every row so the two labels stay left-aligned with each other
+   — without this the unselected language shifts left by the width of the check. */
+.lang-tick { width: 12px; flex: none; font-size: 12px; line-height: 1; }
 
 /* ── hero ────────────────────────────────────────────────────────────────── */
 .hero { padding: 150px 0 96px; background: var(--hero); }
@@ -486,6 +527,13 @@ html { scroll-behavior: smooth; }
   .sec-head { margin-bottom: 32px; }
   .nav { top: 10px; }
   .nav-in { height: 54px; padding: 0 10px 0 16px; }
+  /* The nav pill is ~300px of usable width on a 360px phone, shared with the logo and a CTA
+     that reads "Ücretsiz başla" in Turkish. Drop the caret and tighten the padding so the
+     switcher costs about what the old "EN · TR" pair did — the globe and the current language
+     carry the meaning; the caret was only an affordance. */
+  .lang > summary { padding: 0 6px; gap: 4px; }
+  .lang-caret { display: none; }
+  .lang-menu { min-width: 140px; }
   .logo { font-size: 19px; }
   .logo-mark { height: 26px; }
   .btn { padding: 12px 18px; }
