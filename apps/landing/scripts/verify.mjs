@@ -49,10 +49,19 @@ const FORBIDDEN_CSS = ["c9a9e9", "201,169,233", "7c86e8", "124,134,232"];
 //   24 distinct sectors               → same file
 //   20 caption styles                 → CAPTION_STYLE_META, packages/types/src/index.ts
 //   14 b-roll effects                 → BROLL_EFFECT_META, packages/types/src/index.ts
+// The hero demo is now the first thing on the page and the only place the product is shown.
+// It is driven entirely by these two hooks: `data-hd` is what src/scripts/hero-demo.ts looks
+// for, and `data-step` is what every rule in the demo's stylesheet keys off. If either stops
+// being emitted the demo does not throw — it renders as a still, empty composer that never
+// advances, which looks deliberate and would ship unnoticed. Asserted in both trees.
+const HERO_DEMO = ["data-hd", 'data-step="idle"'];
+
 const REQUIRED = [
   ">126<", ">24<", ">20<", ">14<",         // the four verified proof numbers
   "Let Sentezy make your videos. You just post them.", // hero headline
   "instagram.com/sentezy.ai",                // the real account is linked
+  "Your video is ready",                     // the hero demo's payoff frame, in English
+  ...HERO_DEMO,
 ];
 
 // Claims that must be present in the Turkish tree. The four proof numbers are checked in
@@ -61,6 +70,8 @@ const REQUIRED_TR = [
   ">126<", ">24<", ">20<", ">14<",
   "Videolarınızı Sentezy hazırlasın, siz sadece paylaşın.",  // hero headline
   "instagram.com/sentezy.ai",
+  "Videonuz hazır",                          // the hero demo's payoff frame, in Turkish
+  ...HERO_DEMO,
 ];
 
 /** Every .html file under dist/, recursively. The old gate read dist/index.html alone, so a

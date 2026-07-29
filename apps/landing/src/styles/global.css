@@ -126,7 +126,9 @@ a:hover { color: var(--color-ink); }
 /* ── hero ────────────────────────────────────────────────────────────────── */
 .hero { padding: 150px 0 96px; background: var(--hero); }
 
-.hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; }
+/* The visual column carries the app demo now, which needs the wider half — a composer squeezed
+   under 500px starts dropping its controls onto a second row. */
+.hero-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 56px; align-items: center; }
 .hero-cta { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
 .microcopy { font-size: 14px; color: var(--color-muted); margin-top: 14px; }
 
@@ -178,12 +180,25 @@ a:hover { color: var(--color-ink); }
 a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid var(--color-signal); outline-offset: 2px; border-radius: 6px; }
 
 @media (max-width: 900px) {
-  .hero-grid { grid-template-columns: 1fr; }
+  /* The whole reason this component was rebuilt: what fits on a phone's FIRST screen.
+     It used to be `.hero-visual { order: -1 }` — a wall of faces above the headline, with the
+     eyebrow, the pitch and the CTA all below the fold. Simply undoing that is not enough
+     either: the lead paragraph runs seven lines on a 390px screen and pushes the demo off the
+     bottom just as effectively as the marquee did.
+     So the copy block dissolves into the grid (`display: contents`) and its parts are ordered
+     individually — headline, demo, button, and only then the paragraph. A visitor now sees
+     what it makes, watches it being made, and can start, without scrolling once.
+     `.hero-copy` carries `.reveal`; with no box of its own it cannot fade, so on a phone the
+     hero simply renders — which is the right trade for the page's largest paint anyway. */
+  .hero-grid { display: grid; grid-template-columns: 1fr; gap: 22px; }
+  .hero-copy { display: contents; }
+  .hero-copy .eyebrow { order: 1; }
+  .hero-copy .h1x { order: 2; }
+  .hero-visual { order: 3; }
+  .hero-copy .hero-cta { order: 4; margin-top: 0; }
+  .hero-copy .lead { order: 5; margin-top: 4px; }
+  .hero-copy .microcopy { order: 6; margin-top: 0; }
   .hero { padding-top: 96px; }
-  /* Faces before the pitch. Only the order changes — the marquee itself is the desktop one. */
-  .hero-visual { order: -1; }
-  .hero-grid { gap: 32px; }
-  .reels { height: 380px; }
   .steps { grid-template-columns: 1fr 1fr; }
   /* Brand full width, then the three link lists side by side. minmax(0,1fr) lets the tracks
      shrink to share the row instead of overflowing on their content's intrinsic width. */
@@ -205,6 +220,10 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
   .foot-col h4 { font-size: 11px; letter-spacing: 0.04em; }
   .foot-col a { font-size: 13px; }
   .btn-lg { flex: 1; justify-content: center; }
+  /* "See real examples" jumped to the showcase further down. A demo of the product is now
+     playing directly above this button, so on a phone it is a second CTA competing with the
+     first for the only row that fits above the fold. The link still exists in the nav. */
+  .hero-cta .btn-ghost { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .reveal, .stagger > * { opacity: 1; transform: none; transition: none; }
@@ -251,24 +270,15 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 }
 
 
-/* ── reel marquee ───────────────────────────────────────────────────────── */
-.reels { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; height: 620px; overflow: hidden;
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
-  mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent); }
-/* The column's items are duplicated so translateY(-50%) can loop. Spacing MUST come from a
-   per-tile margin, not `gap`: gap only renders BETWEEN children, so a doubled list of n tiles
-   gets 2n-1 gaps, not 2n. Half of that height falls half a gap short of one full set, and the
-   loop snaps by gap/2 (9px) every cycle. A bottom margin belongs to each tile, so the track is
-   exactly 2x one set and the seam is invisible. */
-.reel-col { display: flex; flex-direction: column; will-change: transform; }
-.reel-col.up { animation: reel-up 38s linear infinite; }
-.reel-col.down { animation: reel-down 38s linear infinite; }
-.reels:hover .reel-col { animation-play-state: paused; }
-@keyframes reel-up { from { transform: translateY(0); } to { transform: translateY(-50%); } }
-@keyframes reel-down { from { transform: translateY(-50%); } to { transform: translateY(0); } }
+/* ── presenter strip ────────────────────────────────────────────────────── */
+/* Was two 620px vertical columns in the hero. The hero belongs to the app demo now, and a tall
+   vertical marquee mid-page fights the direction the visitor is already scrolling — so the same
+   tiles ride the shared horizontal `.marquee` primitive instead, in a slim band directly under
+   the proof bar that states the 126 and the 24 these faces are evidence for. */
+.strip { padding: 8px 0 4px; overflow: hidden; }
+.strip .tile { width: 132px; margin-bottom: 0; }
 
 .tile { position: relative; aspect-ratio: 9/16; border-radius: 18px; overflow: hidden; flex: none;
-  margin-bottom: 18px;
   border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 18px 44px rgba(10,10,12,0.16); }
 .tile-cool   { background: linear-gradient(165deg, #2e74c4, #14304f); }
 .tile-warm   { background: linear-gradient(165deg, #e89260, #6d3a1c); }
@@ -294,8 +304,7 @@ a:focus-visible, button:focus-visible, .faq-q:focus-visible { outline: 2px solid
 .cap-glow      { color: #7de3ff; text-shadow: 0 0 10px #29b6ff, 0 0 22px rgba(41,182,255,0.6); }
 .cap-clean     { font-weight: 600; text-transform: none; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
 
-@media (max-width: 900px) { .reels { height: 420px; } }
-@media (prefers-reduced-motion: reduce) { .reel-col { animation: none; } }
+@media (max-width: 560px) { .strip .tile { width: 104px; } }
 
 /* ── proof bar ──────────────────────────────────────────────────────────── */
 .proof { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 34px 0;
@@ -546,4 +555,326 @@ html { scroll-behavior: smooth; }
   .step-n { font-size: 34px; }
   .foot-grid { gap: 26px; }
   .footer { padding: 56px 0 32px; }
+}
+
+/* ── hero app demo ──────────────────────────────────────────────────────── */
+/* A rebuild of the real composer inside a browser frame, walked by a fake cursor. See
+   src/components/HeroDemo.astro for the markup and src/data/heroDemo.ts for the timeline.
+
+   Two conventions run through this whole block:
+
+   1. `.appwin` is sized in `em` off ONE font-size, and that font-size is a container query on
+      the hero column. Every dimension inside therefore scales together — there is no second
+      breakpoint to keep in step, and the demo cannot half-shrink.
+   2. State is `[data-step]` on `.hd`. CSS has no "at or after this step" operator, so each rule
+      spells out its steps: a `:not()` chain when the early steps are fewer, an `:is()` list when
+      the late ones are. Both are exhaustive on purpose — a step added to heroDemo.ts without a
+      rule here shows up as a visibly stuck frame, which is the failure you want.
+
+   Nothing hides with `display: none` while the cursor might aim at it: the driver measures its
+   target with getBoundingClientRect at the moment it moves, and an element with no box has no
+   rect to aim at. */
+.hd { position: relative; container-type: inline-size; }
+
+.hd-glow { position: absolute; inset: -12% -16% 12%; border-radius: 50%; opacity: 0.3;
+  filter: blur(52px); background: radial-gradient(closest-side, #2e74c4, transparent 72%);
+  animation: breathe 7s ease-in-out infinite alternate; }
+
+/* The aspect ratio is set from the composer's own height at the largest font-size, not chosen
+   for looks: too tall and the card floats in a lake of white for the first twelve seconds,
+   too short and the finished reel has no room to be seen. */
+.appwin { position: relative; width: 100%; aspect-ratio: 16/10; display: flex; flex-direction: column;
+  border-radius: 16px; overflow: hidden; background: var(--color-paper);
+  border: 1px solid var(--color-hairline);
+  box-shadow: 0 30px 80px rgba(10,10,12,0.22), 0 2px 8px rgba(10,10,12,0.06);
+  /* The only scale knob in the entire demo. cqw is a percentage of .hd's width, so this tracks
+     the hero column rather than the viewport — which is what makes one value cover desktop,
+     tablet and phone without a media query. */
+  font-size: clamp(10.5px, 1.9cqw, 15.5px); }
+
+.appwin-bar { flex: none; height: 2.6em; display: flex; align-items: center; gap: 0.9em;
+  padding: 0 0.9em; background: var(--color-mist); border-bottom: 1px solid var(--color-hairline); }
+.appwin-dots { display: flex; gap: 0.42em; }
+.appwin-dots i { width: 0.62em; height: 0.62em; border-radius: 50%; background: #d4d4d8; }
+.appwin-url { margin: 0 auto; font-family: var(--font-mono); font-size: 0.8em;
+  color: var(--color-muted); background: var(--color-paper);
+  border: 1px solid var(--color-hairline); border-radius: 999px; padding: 0.2em 1.2em; }
+
+.appwin-body { flex: 1; min-height: 0; display: flex; }
+
+.appside { flex: none; width: 9.4em; padding: 1em 0.75em; background: #fafafa;
+  border-right: 1px solid var(--color-hairline); display: flex; flex-direction: column; gap: 0.8em; }
+.appside-brand { font-family: var(--font-display); font-weight: 700; font-size: 1.05em;
+  color: var(--color-ink); letter-spacing: -0.01em; padding: 0 0.4em; }
+.appside-nav { display: flex; flex-direction: column; gap: 0.15em; }
+.appside-nav span { display: flex; align-items: center; gap: 0.55em; padding: 0.45em 0.6em;
+  border-radius: 0.6em; font-size: 0.82em; color: var(--color-slate);
+  transition: background 0.35s, color 0.35s; }
+.appside-nav b { width: 0.66em; height: 0.66em; border-radius: 0.18em; background: currentColor;
+  opacity: 0.45; flex: none; }
+.appside-nav .on { background: var(--color-ink); color: #fff; }
+/* The finished video lands in the library, so that is where the app is once the demo ends. */
+.hd[data-step="done"] .appside-nav .on { background: transparent; color: var(--color-slate); }
+.hd[data-step="done"] .appside-nav .lib { background: var(--color-ink); color: #fff; }
+.appside-credits { margin-top: auto; padding: 0 0.4em; font-family: var(--font-mono);
+  font-size: 0.72em; color: var(--color-muted); }
+
+.appmain { position: relative; flex: 1; min-width: 0; padding: 1.25em 1.2em; overflow: hidden;
+  display: flex; flex-direction: column; }
+.appmain-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.4em; font-weight: 600;
+  letter-spacing: -0.01em; color: var(--color-ink); }
+.appmain-head p { margin: 0.3em 0 0; font-size: 0.84em; color: var(--color-slate); }
+
+.compose { position: relative; margin-top: 1em; padding: 0.85em; background: var(--color-paper);
+  border: 1px solid var(--color-hairline); border-radius: 1.15em;
+  box-shadow: 0 1px 3px rgba(10,10,12,0.05); }
+.compose-tabs { display: inline-flex; gap: 0.15em; margin-bottom: 0.75em; padding: 0.15em;
+  font-size: 0.78em; background: var(--color-mist); border: 1px solid var(--color-hairline);
+  border-radius: 999px; }
+.compose-tabs span { padding: 0.35em 1em; border-radius: 999px; color: var(--color-muted); }
+.compose-tabs .on { background: var(--color-paper); color: var(--color-ink); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(10,10,12,0.07); }
+
+/* The empty dropzone and the filled tray share one fixed-height slot. Swapping them by height
+   would resize the card mid-beat and pull the controls — and the cursor's next target — out
+   from under it. */
+.compose-slot { position: relative; height: 6.2em; }
+.drop, .tray { position: absolute; inset: 0; transition: opacity 0.35s; }
+
+.drop { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.2em; text-align: center; border: 1px dashed var(--color-hairline); border-radius: 0.9em;
+  transition: opacity 0.35s, border-color 0.3s, background 0.3s; }
+.drop-ico { display: grid; place-items: center; width: 2.1em; height: 2.1em; margin-bottom: 0.2em;
+  border-radius: 0.55em; background: var(--color-mist); color: var(--color-slate); }
+.drop-ico svg { width: 1.1em; height: 1.1em; }
+.drop b { font-size: 0.84em; font-weight: 600; color: var(--color-ink); }
+.drop em { font-style: normal; font-size: 0.72em; color: var(--color-muted); }
+/* The drag-over state the real card shows while files are over it. */
+.hd[data-step="drop"] .drop { border-color: var(--color-ink); background: var(--color-mist); }
+
+.hd:is([data-step="idle"], [data-step="drop"]) .tray { opacity: 0; }
+.hd:not([data-step="idle"]):not([data-step="drop"]) .drop { opacity: 0; }
+
+.tray { display: flex; align-items: center; gap: 0.5em; }
+.clip { position: relative; flex: none; width: 4.6em; height: 4.6em; border-radius: 0.7em;
+  overflow: hidden; border: 1px solid var(--color-hairline); background: var(--color-mist); }
+/* Cropped to the upper third of the frame. These are real reel stills, and a couple of them
+   carry burned-in captions further down — visible on a tile that is supposed to be raw footage
+   the visitor just dragged in, they make the input look like the output. */
+.clip img { width: 100%; height: 100%; object-fit: cover; object-position: center 8%; }
+.clip-kind { position: absolute; left: 0.28em; top: 0.28em; display: grid; place-items: center;
+  width: 1.15em; height: 1.15em; border-radius: 999px; background: rgba(0,0,0,0.6); color: #fff; }
+.clip-kind svg { width: 0.66em; height: 0.66em; }
+.clip-spin { position: absolute; inset: 0; background: rgba(0,0,0,0.45); }
+.clip-spin::after { content: ""; position: absolute; left: 50%; top: 50%; width: 1.3em; height: 1.3em;
+  margin: -0.65em 0 0 -0.65em; border-radius: 50%; border: 0.16em solid rgba(255,255,255,0.35);
+  border-top-color: #fff; animation: hdspin 0.7s linear infinite; }
+.clip-ok { position: absolute; right: 0.3em; bottom: 0.3em; display: grid; place-items: center;
+  width: 1.25em; height: 1.25em; border-radius: 999px; background: var(--color-ink); color: #fff;
+  opacity: 0; }
+.clip-ok svg { width: 0.7em; height: 0.7em; }
+/* The three clips land, spin and tick over one after another rather than together — an upload
+   that completes in perfect unison reads as a mock, which is the one thing this must not. */
+.hd:not([data-step="idle"]):not([data-step="drop"]) .clip {
+  animation: clipin 0.45s cubic-bezier(0.22,1,0.36,1) both; animation-delay: calc(var(--i) * 0.12s); }
+.hd:not([data-step="idle"]):not([data-step="drop"]) .clip-spin {
+  animation: hdfade 0.3s calc(0.75s + var(--i) * 0.3s) both; }
+.hd:not([data-step="idle"]):not([data-step="drop"]) .clip-ok {
+  animation: hdpop 0.35s calc(0.8s + var(--i) * 0.3s) both cubic-bezier(0.22,1.6,0.36,1); }
+@keyframes clipin { from { opacity: 0; transform: translateY(0.9em) scale(0.86); } to { opacity: 1; transform: none; } }
+@keyframes hdfade { to { opacity: 0; visibility: hidden; } }
+@keyframes hdpop { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes hdspin { to { transform: rotate(360deg); } }
+.clip-add { display: grid; place-items: center; flex: none; width: 4.6em; height: 4.6em;
+  border-radius: 0.7em; border: 1px dashed var(--color-hairline); color: var(--color-muted); }
+
+.compose-script { position: relative; margin-top: 0.7em; min-height: 3.1em; padding: 0.3em 0.2em;
+  font-size: 0.88em; line-height: 1.55; color: var(--color-ink); opacity: 0; transition: opacity 0.4s; }
+.hd:not([data-step="idle"]):not([data-step="drop"]) .compose-script { opacity: 1; }
+.script-ph { position: absolute; inset: 0.3em 0.2em auto; color: var(--color-muted);
+  transition: opacity 0.2s; }
+.hd:not([data-step="idle"]):not([data-step="drop"]):not([data-step="uploaded"]) .script-ph { opacity: 0; }
+.caret { display: inline-block; width: 1.5px; height: 1.05em; margin-left: 1px;
+  vertical-align: -0.18em; background: var(--color-ink); opacity: 0; }
+.hd[data-step="typing"] .caret { opacity: 1; animation: hdblink 0.9s steps(1) infinite; }
+@keyframes hdblink { 50% { opacity: 0; } }
+
+.compose-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45em; margin-top: 0.65em; }
+.cbtn { display: inline-flex; align-items: center; gap: 0.4em; height: 2.5em; padding: 0 0.95em;
+  border-radius: 999px; border: 1px solid var(--color-hairline); background: var(--color-paper);
+  color: var(--color-ink); font-family: var(--font-sans); font-size: 0.82em; font-weight: 500;
+  white-space: nowrap; }
+.cbtn svg { width: 1em; height: 1em; flex: none; }
+.cbtn-ico { width: 2.5em; padding: 0; justify-content: center; }
+.cbtn-plus { font-size: 1.15em; line-height: 1; }
+.cbtn-play { color: var(--color-slate); }
+.cbtn-badge { display: grid; place-items: center; min-width: 1.35em; height: 1.35em; padding: 0 0.3em;
+  border-radius: 999px; background: var(--color-ink); color: #fff; font-size: 0.75em;
+  font-weight: 600; opacity: 0; transition: opacity 0.25s; }
+.cbtn-badge i { font-style: normal; display: none; }
+.hd:is([data-step="picked"], [data-step="menu2"], [data-step="captions"]) .cbtn-badge { opacity: 1; }
+.hd:is([data-step="picked"], [data-step="menu2"], [data-step="captions"]) .cbtn-badge .b1 { display: block; }
+.hd:is([data-step="styled"], [data-step="making"], [data-step="done"]) .cbtn-badge { opacity: 1; }
+.hd:is([data-step="styled"], [data-step="making"], [data-step="done"]) .cbtn-badge .b2 { display: block; }
+
+/* Everything is inert until there is a script, exactly as the real card is: the composer's
+   controls are gated on `hasScript`, not on media. */
+.cbtn-opt, .cbtn-ico, .cbtn-prev, .cbtn-go { opacity: 0.45; transition: opacity 0.3s; }
+.hd:not([data-step="idle"]):not([data-step="drop"]):not([data-step="uploaded"]):not([data-step="typing"])
+  :is(.cbtn-opt, .cbtn-ico, .cbtn-prev, .cbtn-go) { opacity: 1; }
+
+.cbtn-go { margin-left: auto; background: var(--color-ink); color: #fff; border-color: var(--color-ink);
+  font-weight: 600; box-shadow: 0 0.3em 0.9em rgba(10,10,12,0.22); }
+.go-making, .go-spin { display: none; }
+.go-spin { order: -1; width: 1em; height: 1em; border-radius: 50%;
+  border: 0.14em solid rgba(255,255,255,0.4); border-top-color: #fff;
+  animation: hdspin 0.7s linear infinite; }
+.hd[data-step="making"] :is(.go-label, .go-arrow) { display: none; }
+.hd[data-step="making"] .go-making { display: inline; }
+.hd[data-step="making"] .go-spin { display: block; }
+
+/* The options popover, anchored to the card rather than to .appmain so it always opens on top
+   of the button that summons it, whatever the card's height works out to. */
+.hd-menu { position: absolute; left: 0.6em; bottom: 3.5em; z-index: 6; width: 13.5em; padding: 0.3em;
+  background: var(--color-paper); border: 1px solid var(--color-hairline); border-radius: 0.9em;
+  box-shadow: 0 1.2em 2.6em rgba(10,10,12,0.18);
+  transform-origin: bottom left; transform: translateY(0.5em) scale(0.97);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.22s, transform 0.22s, visibility 0s linear 0.22s; }
+.hd:is([data-step="menu1"], [data-step="menu2"]) .hd-menu { opacity: 1; visibility: visible;
+  transform: none; transition-delay: 0s; }
+.hd-menu-row { display: flex; align-items: center; justify-content: space-between; gap: 1em;
+  width: 100%; padding: 0.5em 0.6em; border: 0; border-radius: 0.6em; background: transparent;
+  text-align: left; }
+.hd-menu-row b { font-size: 0.82em; font-weight: 500; color: var(--color-ink); }
+.hd-menu-row em { font-style: normal; font-size: 0.75em; color: var(--color-muted); }
+.hd-menu-row em i { font-style: normal; display: none; }
+.hd-menu-row .v-off { display: inline; }
+/* Once a choice is made the row shows it, and keeps showing it for the rest of the loop. */
+.hd:is([data-step="picked"], [data-step="menu2"], [data-step="captions"], [data-step="styled"], [data-step="making"], [data-step="done"])
+  .v-presenter :is(.v-off) { display: none; }
+.hd:is([data-step="picked"], [data-step="menu2"], [data-step="captions"], [data-step="styled"], [data-step="making"], [data-step="done"])
+  .v-presenter .v-on { display: inline; color: var(--color-ink); font-weight: 600; }
+.hd:is([data-step="styled"], [data-step="making"], [data-step="done"]) .v-caption :is(.v-off) { display: none; }
+.hd:is([data-step="styled"], [data-step="making"], [data-step="done"]) .v-caption .v-on { display: inline; color: var(--color-ink); font-weight: 600; }
+
+/* A scrim plus a sheet, not a translucent wash. A wash over the composer let the script line
+   and the control row read straight through the picker, which made an open modal look like a
+   rendering fault rather than a dialog. */
+.hd-modal { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center;
+  padding: 0.9em; background: rgba(10,10,12,0.34);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0s linear 0.25s; }
+.hd[data-step="avatars"] .hd-modal-av,
+.hd[data-step="captions"] .hd-modal-cap { opacity: 1; visibility: visible; transition-delay: 0s; }
+.hd-sheet { display: flex; flex-direction: column; align-items: center; gap: 0.8em;
+  width: 100%; max-width: 21em; padding: 1.1em; border-radius: 1em;
+  background: var(--color-paper); border: 1px solid var(--color-hairline);
+  box-shadow: 0 1.4em 3em rgba(10,10,12,0.28); }
+.hd-sheet h4 { margin: 0; font-family: var(--font-display); font-size: 1.02em; font-weight: 600;
+  color: var(--color-ink); }
+
+.avgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5em; width: 100%; max-width: 19em; }
+.av { position: relative; aspect-ratio: 1; border-radius: 0.7em; overflow: hidden;
+  border: 1px solid var(--color-hairline); background: var(--color-mist);
+  box-shadow: 0 0 0 0 var(--color-ink); }
+.av img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+/* The ring lights on a delay timed to the cursor's arrival, not to the modal opening — the
+   selection has to look like a consequence of the click, not a decoration that was already there. */
+.hd[data-step="avatars"] .av.target { animation: hdring 0.28s 0.5s both; }
+@keyframes hdring { to { box-shadow: 0 0 0 0.18em var(--color-ink); } }
+
+.capgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5em; width: 100%; max-width: 19em; }
+.capt { display: grid; place-items: center; height: 3.1em; border-radius: 0.7em; background: #18181b;
+  border: 1px solid var(--color-hairline); box-shadow: 0 0 0 0 var(--color-ink); }
+/* The .cap-* treatments are shared with the marquee tiles, where they are sized in px for a
+   132px tile. Inside the demo they have to follow the container query like everything else. */
+.capgrid span { font-family: var(--font-display); font-weight: 700; font-size: 0.95em;
+  line-height: 1.1; text-transform: uppercase; color: #fff; }
+.capgrid :is(.cap-hormozi, .cap-tiktok, .cap-highlight, .cap-boxed) { font-size: 0.95em; }
+.hd[data-step="captions"] .capt.target { animation: hdring 0.28s 0.5s both; }
+
+.hd-done { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 0.65em; padding: 1.1em;
+  background: var(--color-paper); opacity: 0; visibility: hidden;
+  transition: opacity 0.45s, visibility 0s linear 0.45s; }
+.hd[data-step="done"] .hd-done { opacity: 1; visibility: visible; transition-delay: 0s; }
+.hd-done-head { flex: none; display: flex; align-items: center; gap: 0.45em; }
+.hd-tick { display: grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 999px;
+  background: var(--color-ink); color: #fff; }
+.hd-tick svg { width: 0.82em; height: 0.82em; }
+.hd-done-head b { font-family: var(--font-display); font-size: 1.05em; font-weight: 600;
+  color: var(--color-ink); }
+/* min-height:0 is what lets the reel shrink to the free space instead of overflowing on its
+   intrinsic height; aspect-ratio then supplies the width. */
+.hd-reel { flex: 1 1 auto; min-height: 0; aspect-ratio: 9/16; border-radius: 0.8em; overflow: hidden;
+  background: #0a0a0b; box-shadow: 0 1em 2.4em rgba(10,10,12,0.3);
+  animation: hdreel 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+.hd-reel video { display: block; width: 100%; height: 100%; object-fit: cover; }
+@keyframes hdreel { from { opacity: 0; transform: translateY(1em) scale(0.94); } to { opacity: 1; transform: none; } }
+.hd-dl { flex: none; margin-left: 0; opacity: 1; }
+
+.hd-cursor { position: absolute; left: 0; top: 0; z-index: 20; width: 1.35rem; height: 1.35rem;
+  pointer-events: none; translate: 0 0;
+  transition: translate 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  filter: drop-shadow(0 2px 5px rgba(10,10,12,0.4)); }
+.hd-cursor svg { width: 100%; height: 100%; fill: #fff; stroke: #0a0a0b; stroke-width: 1.4;
+  stroke-linejoin: round; transition: scale 0.12s; }
+.hd-cursor.click svg { scale: 0.82; }
+.hd-cursor::after { content: ""; position: absolute; left: 0; top: 0; width: 2.2rem; height: 2.2rem;
+  margin: -0.42rem 0 0 -0.42rem; border-radius: 50%; border: 2px solid var(--color-ink); opacity: 0; }
+.hd-cursor.click::after { animation: hdclick 0.42s ease-out; }
+@keyframes hdclick { from { opacity: 0.5; transform: scale(0.2); } to { opacity: 0; transform: scale(1); } }
+.hd-park { position: absolute; right: 8%; bottom: 6%; width: 1px; height: 1px; }
+
+/* The row that has to work for someone who never parses the UI above it. Four labels, the
+   current one lit — upload, write, choose, done — so the demo is legible even muted, even
+   scrolled past at speed, even by someone who has never seen the product. */
+/* Two columns rather than one wrapping row. Four labels fit on one line in neither language at
+   the width this column actually gets, and a row that breaks 3-then-1 reads as an accident; a
+   2x2 block reads as a set. It is also the layout a phone lands on anyway. */
+.hd-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 14px;
+  margin: 20px 0 0; padding: 0; list-style: none; counter-reset: hds; }
+.hd-steps li { counter-increment: hds; display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--color-muted);
+  transition: color 0.35s; }
+.hd-steps li::before { content: counter(hds); display: grid; place-items: center; width: 19px;
+  height: 19px; border-radius: 50%; font-size: 10px; background: var(--color-paper);
+  border: 1px solid var(--color-hairline); color: var(--color-muted);
+  transition: background 0.35s, border-color 0.35s, color 0.35s; }
+.hd:is([data-step="idle"], [data-step="drop"], [data-step="uploaded"]) .hd-steps li:nth-child(1),
+.hd:is([data-step="typing"], [data-step="typed"]) .hd-steps li:nth-child(2),
+.hd:is([data-step="menu1"], [data-step="avatars"], [data-step="picked"], [data-step="menu2"], [data-step="captions"], [data-step="styled"], [data-step="making"]) .hd-steps li:nth-child(3),
+.hd[data-step="done"] .hd-steps li:nth-child(4),
+.hd[data-reduce] .hd-steps li { color: var(--color-ink); font-weight: 600; }
+.hd:is([data-step="idle"], [data-step="drop"], [data-step="uploaded"]) .hd-steps li:nth-child(1)::before,
+.hd:is([data-step="typing"], [data-step="typed"]) .hd-steps li:nth-child(2)::before,
+.hd:is([data-step="menu1"], [data-step="avatars"], [data-step="picked"], [data-step="menu2"], [data-step="captions"], [data-step="styled"], [data-step="making"]) .hd-steps li:nth-child(3)::before,
+.hd[data-step="done"] .hd-steps li:nth-child(4)::before,
+.hd[data-reduce] .hd-steps li::before { background: var(--color-ink); border-color: var(--color-ink); color: #fff; }
+
+@media (max-width: 900px) {
+  /* The sidebar goes, which is what the real app does on a phone too (BottomNav). Losing it
+     buys the composer ~9.4em, and the composer is the part being demonstrated. */
+  .appside { display: none; }
+  .appwin { aspect-ratio: 1/0.98; }
+  .appmain { padding: 1.1em 1em; }
+}
+@media (max-width: 560px) {
+  .appwin { aspect-ratio: 1/1.06; }
+  /* Four controls will not sit on one row at this width without shrinking past legibility, and
+     Preview is the one the demo never touches. */
+  .cbtn-prev { display: none; }
+  .hd-steps { gap: 7px 14px; font-size: 11px; }
+  .hd-steps li { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The driver never starts under reduced motion — it renders the finished state and stops.
+     These rules kill the decorative loops that CSS owns rather than the script. */
+  .hd-glow, .hd-reel, .clip, .clip-spin, .clip-spin::after, .clip-ok, .caret, .go-spin,
+  .av.target, .capt.target { animation: none; }
+  .hd-cursor { display: none; }
+  .clip-ok { opacity: 1; }
+  .clip-spin { display: none; }
+  .hd-menu, .hd-modal, .hd-done { transition: none; }
 }

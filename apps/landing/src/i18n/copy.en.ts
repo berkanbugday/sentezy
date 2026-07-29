@@ -53,6 +53,39 @@ export const copy: Copy = {
     microcopy: "Your first videos are free. No card.",
   },
 
+  /* The animated app demo beside the headline. Its job is the first three seconds: someone who
+   * reads nothing still watches media go in, a line get typed, a presenter get picked, and a
+   * finished reel come out. Strings that exist in MediaComposer.tsx are copied verbatim so the
+   * demo and the product cannot say different things. */
+  heroDemo: {
+    dashTitle: "What are we making today?",
+    dashLead: "Paste a product link, or upload your own photos and clips",
+    nav: { home: "Home", library: "Library", presenters: "Presenters", brand: "Brand kit" },
+    credits: "30 credits",
+    tabLink: "Product link",
+    tabUpload: "Upload media",
+    dropTitle: "Drop your videos or photos here",
+    dropHint: ".mp4, .mov, .jpg or .png",
+    clipsReady: "3 clips ready",
+    scriptPlaceholder: "What should the video say? Write it here…",
+    script: "This coat is waterproof, packs into your bag, and it's 40% off this week.",
+    options: "Video options",
+    menuPresenter: "Presenter",
+    menuVoice: "Voice",
+    menuMusic: "Music",
+    menuCaptions: "Captions",
+    menuNone: "none yet",
+    voiceValue: "Rene",
+    preview: "Preview",
+    make: "Make video",
+    making: "Starting…",
+    pickPresenter: "Choose a presenter",
+    pickCaption: "Choose a caption style",
+    ready: "Your video is ready",
+    download: "Download",
+    steps: ["Upload your media", "Write the line", "Pick presenter & captions", "Your reel is ready"],
+  },
+
   /** Every number here traces to source. Do not add one that does not.
    *   126 → apps/api/src/data/avatars.json, total catalogue entries. NOTE: 12 of them have a
    *         portrait generated today (`displayImageId`); the rest appear as "coming soon" in the

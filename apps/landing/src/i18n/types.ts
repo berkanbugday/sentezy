@@ -47,6 +47,43 @@ export type Copy = {
     eyebrow: string; title: string; lead: string;
     ctaPrimary: string; ctaSecondary: string; microcopy: string;
   };
+  /** Every string inside the hero's animated app demo. The demo is a rebuild of the real
+   *  composer (apps/web/src/components/MediaComposer.tsx), so where a string exists there it
+   *  is copied verbatim in `en` rather than reworded — a demo that says something the product
+   *  does not is the one thing this component must never do.
+   *
+   *  `steps` is the row of labels under the stage, and is the part that has to survive a
+   *  visitor who never parses the UI: upload → write → choose → done, in four words each. */
+  heroDemo: {
+    dashTitle: string;
+    dashLead: string;
+    nav: { home: string; library: string; presenters: string; brand: string };
+    credits: string;
+    tabLink: string;
+    tabUpload: string;
+    dropTitle: string;
+    dropHint: string;
+    clipsReady: string;
+    scriptPlaceholder: string;
+    /** The line that types itself. Keep it one sentence — it has 2.7s to land. */
+    script: string;
+    options: string;
+    menuPresenter: string;
+    menuVoice: string;
+    menuMusic: string;
+    menuCaptions: string;
+    menuNone: string;
+    /** The voice shown as already chosen. A proper noun; identical in both locales. */
+    voiceValue: string;
+    preview: string;
+    make: string;
+    making: string;
+    pickPresenter: string;
+    pickCaption: string;
+    ready: string;
+    download: string;
+    steps: string[];
+  };
   /** `n` is a proof number and is identical in both locales — only `label` translates. */
   proof: { n: string; label: string }[];
   sectors: {

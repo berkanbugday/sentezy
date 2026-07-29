@@ -53,6 +53,39 @@ export const copy: Copy = {
     microcopy: "İlk videolarınız ücretsiz. Kart istemiyoruz.",
   },
 
+  /* Uygulamanın kendisi İngilizce; buradaki etiketler o ekranın Türkçe karşılığı, birebir
+     çevirisi değil. "Sunucu" = presenter, "Kitaplık" = library — ürünün Türkçe konuşurken
+     kullandığı sözlük. `steps` satırı hiç arayüz okumayan birine bile hikâyeyi anlatmak
+     zorunda: yükle → yaz → seç → hazır. */
+  heroDemo: {
+    dashTitle: "Bugün ne hazırlıyoruz?",
+    dashLead: "Bir ürün linki yapıştırın ya da kendi fotoğraf ve videolarınızı yükleyin",
+    nav: { home: "Ana sayfa", library: "Kitaplık", presenters: "Sunucular", brand: "Marka kiti" },
+    credits: "30 kredi",
+    tabLink: "Ürün linki",
+    tabUpload: "Medya yükle",
+    dropTitle: "Videolarınızı ya da fotoğraflarınızı buraya bırakın",
+    dropHint: ".mp4, .mov, .jpg ya da .png",
+    clipsReady: "3 klip hazır",
+    scriptPlaceholder: "Video ne desin? Buraya yazın…",
+    script: "Bu mont su geçirmez, çantanıza sığar ve bu hafta %40 indirimde.",
+    options: "Video seçenekleri",
+    menuPresenter: "Sunucu",
+    menuVoice: "Ses",
+    menuMusic: "Müzik",
+    menuCaptions: "Altyazı",
+    menuNone: "seçilmedi",
+    voiceValue: "Rene",
+    preview: "Önizle",
+    make: "Videoyu oluştur",
+    making: "Başlatılıyor…",
+    pickPresenter: "Sunucunuzu seçin",
+    pickCaption: "Altyazı stilini seçin",
+    ready: "Videonuz hazır",
+    download: "İndir",
+    steps: ["Medyanızı yükleyin", "Cümlenizi yazın", "Sunucu ve altyazı seçin", "Reels'iniz hazır"],
+  },
+
   proof: [
     { n: "126", label: "Seçebileceğiniz sunucu" },
     { n: "24", label: "Hazırlandıkları sektör" },

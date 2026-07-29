@@ -1,10 +1,15 @@
 ---
-/* Same vertical marquee at every width. On a phone it moves above the copy — faces first, then
-   the pitch — which is a grid `order` change and nothing else: the component lays out exactly
-   as it does on desktop. */
+/* Copy on one side, the app demo on the other — and on a phone, in that order.
+ *
+ * The visual half used to be the vertical presenter marquee, and below 900px it was pulled
+ * ABOVE the copy. That meant a phone opened on a wall of AI faces with the eyebrow, the
+ * headline and the CTA all below the fold: nothing on the first screen said what the product
+ * was. HeroDemo replaces it and the order flip is gone, so the first screen now reads
+ * pitch → demo → button. The marquee still ships, as PresenterStrip under the proof bar.
+ */
 import { getCopy } from "../i18n";
 import { startUrl } from "../data/site";
-import ReelMarquee from "./ReelMarquee.astro";
+import HeroDemo from "./HeroDemo.astro";
 
 const { hero } = getCopy(Astro.currentLocale);
 ---
@@ -21,6 +26,6 @@ const { hero } = getCopy(Astro.currentLocale);
       </div>
       <div class="microcopy">{hero.microcopy}</div>
     </div>
-    <div class="hero-visual"><ReelMarquee /></div>
+    <div class="hero-visual"><HeroDemo /></div>
   </div>
 </section>
