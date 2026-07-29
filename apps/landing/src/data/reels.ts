@@ -22,6 +22,6 @@ import type { ReelFile } from "../i18n/types";
 export type Reel = { file: ReelFile };
 
 export const reels: Reel[] = [
-  { file: "2" }, { file: "1" }, { file: "3" },
+  { file: "2" }, { file: "1" }, { file: "3" }, { file: "7" },
   { file: "6" }, { file: "4" }, { file: "5" },
 ];

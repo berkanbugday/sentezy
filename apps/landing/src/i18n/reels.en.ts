@@ -7,6 +7,7 @@ export const reels: Reels = {
     "2": { sector: "Beauty",     alt: "A Sentezy reel made for a beauty salon" },
     "1": { sector: "Travel",     alt: "A Sentezy reel made for a travel agency" },
     "3": { sector: "Gym",        alt: "A Sentezy reel made for a gym" },
+    "7": { sector: "Promo",      alt: "A promo reel made with Sentezy" },
     "6": { sector: "Automotive", alt: "A Sentezy reel made for a car service" },
     "4": { sector: "Café",       alt: "A Sentezy reel made for a café" },
     "5": { sector: "Cruise",     alt: "A Sentezy reel made for a cruise line" },

@@ -45,9 +45,9 @@ export const copy: Copy = {
        altına itiyordu ki bu hero'nun baştan yazılma sebebi tam olarak buydu. Müzik, önizleme,
        tek dosya, beş dakika — hepsi sayfanın devamında duruyor. */
     lead: "Bir ürün linki yapıştırın ya da kendi fotoğraflarınızı yükleyin. Sunucuyu, sesi ve altyazıyı seçin; dikey videonuz dakikalar içinde hazır.",
-    ctaPrimary: "İlk videonuzu yapın",
-    ctaSecondary: "Gerçek örnekleri izleyin",
-    microcopy: "İlk videolarınız ücretsiz. Kart istemiyoruz.",
+    ctaPrimary: "İlk videonu oluştur",
+    ctaSecondary: "Gerçek örnekleri izle",
+    microcopy: "İlk videolarınız ücretsiz.",
   },
 
   /* Uygulamanın kendisi İngilizce; buradaki etiketler o ekranın Türkçe karşılığı, birebir
@@ -58,7 +58,7 @@ export const copy: Copy = {
     dashTitle: "Bugün ne hazırlıyoruz?",
     dashLead: "Bir ürün linki yapıştırın ya da kendi fotoğraf ve videolarınızı yükleyin",
     nav: { home: "Ana sayfa", library: "Videolarınız", presenters: "Sunucular", brand: "Marka Kiti" },
-    credits: "30 kredi",
+    credits: "3 kredi",
     tabLink: "Ürün linki",
     tabUpload: "Medya yükle",
     dropTitle: "Videolarınızı ya da fotoğraflarınızı buraya bırakın",
@@ -75,17 +75,19 @@ export const copy: Copy = {
     menuNone: "seçilmedi",
     voiceValue: "Rene",
     preview: "Önizle",
-    make: "Videoyu oluştur",
+    make: "Video oluştur",
     making: "Başlatılıyor…",
     pickPresenter: "Sunucunuzu seçin",
-    pickCaption: "Altyazı stilini seçin",
+    pickCaption: "Altyazı stili",
+    searchStyles: "Stil ara…",
+    filters: "Filtrele",
+    styleCount: "20 stil",
     pickerDone: "Tamam",
     pickerClose: "Kapat",
     addMedia: "Ekle",
     transitionLabel: "Savurma",
     ready: "Videonuz hazır",
     download: "İndir",
-    steps: ["Medyanızı yükleyin", "Cümlenizi yazın", "Sunucu ve altyazı seçin", "Reels'iniz hazır"],
   },
 
   proof: [
@@ -219,7 +221,7 @@ export const copy: Copy = {
        söylemiyordu. */
     title: "Tek bir videoyla deneyin.",
     lead: "Başlamak ücretsiz, kart yok, geri sayım yok. Daha fazlasını isterseniz ödersiniz.",
-    cta: "İlk videonuzu yapın",
+    cta: "İlk videonu oluştur",
     microcopy: "Yaklaşık beş dakika sürer.",
   },
 

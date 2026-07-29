@@ -74,17 +74,6 @@ export const beats: Beat[] = [
   { at: 13_950, step: "done", cursor: "start" },
 ];
 
-/** Which step each label under the stage belongs to. A label lights when the current step is
- *  at or past its first step, and unlights when the next label's turn comes — so the row reads
- *  as progress rather than four independent blinks. */
-export const STEP_ORDER: Step[] = [
-  "idle", "drop", "uploaded", "typing", "typed", "menu1",
-  "avatars", "picked", "menu2", "captions", "styled", "making", "done",
-];
-
-/** First step of each of the four labels in `copy.heroDemo.steps`. */
-export const LABEL_AT: Step[] = ["idle", "typing", "menu1", "done"];
-
 /** What the visitor drags in: Berkan's own B-roll from src/assets/backgrounds — one photo and
  *  three clips, which is exactly the mix the composer accepts. `1.jpg` is the salon the result
  *  reel is shot against, so the media going in and the video coming out are the same shoot.
@@ -123,8 +112,20 @@ export const FACES = [
 export const PICKED_FACE = "kevser";
 export const PICKED_FACE_NAME = "Kevser";
 
-/** Caption styles in the picker, matching `.cap-<id>` in global.css. */
-export const CAPTIONS = ["hormozi", "tiktok", "highlight", "boxed"] as const;
+/** Caption styles in the picker, matching `.cap-<id>` in global.css. Six, not four: the real
+ *  CaptionPicker lays its tiles out `grid-cols-2 sm:grid-cols-3`, and six fills two clean rows
+ *  of three where four left a row half empty.
+ *
+ *  The font on each is the second half of the preset's own label — CAPTION_PRESETS in
+ *  lib/captionStyles.ts names every preset `family · font`, and the tile prints exactly that. */
+export const CAPTIONS = [
+  { id: "hormozi", font: "Anton" },
+  { id: "tiktok", font: "Montserrat" },
+  { id: "highlight", font: "Poppins" },
+  { id: "boxed", font: "Bebas Neue" },
+  { id: "glow", font: "Kanit" },
+  { id: "clean", font: "Inter" },
+] as const;
 export const PICKED_CAPTION = "hormozi";
 
 /** The connector between two clips in the tray, straight from lib/composer/transitions.ts. */

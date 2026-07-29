@@ -51,9 +51,7 @@ export type Copy = {
    *  composer (apps/web/src/components/MediaComposer.tsx), so where a string exists there it
    *  is copied verbatim in `en` rather than reworded — a demo that says something the product
    *  does not is the one thing this component must never do.
-   *
-   *  `steps` is the row of labels under the stage, and is the part that has to survive a
-   *  visitor who never parses the UI: upload → write → choose → done, in four words each. */
+ */
   heroDemo: {
     dashTitle: string;
     dashLead: string;
@@ -80,6 +78,11 @@ export type Copy = {
     making: string;
     pickPresenter: string;
     pickCaption: string;
+    /** The caption sheet's search placeholder, its filter button, and its footer count —
+     *  all three exist in CaptionPicker.tsx and are what made the demo's version look unlike it. */
+    searchStyles: string;
+    filters: string;
+    styleCount: string;
     /** The picker sheets' confirm button and their close control's label. Both exist in
      *  AvatarPicker.tsx; the demo shows them because a modal with no way out reads as a
      *  screenshot rather than a screen. */
@@ -91,7 +94,6 @@ export type Copy = {
     addMedia: string;
     ready: string;
     download: string;
-    steps: string[];
   };
   /** `n` is a proof number and is identical in both locales — only `label` translates. */
   proof: { n: string; label: string }[];
@@ -129,7 +131,7 @@ export type PresenterSlug = "aisha" | "anna" | "arda" | "amara" | "camila" | "al
 export type VoiceName = "PJ" | "Kate Mercer" | "David" | "Rene";
 export type TrackMood = "Cinematic" | "Calm" | "Energetic" | "Corporate";
 export type CaptionStyleId = "hormozi" | "tiktok" | "highlight" | "boxed" | "glow" | "clean";
-export type ReelFile = "1" | "2" | "3" | "4" | "5" | "6";
+export type ReelFile = "1" | "2" | "3" | "4" | "5" | "6" | "7";
 
 export type Studio = {
   /** Keyed by Presenter.slug — the sector shown under each face on the demo phone. */
